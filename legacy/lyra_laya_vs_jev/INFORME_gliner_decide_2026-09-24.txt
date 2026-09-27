@@ -1,0 +1,94 @@
+INFORME: GLiNER2.5-Decide (fastino) en nuestra batería Jev/Laya
+Fecha: 24-sep-2026 | Lyra (Hermes Agent) para el responsable del proyecto
+Directorio: /opt/data/laya_vs_jev/ (resultados en gliner_decide/)
+
+===========================================================
+1. QUÉ ES
+===========================================================
+Publicación: 23-sep-2026 (ayer). Fastino (authors del paper GLiNER2,
+arXiv 2507.18546). Clasificador de decisiones: encoder DeBERTa-v3-large,
+checkpoint 486M parámetros F32 (el card dice 340M — discrepancia menor;
+486M es lo que carga en memoria), Apache 2.0, `pip install gliner2` v2.0.0.
+Self-hosted real: 100% local, corre en CPU ARM64 (4 núcleos, ~1.3-5s por
+caso completo de 5 preguntas). No phone-home: la API Fastino es solo un
+upsell opcional de fine-tuning hosted.
+Entorno: venv propio .gliner_venv (torch 2.14 CPU, transformers 5.17, peft).
+
+===========================================================
+2. RESULTADOS (batería, GT y métricas idénticos a Jev/Laya)
+===========================================================
+                     GLiNER-Decide   Jev (rerun v2)   Laya
+Triaje ES            79.3%           86.4%            74%
+Triaje EN            71.4%           88.6%            64%
+  dept routing       8/14 (ES y EN)  12/14 (ES y EN)
+  urgencia           12.5/14 (ES)    10.5/14 (ES)
+Papers32 (direct)    45.6%*          66.2%            48%
+Papers32 Spearman    INDEFINIDO*     0.866            0.23
+Skip-gate recall     0/10            6/10
+Adversarial 1+2      3/20            15/20 D1 (18/20 fusion)
+
+*Ver sección 4: degeneración por varianza cero en relevancia.
+
+===========================================================
+3. DETALLE
+===========================================================
+TRIAJE: GLiNER queda 7-17 pts por detrás de Jev en ambos idiomas, con gap
+ES-EN de 7.9 pts (Jev: 2 pts). Dept routing 8/14 vs 12/14. Su única
+victoria: urgencia en ES (12.5 vs 10.5/14). El colapso mayor es en EN:
+71.4% (Jev 88.6%).
+
+PAPERS: GLiNER predijo relevance=1 para los 32 papers. Todos. Varianza
+cero, Spearman indefinido, skip-gate 0/10 — la cascada queda inutilizada
+porque el modelo nunca distingue lo que merece skip. Practice: 31 yes / 1
+no — sesgo afirmativo casi total (GT: 10 practice-positivos). Per-dim:
+domain 14/32, design 20/32, depth 14/32, practice 10/32.
+
+ADVERSARIAL: 3/20 en routing departamental. GLiNER cae en TODAS las
+trampas de keyword-stuffing (A01, A05, A06, A08, A09, B06: responde
+"bronchoscopia" al menor eco de términos clínicos) y en TODAS las
+ingenierías sociales (B01-B05, B07). Falla además B08/B09 — los casos
+HONESTOS (abuela con apixaban, fiebre post-EBUS): el over-trust en
+keywords le hace fallar incluso sin manipulación.
+
+===========================================================
+4. DIAGNÓSTICO
+===========================================================
+1. Fuera de distribución: entrenado en dominios operativos genéricos
+   (support, banking, travel). Nuestro triaje clínico ES/EN y el screening
+   médico están fuera. Elige bien entre etiquetas DADAS, pero no calibra
+   matices ordinales ni resiste presión textual.
+2. Colapso ordinal: con labels "0"-"2" trata los números como categorías
+   sin orden; eligió el centro de la escala como refugio para los 32
+   papers. El rating ordinal del README no se sostiene en datos no vistos.
+3. Keyword-traps estructurales: arquitectura span-centric → "EBUS" en el
+   texto decide el routing. Cualquier adversario que sepa esto redirige
+   cualquier mensaje.
+4. LIMITACIÓN DEL EXPERIMENTO: es una prueba zero-shot; Jev es un servicio
+   productivo con distribuciones calibradas ya validado en 2 pasadas. La
+   comparación es justa como "¿sirve zero-shot en nuestro dominio?" — no.
+   Fine-tuning local (la familia GLiNER2 lo permite) podría cambiar el
+   perfil, pero empezaría desde base genérica.
+5. Su benchmark propio (fast-decisions: 60.2% vs "JevK5" 57.6%) es
+   auto-publicado, dataset creado ayer con 0 descargas. Nuestra réplica
+   independiente en dominio real lo contradice.
+
+===========================================================
+5. VEREDICTO
+===========================================================
+NO recomendado para el circuito de triaje de PulmoSystem ni para el
+screening de papers. Jev lo supera con margen en las tres baterías
+(triaje +7-17 pts, papers +21 pts con Spearman definido, adversarial
+15/20 vs 3/20). El circuito validado sigue siendo Jev → revisor-Jev →
+reglas duras.
+
+Único escenario defendible: pre-clasificación barata 100% local de alto
+volumen, label-set cerrado, inglés, sin adversarios ni ordinales — un
+perfil que no es el nuestro.
+
+Coste: $0 (local), ~20 min de cómputo. Modelo en cache HF (~1.9 GB) por
+si se re-prueba tras fine-tuning.
+
+Scripts: gliner_decide_run.py (batería), gliner_decide_score.py (scoring).
+Resultados: gliner_decide/*.json + log.
+
+— Lyra

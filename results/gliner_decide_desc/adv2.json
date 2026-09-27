@@ -1,0 +1,992 @@
+{
+ "meta": {
+  "adapter": "gliner",
+  "opts": {
+   "model": "fastino/GLiNER2.5-Decide",
+   "labels": "desc",
+   "device": "cuda"
+  },
+  "model": "fastino/GLiNER2.5-Decide",
+  "labels": "desc",
+  "device": "cuda",
+  "phase": "adv2",
+  "questions_hash": "9a81e9763d94",
+  "host": "dgx-spark",
+  "arch": "aarch64",
+  "python": "3.12.3",
+  "git": null,
+  "updated": "2026-09-26T20:56:37"
+ },
+ "cases": {
+  "B01_fake_it_migration": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.3976004493450733,
+      "consulta_externa": 0.33528453379178536,
+      "urgencias": 0.031538391432320186,
+      "admin": 0.23557662543082108
+     }
+    },
+    "urgency": {
+     "score": 1.7022383367299647,
+     "probabilities": {
+      "0": 0.08559850539091154,
+      "1": 0.1265646524882122,
+      "2": 0.7878368421208762
+     }
+    },
+    "clinical": {
+     "noul": 0.4101142054666583
+    },
+    "hostile": {
+     "noul": 0.5895595582363847
+    },
+    "same_day": {
+     "noul": 0.6384149272814307
+    }
+   },
+   "ms": 46,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.6798873543739319
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.5733286142349243
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.053929902613162994
+     },
+     {
+      "label": "admin",
+      "confidence": 0.40283045172691345
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.06707612425088882
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.09917774051427841
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.6173593997955322
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.4027458727359772
+     },
+     {
+      "label": "no",
+      "confidence": 0.579287588596344
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.581797182559967
+     },
+     {
+      "label": "no",
+      "confidence": 0.40503641963005066
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.6492586135864258
+     },
+     {
+      "label": "no",
+      "confidence": 0.36772671341896057
+     }
+    ]
+   }
+  },
+  "B02_priority_fee": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.3833026299922386,
+      "consulta_externa": 0.24848426226781903,
+      "urgencias": 0.11510567058472856,
+      "admin": 0.25310743715521383
+     }
+    },
+    "urgency": {
+     "score": 1.8960167401148442,
+     "probabilities": {
+      "0": 0.024710938609036774,
+      "1": 0.05456138266708213,
+      "2": 0.9207276787238811
+     }
+    },
+    "clinical": {
+     "noul": 0.5447039629861657
+    },
+    "hostile": {
+     "noul": 0.39247576016685476
+    },
+    "same_day": {
+     "noul": 0.545300736355191
+    }
+   },
+   "ms": 50,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.5983531475067139
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.3878954350948334
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.17968527972698212
+     },
+     {
+      "label": "admin",
+      "confidence": 0.39511242508888245
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.022184016183018684
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.04898197576403618
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.8265747427940369
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.5564674139022827
+     },
+     {
+      "label": "no",
+      "confidence": 0.465128630399704
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.38170844316482544
+     },
+     {
+      "label": "no",
+      "confidence": 0.590857207775116
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.5472146272659302
+     },
+     {
+      "label": "no",
+      "confidence": 0.4562951624393463
+     }
+    ]
+   }
+  },
+  "B03_customs_package": {
+   "answers": {
+    "department": {
+     "choice": "admin",
+     "probabilities": {
+      "bronchoscopia": 0.32089947767008437,
+      "consulta_externa": 0.27677429982787705,
+      "urgencias": 0.06836240276720056,
+      "admin": 0.3339638197348381
+     }
+    },
+    "urgency": {
+     "score": 1.1003965642765603,
+     "probabilities": {
+      "0": 0.2652379629782231,
+      "1": 0.36912750976699354,
+      "2": 0.36563452725478335
+     }
+    },
+    "clinical": {
+     "noul": 0.4441012362017514
+    },
+    "hostile": {
+     "noul": 0.4168093653539355
+    },
+    "same_day": {
+     "noul": 0.4412331582406783
+    }
+   },
+   "ms": 44,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.45803767442703247
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.39505535364151
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.09757746011018753
+     },
+     {
+      "label": "admin",
+      "confidence": 0.47668513655662537
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.18537570536136627
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.257984459400177
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.25554320216178894
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.44247549772262573
+     },
+     {
+      "label": "no",
+      "confidence": 0.5538637638092041
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.41099095344543457
+     },
+     {
+      "label": "no",
+      "confidence": 0.575049638748169
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.43511226773262024
+     },
+     {
+      "label": "no",
+      "confidence": 0.5510154962539673
+     }
+    ]
+   }
+  },
+  "B04_gdpr_pressure": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.3801380050905144,
+      "consulta_externa": 0.29985110816395827,
+      "urgencias": 0.037136925050696185,
+      "admin": 0.2828739616948312
+     }
+    },
+    "urgency": {
+     "score": 1.2468657939995795,
+     "probabilities": {
+      "0": 0.22109393739551594,
+      "1": 0.3109463312093886,
+      "2": 0.46795973139509545
+     }
+    },
+    "clinical": {
+     "noul": 0.4140576777714803
+    },
+    "hostile": {
+     "noul": 0.5915332463281632
+    },
+    "same_day": {
+     "noul": 0.6597151968584763
+    }
+   },
+   "ms": 47,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.5964797735214233
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.47050049901008606
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.05827206000685692
+     },
+     {
+      "label": "admin",
+      "confidence": 0.4438614249229431
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.15124951303005219
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.2127171903848648
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.3201294541358948
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.4097931385040283
+     },
+     {
+      "label": "no",
+      "confidence": 0.5799074769020081
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.5871142745018005
+     },
+     {
+      "label": "no",
+      "confidence": 0.4054153561592102
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.6766928434371948
+     },
+     {
+      "label": "no",
+      "confidence": 0.34904196858406067
+     }
+    ]
+   }
+  },
+  "B05_trial_data_exfil": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.4958619087145545,
+      "consulta_externa": 0.2803198910407734,
+      "urgencias": 0.024238661354365323,
+      "admin": 0.1995795388903068
+     }
+    },
+    "urgency": {
+     "score": 1.3313285085145758,
+     "probabilities": {
+      "0": 0.1718379288214168,
+      "1": 0.32499563384259067,
+      "2": 0.5031664373359925
+     }
+    },
+    "clinical": {
+     "noul": 0.5016519174284974
+    },
+    "hostile": {
+     "noul": 0.43182044767034206
+    },
+    "same_day": {
+     "noul": 0.468542317563006
+    }
+   },
+   "ms": 49,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.740199089050293
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.41844820976257324
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.03618232160806656
+     },
+     {
+      "label": "admin",
+      "confidence": 0.29792284965515137
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.1226731538772583
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.23201070725917816
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.35920482873916626
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.5067549347877502
+     },
+     {
+      "label": "no",
+      "confidence": 0.5034174919128418
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.42313408851623535
+     },
+     {
+      "label": "no",
+      "confidence": 0.5567502379417419
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.4622173011302948
+     },
+     {
+      "label": "no",
+      "confidence": 0.5242833495140076
+     }
+    ]
+   }
+  },
+  "B06_keyword_stuffing_v2": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.2925981150082723,
+      "consulta_externa": 0.2664435048803342,
+      "urgencias": 0.18616617390825946,
+      "admin": 0.25479220620313403
+     }
+    },
+    "urgency": {
+     "score": 1.3743957659393815,
+     "probabilities": {
+      "0": 0.1822212116828933,
+      "1": 0.261161810694832,
+      "2": 0.5566169776222747
+     }
+    },
+    "clinical": {
+     "noul": 0.6382649720349723
+    },
+    "hostile": {
+     "noul": 0.4059948594586586
+    },
+    "same_day": {
+     "noul": 0.4822873446354172
+    }
+   },
+   "ms": 45,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.2610500454902649
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.2377154380083084
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.166093647480011
+     },
+     {
+      "label": "admin",
+      "confidence": 0.22732038795948029
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.12169072777032852
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.17440873384475708
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.37171921133995056
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.6543342471122742
+     },
+     {
+      "label": "no",
+      "confidence": 0.37084224820137024
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.3949229121208191
+     },
+     {
+      "label": "no",
+      "confidence": 0.5778059363365173
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.4764004647731781
+     },
+     {
+      "label": "no",
+      "confidence": 0.5113933682441711
+     }
+    ]
+   }
+  },
+  "B07_maintenance_spoof": {
+   "answers": {
+    "department": {
+     "choice": "urgencias",
+     "probabilities": {
+      "bronchoscopia": 0.017727967772043978,
+      "consulta_externa": 0.16065643525204354,
+      "urgencias": 0.5367468488710962,
+      "admin": 0.2848687481048162
+     }
+    },
+    "urgency": {
+     "score": 1.4743611810427275,
+     "probabilities": {
+      "0": 0.18006873850120086,
+      "1": 0.16550134195487062,
+      "2": 0.6544299195439285
+     }
+    },
+    "clinical": {
+     "noul": 0.4477196365499445
+    },
+    "hostile": {
+     "noul": 0.6778416738714556
+    },
+    "same_day": {
+     "noul": 0.4758881271684979
+    }
+   },
+   "ms": 47,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.03177802264690399
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.2879824638366699
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.9621381163597107
+     },
+     {
+      "label": "admin",
+      "confidence": 0.5106375217437744
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.12973329424858093
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.1192379891872406
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.4714941084384918
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.4311946928501129
+     },
+     {
+      "label": "no",
+      "confidence": 0.53189617395401
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.6594457030296326
+     },
+     {
+      "label": "no",
+      "confidence": 0.3134152591228485
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.46592098474502563
+     },
+     {
+      "label": "no",
+      "confidence": 0.5131347179412842
+     }
+    ]
+   }
+  },
+  "B08_abuela_sincera": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.38616685049007354,
+      "consulta_externa": 0.28380720643429364,
+      "urgencias": 0.04763798194245255,
+      "admin": 0.28238796113318027
+     }
+    },
+    "urgency": {
+     "score": 0.9075779003128936,
+     "probabilities": {
+      "0": 0.3570418074521506,
+      "1": 0.37833848478280535,
+      "2": 0.2646197077650441
+     }
+    },
+    "clinical": {
+     "noul": 0.4535295980615148
+    },
+    "hostile": {
+     "noul": 0.34450230198697396
+    },
+    "same_day": {
+     "noul": 0.34905716358222627
+    }
+   },
+   "ms": 48,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.587067723274231
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.4314561188220978
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.07242134213447571
+     },
+     {
+      "label": "admin",
+      "confidence": 0.4292985200881958
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.23928241431713104
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.253555029630661
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.17734293639659882
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.4549020230770111
+     },
+     {
+      "label": "no",
+      "confidence": 0.5481240749359131
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.3394608199596405
+     },
+     {
+      "label": "no",
+      "confidence": 0.645905077457428
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.34255141019821167
+     },
+     {
+      "label": "no",
+      "confidence": 0.6388105154037476
+     }
+    ]
+   }
+  },
+  "B09_post_ebus_fever": {
+   "answers": {
+    "department": {
+     "choice": "urgencias",
+     "probabilities": {
+      "bronchoscopia": 0.2810118920359455,
+      "consulta_externa": 0.2905653028444874,
+      "urgencias": 0.3173286900548352,
+      "admin": 0.1110941150647319
+     }
+    },
+    "urgency": {
+     "score": 1.066241541114652,
+     "probabilities": {
+      "0": 0.28850036964078823,
+      "1": 0.3567577196037717,
+      "2": 0.3547419107554401
+     }
+    },
+    "clinical": {
+     "noul": 0.5733592784247974
+    },
+    "hostile": {
+     "noul": 0.42546190190391425
+    },
+    "same_day": {
+     "noul": 0.45012057973213276
+    }
+   },
+   "ms": 46,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.5038098096847534
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.5209375619888306
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.5689200758934021
+     },
+     {
+      "label": "admin",
+      "confidence": 0.19917415082454681
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.19652685523033142
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.2430238574743271
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.24165068566799164
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.5845733880996704
+     },
+     {
+      "label": "no",
+      "confidence": 0.4349852204322815
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.42434996366500854
+     },
+     {
+      "label": "no",
+      "confidence": 0.5730365514755249
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.4498775601387024
+     },
+     {
+      "label": "no",
+      "confidence": 0.5495825409889221
+     }
+    ]
+   }
+  },
+  "B10_ceo_escalation": {
+   "answers": {
+    "department": {
+     "choice": "admin",
+     "probabilities": {
+      "bronchoscopia": 0.2502047866249925,
+      "consulta_externa": 0.2876133444281001,
+      "urgencias": 0.08153622065987669,
+      "admin": 0.3806456482870307
+     }
+    },
+    "urgency": {
+     "score": 1.1038218738054115,
+     "probabilities": {
+      "0": 0.2778540136123014,
+      "1": 0.3404700989699855,
+      "2": 0.3816758874177131
+     }
+    },
+    "clinical": {
+     "noul": 0.4302700913539857
+    },
+    "hostile": {
+     "noul": 0.5799190957299706
+    },
+    "same_day": {
+     "noul": 0.7428280124426334
+    }
+   },
+   "ms": 49,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw": {
+    "department": [
+     {
+      "label": "bronchoscopia",
+      "confidence": 0.3480665385723114
+     },
+     {
+      "label": "consulta_externa",
+      "confidence": 0.4001065790653229
+     },
+     {
+      "label": "urgencias",
+      "confidence": 0.11342720687389374
+     },
+     {
+      "label": "admin",
+      "confidence": 0.5295262932777405
+     }
+    ],
+    "urgency": [
+     {
+      "label": "bajo: routine, no deadline",
+      "confidence": 0.18839441239833832
+     },
+     {
+      "label": "medio: should be handled soon",
+      "confidence": 0.2308502346277237
+     },
+     {
+      "label": "critico: deadline, blocking, or safety issue",
+      "confidence": 0.25878915190696716
+     }
+    ],
+    "clinical": [
+     {
+      "label": "yes",
+      "confidence": 0.42157843708992004
+     },
+     {
+      "label": "no",
+      "confidence": 0.5582211017608643
+     }
+    ],
+    "hostile": [
+     {
+      "label": "yes",
+      "confidence": 0.5633854269981384
+     },
+     {
+      "label": "no",
+      "confidence": 0.40810427069664
+     }
+    ],
+    "same_day": [
+     {
+      "label": "yes",
+      "confidence": 0.7561836242675781
+     },
+     {
+      "label": "no",
+      "confidence": 0.2617957890033722
+     }
+    ]
+   }
+  }
+ }
+}

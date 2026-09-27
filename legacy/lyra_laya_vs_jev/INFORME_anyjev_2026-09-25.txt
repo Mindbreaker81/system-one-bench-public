@@ -1,0 +1,103 @@
+INFORME: AnyJev (Nokia Applied Research) vs incumbentes
+Fecha: 2026-09-25 | Bateria: /opt/data/laya_vs_jev | Autora: Lyra
+
+=======================================================================
+1. QUE ES (verificado desde fuente primaria, github.com/nokia-applied-research/AnyJev)
+=======================================================================
+- NO es un modelo: es un FRAMEWORK (pip "anyjev", Apache-2.0, ~12.8k LOC,
+  tests+CI, numpy-only core) que convierte cualquier LLM abierto en un
+  decisor tipo Jev: preguntas tipadas (choice/score/noul), probabilidades
+  reales, cero generacion (un prefill, lectura de logits).
+  Autores: J. Zhang, T. Yang (Nokia Sunnyvale) + Y. Shi (Tencent Hunyuan).
+- Niveles: raw -> L0 (marginalizacion de permutaciones + prior batch sin
+  labels; arregla order-flip 0.23->0.07) -> L1 (temperature scaling,
+  100-500 labels) -> L2 (head lineal closed-form sobre hidden state,
+  100-300 labels, PER-QUESTION y PER-MODEL, no transfiere).
+- Self-hosted REAL: sin phone-home, sin telemetry. Core solo numpy.
+- Claim propio: L2 con Qwen3-4B (0.786) empata Laya-FT y supera el 0.727
+  publicado de Jev EN SU SET (gold = teacher LLM, techo 0.735; no rerun
+  de Jev). En NUESTRA bateria solo L0 es comparable zero-shot.
+- Quirka install: anyjev[hf] no declara accelerate (necesario para
+  device_map). Instalado en /opt/data/anyjev_venv; repo en
+  /opt/data/anyjev_repo.
+
+Config de prueba: Qwen3-1.7B F32, L0 default (perm+batch prior), CPU ARM
+A1 (4 cores), ~55-70 s/estado (16 prefills/estado por rotaciones).
+Abstract extremos (P11 23k chars) tardan >20 min/estado.
+
+=======================================================================
+2. RESULTADOS (misma bateria, mismo GT, mismos scorers que Jev/Laya/GLiNER)
+=======================================================================
+TRIAJE 14 casos x 5 preg (ES/EN):
+               ES      EN      dept ES/EN
+  Jev          86.4%   88.6%   12/14  12/14
+  AnyJev-1.7B  80.0%   70.0%   11/14  12/14
+  GLiNER-2.5   79.3%   71.4%    8/14   8/14
+  Laya         74%     64%      -      -
+
+PAPERS32 (32 papers x 5 dims):
+               direct  Spearman  skip-gate  cascade-CV
+  Jev          66.2%   0.866     6/10       -
+  AnyJev-1.7B  62.2%   0.501     4/10       40.6%
+  GLiNER-2.5   45.6%   undefined 0/10       -
+  (relevance con varianza real 0.5-2.0, NO colapsa como GLiNER;
+   pero depth colapsa a "full": 6/32 aciertos)
+
+ADVERSARIAL routing departamental (2 sets, n=20):
+  Jev D1 sola        15/20   (con revisor-Jev: 18/20)
+  AnyJev-1.7B        14/20   (8/10 + 6/10)
+  GLiNER-2.5          3/20
+  Laya               ~3/20
+
+OOD (receta/contrato/codigo): 3/3 limpio (dom=other, clinico ~0,
+relevance ~1.0). Igual que Jev.
+
+Diagnostico de fallos AnyJev-1.7B:
+- urgency sistematicamente arrastrada a extremos (8 casos con 0.5 parcial)
+- clinical inestable en manipulados (A03/A05/A06/A08/B05/B10 clin=0.0)
+- keyword-stuffing B06 y A01 RESISTENTES (rutea bien a admin; GLiNER
+  fallaba TODOS los de esta familia) - la marginalizacion de permutaciones
+  ayuda de verdad contra token-stuffing
+- B08 honesto (abuela apixaban+perro): FP de routing - falla donde Jev D1 acertaba
+- Determinista (cero sampling), distribuciones completas (no argmax como GLiNER)
+
+COSTE: $0 API, ~60 s/estado en ARM CPU. Jev: $0.0003/caso, ~2 s.
+
+=======================================================================
+3. VEREDICTO
+=======================================================================
+RECHAZADO como reemplazo de Jev zero-shot, APROBADO como segunda pieza
+mejor clasificada de la historia de esta bateria:
+
+1. Barre a Laya en todo. Barre a GLiNER-Decide en casi todo (papers +17pp,
+   adversarial 14/20 vs 3/20, dept routing 11-12/14 vs 8/14).
+2. NO toca a Jev D1 en ninguna metrica (triaje -6/-19pp, Spearman 0.50 vs
+   0.87, adversarial 14 vs 15, skip-gate 4 vs 6), y el circuito de
+   produccion Jev->revisor (18/20, manip 16/16) queda lejos.
+3. CAVEAT OBLIGATORIO (comparacion justa): esto es su modelo MAS PEQUEÑO
+   (1.7B; su propio bench: typed acc L0 0.494) a zero labels contra un
+   incumbente calibrado. Su escalera 4B/8B/32B L0 sube a 0.56-0.70 y su L2
+   (con 100-300 labels/pregunta que NO tenemos: tenemos 14-32/pregunta)
+   llega a 0.78-0.80 EN SU SET. La pregunta "sirve como esta?" = NO.
+   La pregunta "merece segunda prueba con modelo mayor?" = abierta.
+4. Engineering honesto: docs regenerables desde JSON comprometido,
+   research log con resultados negativos, limitaciones declaradas
+   (incluido que el batch prior falla en marginales sesgadas - nuestro
+   "hostile" 13/14 GT=0 es exactamente ese caso: 1 FP en ES... y aun asi
+   13/14 y 12/14 en hostile).
+
+=======================================================================
+4. DECISION PENDIENTE
+=======================================================================
+Opcion A: cerrar aqui (Jev sigue; AnyJev archivado como "mejor open
+  zero-shot visto, insuficiente").
+Opcion B: segunda ronda en DGX Spark con Qwen3-8B o 32B L0 (horas, $0,
+  solo descarga) - su bench sugiere que 8B L0 ganaria ~5-8pp sobre esto
+  pero seguiria bajo Jev en zero-shot; el salto real requeriria L2 con
+  labels sinteticos (500-1000 generados+verificados, el mismo cuello de
+  botella que GLiNER).
+Opcion C: quedarse solo con la IDEA L0 (marginalizacion de permutaciones)
+  como capa anti-flip para cualquier decisor local futuro.
+
+Files: anyjev_run.py, anyjev_score.py, anyjev_results/*.json
+— Lyra
