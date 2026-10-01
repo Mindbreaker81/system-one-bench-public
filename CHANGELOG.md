@@ -13,6 +13,49 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [0.14.0] - 2026-10-01 — gpt-6.1-sol con razonamiento `low` (JEV-47)
+
+### Añadido
+- **Opción `reasoning_effort` del adaptador `llm`** (`jevbench/adapters/llm.py`):
+  `minimal`/`low`/`medium`/`high`, traducida a `reasoning={"effort": …}` en la API
+  Responses y a `reasoning_effort=…` en Chat Completions. Solo para `provider=openai`
+  (con Anthropic/Gemini falla al construirse, como los demás límites); cualquier otro
+  valor da `ValueError`. Sin la opción no se envía ninguna clave de razonamiento, así
+  que los runs anteriores no cambian. `meta()` guarda el valor aunque sea `None`.
+- **Precio de `gpt-6.1-sol`** en `PRICES` ($2.00/$10.00 por Mtok; la página de precios
+  de OpenAI no fue legible y el dato coincide en OpenRouter y fichas de terceros).
+- **Run `llm_gpt61sol_low_prob`** (`results/llm_gpt61sol_low_prob/`): gpt-6.1-sol con
+  `reasoning_effort=low`, modo `probabilities`, 195 casos (`all+new` + adv4/adv5),
+  0 errores. Pre-registro y presupuesto ($3) en `docs/plan_gpt61sol.md` (ejecutado).
+- Pruebas offline de la opción en `tests/test_llm_adapter.py`: las dos APIs reciben la
+  clave correcta, sin la opción no aparece, valor inválido y proveedor no OpenAI → error,
+  y `meta()["reasoning_effort"]`.
+
+### Resultado (195 casos, coste medido $0.56, ~$0.0029/caso, mediana 3.4 s)
+- **Ajustado 65: la mejor una pasada medida**, por encima de gpt-6-luna (61) y a la par
+  de la cascada `jev_cascade_audit` (64); por debajo de la mejor config absoluta,
+  `llm_gpt6luna_jevrev_audit` (71). Brier noul 0.054 (≈ luna, 0.053).
+- Comparaciones pre-registradas: frente a luna solo es significativo `urgency` de adv4
+  (6–0, p = 0.03); frente a `jev_v3`, `depth` de papers (13–1, p < 0.01); frente a
+  `jev_cascade_audit`, nada significativo.
+- Documentación: marcador (`docs/resultados_runs.txt` + `jevbench.report`), ficha en
+  `docs/modelos.md`, bullet en «Por modelo», `RUNS` de `web.py` y `site.py` (familia
+  LLM) y textos de portada (mejor una pasada, tabla de modelos, latencias). El
+  circuito recomendado no cambia: sigue siendo Jev → revisor Jev.
+
+### Revisión de la web y la documentación de sol
+- **Alcance limitado por coste**, anotado en la portada (tarjeta de Jev, matiz del circuito,
+  «Qué no se ha probado»), en `docs/modelos.md` y en `docs/resultados.md`: de gpt-6.1-sol solo
+  hay una pasada en modo `probabilities`; faltan `discrete`, su papel como revisor, la cascada
+  sol → revisor Jev y la alerta de manipulación.
+- Portada: la tarjeta de Jev pasa a «mejor decisor **dedicado**» (dos LLM generalistas le
+  superan en agregado); el matiz del circuito compara sol con Jev → revisor Jev (65 frente a
+  64, ~34× el coste por mensaje); gpt-6.1-sol tiene su propio paso, fechado el 1-oct, en «Las
+  pruebas, en orden», en vez de una frase añadida al paso de luna del 29-sep.
+- `docs/modelos.md`: el bullet de sol estaba entre el «Probado» y el «Resultado» de luna, así
+  que el «~5.5× más caro» de luna parecía de sol; reordenado y etiquetado.
+- `docs/resultados.md`: el sentido de los McNemar (6–0 y 13–1, **a favor de sol**).
+
 ## [0.13.3] - 2026-10-01 — Revisión de la web de resultados
 
 ### Web y sitio

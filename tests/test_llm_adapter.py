@@ -193,6 +193,19 @@ class TestLLMAdapter(unittest.TestCase):
         self.assertEqual(b.meta()["case_timeout"], 30.0)
         self.assertEqual(b.meta()["max_tokens"], 256)
 
+    def test_reasoning_effort_validation_and_meta(self):
+        from jevbench.adapters.llm import LLM
+        a = LLM(model="gpt-6.1-sol", api_key="none", reasoning_effort="low")
+        self.assertNotIsInstance(a.target, str)
+        self.assertEqual(a.meta()["reasoning_effort"], "low")
+        b = LLM(model="gpt-6-luna")
+        self.assertIsNone(b.meta()["reasoning_effort"])
+        with self.assertRaisesRegex(ValueError, "reasoning_effort"):
+            LLM(model="m", reasoning_effort="turbo")
+        for provider in ("anthropic", "gemini"):
+            with self.subTest(provider=provider), self.assertRaises(ValueError):
+                LLM(provider=provider, model="m", api_key="x", reasoning_effort="low")
+
     def test_nested_secrets_redacted_from_meta(self):
         from jevbench.adapters.llm import LLM
         sentinel = "sk-CENTINELA-EXTRA-BODY"
@@ -271,6 +284,34 @@ class TestOpenAIContract(unittest.TestCase):
         self.assertEqual(srv.httpd.requests[0]["path"], "/v1/responses")
         self.assertEqual(seen.get("max_output_tokens"), 64)
         self.assertEqual(out["answers"]["department"]["choice"], "admin")
+
+    def test_reasoning_effort(self):
+        """Responses recibe reasoning={"effort": …} y Chat Completions
+        reasoning_effort=…; sin la opción ninguna de las dos claves aparece."""
+        body_text = _answers_payload("probabilities")
+
+        for api, key, expected in (("responses", "reasoning", {"effort": "low"}),
+                                   ("chat_completions", "reasoning_effort", "low")):
+            for effort in (None, "low"):
+                seen = {}
+
+                def plan(n, body, seen=seen):
+                    seen.update(body)
+                    payload = (_responses_payload if api == "responses"
+                               else _chat_completion)(body_text)
+                    return {"json": payload}
+
+                with FakeOpenAIServer(plan) as srv:
+                    a = self._adapter(srv.base_url, model="m",
+                                      **({"reasoning_effort": effort} if effort else {}))
+                    a.target.api = api  # fuerza la rama contra el servidor falso
+                    out = a.decide("estado", TRIAGE_QS)
+                if effort:
+                    self.assertEqual(seen.get(key), expected)
+                else:
+                    self.assertNotIn("reasoning", seen)
+                    self.assertNotIn("reasoning_effort", seen)
+                self.assertEqual(out["answers"]["department"]["choice"], "admin")
 
     def test_structured_false_prompted_json(self):
         body_text = _answers_payload("probabilities")

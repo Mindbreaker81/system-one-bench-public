@@ -132,6 +132,8 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   `min(timeout, restante)` y una corrección por JSON mal formado nunca reinicia la bolsa),
   `max_tokens` (tope de salida: `max_output_tokens` en Responses, `max_completion_tokens`
   en Chat Completions oficial, `max_tokens` en endpoints compatibles como vLLM/SGLang),
+  `reasoning_effort` (`minimal`/`low`/`medium`/`high`: `reasoning={"effort": …}` en
+  Responses, `reasoning_effort=…` en Chat Completions),
   `usd_in`/`usd_out` ($/Mtok, para la columna de coste: el proveedor no la devuelve).
   Los límites solo están implementados para `provider=openai`: con Anthropic/Gemini el
   adaptador falla al construirse en vez de ignorarlos. El cliente OpenAI conserva
@@ -153,11 +155,20 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
 - **Probado (29-sep):** `gpt-6-luna` (OpenAI resuelve el alias sin fecha: `gpt-6-luna`),
   $0.10/$0.50 por Mtok. 195 casos por modo, 0 errores. Coste total $0.038 (`_prob`) y $0.025
   (`_disc`); mediana 3.1 s y 1.9 s por caso.
-- **Resultado:** en una pasada queda al nivel de la cascada de Jev (ver `docs/resultados.md`).
+- **Resultado (luna):** en una pasada queda al nivel de la cascada de Jev (ver `docs/resultados.md`).
   Frente a `jev_v3`, solo `depth` de papers es significativo (p < 0.01, a favor del LLM); frente a
   `jev_cascade_audit`, solo `urgency` de adv4 (p = 0.01, a favor de la cascada). ~5.5× más caro y
   ~5× más lento que Jev.
-- **Como revisor de la cascada** (`--adapter llm` en `jevbench.cascade`): sobre Decider-4B
+- **Probado (1-oct):** `gpt-6.1-sol` (OpenAI resuelve el alias sin fecha: `gpt-6.1-sol`)
+  con `--opt reasoning_effort=low` (va como `reasoning={"effort":"low"}` en la API
+  Responses). $2.00/$10.00 por Mtok — 20× luna; la página de precios de OpenAI no fue
+  legible y el dato coincide en OpenRouter y fichas de terceros (pendiente confirmar en
+  la consola). 195 casos, 0 errores, coste total medido **$0.56** (~$0.0029/caso) y
+  mediana 3.4 s/caso. Ajustado 65: la mejor una pasada medida, a la par de
+  `jev_cascade_audit` (64) y por encima de luna (61); ver `docs/resultados.md`.
+  **Alcance limitado por coste:** solo esta pasada; sin modo `discrete`, sin papel de revisor,
+  sin cascada gpt-6.1-sol → revisor Jev y sin alerta de manipulación.
+- **Como revisor de la cascada (luna)** (`--adapter llm` en `jevbench.cascade`): sobre Decider-4B
   recupera el 77 % de la ganancia de Jev en adv3+adv5 (el mejor revisor no-Jev), pero no cumple
   el criterio JEV-32 por triaje (28 %) y alerta adv5 (6/10, < 7/10). Como D1 con revisor Jev
   (`llm_gpt6luna_jevrev_*`): la mejor config absoluta, equivalente a Jev → Jev (ver

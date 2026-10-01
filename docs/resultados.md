@@ -8,14 +8,14 @@ adjudicación de la 2ª anotación, ver `data/GT_CHANGELOG.md`). Todo se regener
 ```bash
 python3 -m jevbench.report   # regenera este documento (runs en docs/resultados_runs.txt)
 python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review jev_cascade_audit jev_cascade_audit_rules \
-    llm_gpt6luna_jevrev_review llm_gpt6luna_jevrev_audit llm_gpt6luna_prob llm_gpt6luna_disc llm_qwen38_27b_prob \
-    llm_qwen38flash_prob decider_4b_jevrev_review decider_4b_jevrev_audit decider_4b_llmrev_review decider_4b_llmrev_audit \
-    decider_35b_a3b decider_35b_a3b_nvfp4 decider_4b decider_4b_cascade_audit decider_4b_d35rev_audit \
-    decider_4b_aj32brev_audit decider_4b_aj8brev_audit decider_2b decider_0.8b anyjev_qwen3_32b_l0 \
-    anyjev_qwen3_8b_l0 anyjev_qwen3_1.7b_l0 gliner_decide_desc gliner_decide_bare gliner_decide_1b_desc \
-    gliner_multi_decide_desc julia_1 laya_router laya_typed legacy_laya_v2 \
-    span01_pro span01_lite span01_lite_or nimble_9b tev1_4b \
-    tev1_0.8b
+    llm_gpt6luna_jevrev_review llm_gpt6luna_jevrev_audit llm_gpt6luna_prob llm_gpt6luna_disc llm_gpt61sol_low_prob \
+    llm_qwen38_27b_prob llm_qwen38flash_prob decider_4b_jevrev_review decider_4b_jevrev_audit decider_4b_llmrev_review \
+    decider_4b_llmrev_audit decider_35b_a3b decider_35b_a3b_nvfp4 decider_4b decider_4b_cascade_audit \
+    decider_4b_d35rev_audit decider_4b_aj32brev_audit decider_4b_aj8brev_audit decider_2b decider_0.8b \
+    anyjev_qwen3_32b_l0 anyjev_qwen3_8b_l0 anyjev_qwen3_1.7b_l0 gliner_decide_desc gliner_decide_bare \
+    gliner_decide_1b_desc gliner_multi_decide_desc julia_1 laya_router laya_typed \
+    legacy_laya_v2 span01_pro span01_lite span01_lite_or nimble_9b \
+    tev1_4b tev1_0.8b
 ```
 <!-- /AUTO:comando -->
 
@@ -33,6 +33,7 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | llm_gpt6luna_jevrev_audit | 71 | 93.6 | 97.1 | 25/28 | 76.9 | 0.82 | 9/10 | 18/20 | 92.0 | 95.0 / 95.0 | 18/20 | 92.0 | 0.045 | — |
 | llm_gpt6luna_prob | 61 | 93.6 | 95.7 | 25/28 | 78.8 | 0.87 | 9/10 | 18/20 | 87.0 | 93.5 / 93.5 | 17/20 | 88.0 | 0.053 | 3027 |
 | llm_gpt6luna_disc | 59 | 93.6 | 91.4 | 26/28 | 76.6 | 0.77 | 6/10 | 17/20 | 85.0 | 92.3 / 92.7 | 18/20 | 89.5 | 0.077 | 1876 |
+| llm_gpt61sol_low_prob | 65 | 92.9 | 93.6 | 26/28 | 80.0 | 0.90 | 8/10 | 18/20 | 88.5 | 94.2 / 94.6 | 18/20 | 89.5 | 0.054 | 3415 |
 | llm_qwen38_27b_prob | -16* | 73.6 | 73.6 | 13/28 | 52.2 | -0.17 | 0/10 | 4/20 | 58.5 | 77.2 / 76.5 | 9/20 | 67.5 | 0.231 | 6799 |
 | llm_qwen38flash_prob | -40* | 65.7 | 55.0 | 14/28 | 38.1 | -0.01 | 0/10 | 4/19 | 50.8 | 55.4 / 51.7 | 6/19 | 65.3 | 0.317 | 47875 |
 | decider_4b_jevrev_review | 65 | 92.1 | 93.6 | 25/28 | 74.4 | 0.85 | 7/10 | 18/20 | 87.5 | 94.2 / 93.8 | 18/20 | 93.5 | 0.056 | — |
@@ -84,7 +85,8 @@ directa, `jev-1.13.0`). Cascadas = 2ª pasada revisor-auditor (`jevbench/cascade
 GLiNER `desc` = etiquetas con descripción, `bare` = como la prueba del 24-sep. Julia-1 en CPU local.
 Laya en GB10 (`laya_router`, `laya_typed`); `legacy_laya_v2` = rerun de Lyra en CPU.
 LLM = `gpt-6-luna` (API OpenAI, Responses + JSON Schema estricto) con `system-one-adapter` 0.2.1;
-`_prob` = `llm_answer_mode=probabilities`, `_disc` = `discrete`.
+`_prob` = `llm_answer_mode=probabilities`, `_disc` = `discrete`. `llm_gpt61sol_low_prob` =
+`gpt-6.1-sol` con `reasoning_effort=low` (mismo modo `probabilities`).
 Versiones de Jev comprobadas: `docs/versiones_jev.md` (sin cambios a 27-sep).
 
 ## Lectura
@@ -117,6 +119,18 @@ Versiones de Jev comprobadas: `docs/versiones_jev.md` (sin cambios a 27-sep).
   10, p = 0.01, a favor de la cascada). El resto, sin diferencia significativa. Cuesta ~5.5× más por caso ($0.00019 frente a $0.000035)
   y es ~5× más lento (mediana 3.1 s frente a 0.64 s). El modo `discrete` rinde parecido pero
   calibra peor (Brier 0.077) y ordena peor los papers (ρ 0.77).
+- **gpt-6.1-sol (1-oct, `reasoning_effort=low`):** modelo de OpenAI ~20× más caro por token que
+  luna, medido con el mismo protocolo. **Ajustado 65: la mejor una pasada medida**, por encima de
+  luna (61) y a la par de la cascada `jev_cascade_audit` (64), aunque por debajo de la mejor
+  config absoluta (`llm_gpt6luna_jevrev_audit`, 71). Frente a luna solo es significativo
+  `urgency` de adv4 (6–0 a favor de sol, p = 0.03); frente a `jev_v3`, `depth` de papers (13–1 a favor de sol, p < 0.01);
+  frente a `jev_cascade_audit`, nada significativo (la cascada gana adv3 92.0/89.5 sin
+  significación). Calibra igual que luna (Brier noul 0.054). 195 casos, 0 errores, coste
+  medido **$0.56 (~$0.0029/caso, ~15× luna y ~80× Jev)** y mediana 3.4 s/caso. Resuelve como
+  `gpt-6.1-sol` (sin fecha). Precio $2/$10 por Mtok (OpenRouter/fichas; pendiente confirmar
+  en la consola de OpenAI). Plan y pre-registro: `docs/plan_gpt61sol.md`.
+  **Alcance limitado por coste:** solo una pasada en modo `probabilities`; no se midieron el
+  modo `discrete`, sol como revisor, la cascada sol → revisor Jev ni la alerta de manipulación.
 - **Cascadas con LLM (29-sep):** `llm_gpt6luna_jevrev_audit` (LLM → revisor Jev) es la
   mejor configuración medida (adv total 92.0, adv5 88.5, Brier 0.045, alerta 9/10 con 1 FP),
   estadísticamente equivalente a `jev_cascade_audit` pero a ~4× el coste y la latencia.

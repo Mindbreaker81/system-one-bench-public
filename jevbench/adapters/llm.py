@@ -15,10 +15,13 @@ https://github.com/typesafe-ai/system-one-adapter-python
   max_tokens=<n>                     output cap: max_output_tokens (Responses),
                                      max_completion_tokens (OpenAI Chat Completions) or
                                      max_tokens (compatible endpoints: vLLM, SGLang…)
+  reasoning_effort=minimal|low|      reasoning effort: reasoning={"effort": …} (Responses) or
+      medium|high                    reasoning_effort=… (Chat Completions)
   usd_in / usd_out                   $/Mtok for the cost column (providers don't return it)
 
-timeout/case_timeout/max_tokens/extra_body are implemented for provider=openai only; with
-Anthropic or Gemini the adapter fails loudly instead of silently ignoring them.
+timeout/case_timeout/max_tokens/reasoning_effort/extra_body are implemented for
+provider=openai only; with Anthropic or Gemini the adapter fails loudly instead of
+silently ignoring them.
 """
 import json
 import time
@@ -28,10 +31,15 @@ from ..env import load_env
 from ..redact import redact_value
 
 # $/Mtok (input, output); public list prices, override with --opt usd_in=… usd_out=…
-PRICES = {"gpt-6-luna": (0.10, 0.50)}
+# gpt-6.1-sol (1-oct-2026): la página de precios de OpenAI no fue legible; el dato
+# coincide en OpenRouter y fichas de terceros. Confirmar en la consola de OpenAI.
+PRICES = {"gpt-6-luna": (0.10, 0.50), "gpt-6.1-sol": (2.00, 10.00)}
 
 # system-one-adapter version whose private members this adapter relies on
 COMPAT_VERSION = "0.2.1"
+
+# OpenAI reasoning effort levels accepted by `reasoning_effort`
+REASONING_EFFORTS = ("minimal", "low", "medium", "high")
 
 
 def _bool(v):
@@ -85,7 +93,8 @@ def _positive(value, name, cast):
     return result
 
 
-def _openai_provider(model, base_url, extra_body, api_key=None, timeout=None, max_tokens=None):
+def _openai_provider(model, base_url, extra_body, api_key=None, timeout=None, max_tokens=None,
+                     reasoning_effort=None):
     """OpenAIProvider with per-request timeout, a per-case wall-clock budget and
     bounded output. The SDK client keeps max_retries=0 and every call is blocking, so
     an expired budget aborts the request in place and never leaves work running."""
@@ -148,12 +157,16 @@ def _openai_provider(model, base_url, extra_body, api_key=None, timeout=None, ma
                             self.model_name, messages, schema, structured=structured)
                         if max_tokens is not None:
                             kwargs["max_output_tokens"] = max_tokens
+                        if reasoning_effort is not None:
+                            kwargs["reasoning"] = {"effort": reasoning_effort}
                         record_request(kwargs, api=self.api)
                         return _responses_result(
                             self._client.responses.create(**kwargs, **call_kwargs))
                     kwargs = {"model": self.model_name, "messages": render_messages(messages),
                               "response_format": _response_format(schema, structured=structured),
                               **self._chat_limit_kwarg()}
+                    if reasoning_effort is not None:
+                        kwargs["reasoning_effort"] = reasoning_effort
                     if extra_body:
                         kwargs["extra_body"] = extra_body
                     record_request(kwargs, api=self.api)
@@ -170,7 +183,7 @@ class LLM(Adapter):
     def __init__(self, provider="openai", model="gpt-6-luna", mode="probabilities", structured=True,
                  normalize=True, retries_malformed=2, base_url=None, extra_body=None,
                  api_key=None, usd_in=None, usd_out=None, timeout=None, case_timeout=None,
-                 max_tokens=None, **opts):
+                 max_tokens=None, reasoning_effort=None, **opts):
         super().__init__(**opts)
         load_env()
         import system_one_adapter
@@ -182,19 +195,25 @@ class LLM(Adapter):
         self.timeout = _positive(timeout, "timeout", float)
         self.case_timeout = _positive(case_timeout, "case_timeout", float)
         self.max_tokens = _positive(max_tokens, "max_tokens", int)
+        if reasoning_effort is not None and reasoning_effort not in REASONING_EFFORTS:
+            raise ValueError(
+                f"reasoning_effort debe ser uno de {REASONING_EFFORTS}, no {reasoning_effort!r}")
+        self.reasoning_effort = reasoning_effort
         price = PRICES.get(model, (None, None))
         self.usd_in = float(usd_in) if usd_in is not None else price[0]
         self.usd_out = float(usd_out) if usd_out is not None else price[1]
         self.versions = {"system_one_adapter": system_one_adapter.__version__,
                          "typesafe_sdk": getattr(typesafe_sdk, "__version__", None)}
-        limits = any(v is not None for v in (self.timeout, self.case_timeout, self.max_tokens))
+        limits = any(v is not None for v in
+                     (self.timeout, self.case_timeout, self.max_tokens, self.reasoning_effort))
         if base_url or self.extra_body or limits:
             if provider != "openai":
                 raise ValueError(
-                    "base_url/extra_body/timeout/case_timeout/max_tokens solo están "
-                    f"implementados para provider=openai, no {provider!r}")
+                    "base_url/extra_body/timeout/case_timeout/max_tokens/reasoning_effort "
+                    f"solo están implementados para provider=openai, no {provider!r}")
             target = _openai_provider(model, base_url, self.extra_body, api_key,
-                                      timeout=self.timeout, max_tokens=self.max_tokens)
+                                      timeout=self.timeout, max_tokens=self.max_tokens,
+                                      reasoning_effort=self.reasoning_effort)
             if self.extra_body and target.api != "chat_completions":
                 raise ValueError(
                     "extra_body solo tiene contrato en Chat Completions; este endpoint "
@@ -214,6 +233,7 @@ class LLM(Adapter):
                 "retries_malformed": self.retries_malformed, "base_url": self.base_url,
                 "extra_body": redact_value(self.extra_body), "timeout": self.timeout,
                 "case_timeout": self.case_timeout, "max_tokens": self.max_tokens,
+                "reasoning_effort": self.reasoning_effort,
                 "usd_per_mtok": [self.usd_in, self.usd_out], **self.versions}
 
     def decide(self, state, questions):
