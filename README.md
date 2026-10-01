@@ -2,12 +2,14 @@
 
 # system-one-bench: banco de pruebas de decisores "System One"
 
-**Versión 0.5.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
+**Versión 0.13.3** — ver [`CHANGELOG.md`](CHANGELOG.md).
 
 Banco de pruebas para comparar **Jev** (TypeSafe), un modelo cerrado que no genera texto sino
 que responde preguntas tipadas con probabilidades, con las alternativas abiertas que prometen lo
 mismo: **Decider** (Mapika), **AnyJev** (Nokia), **GLiNER2.5-Decide** (fastino), **Laya**
-(ConvAI) y **Julia-1** (SupersonicLabs).
+(ConvAI), **Julia-1** (SupersonicLabs), **Nimble-9B** (Bespoke Labs) y **Tev1** (Together AI).
+También compara **Span-01** (Respan) y un **LLM generalista** (gpt-6-luna) a través de
+`system-one-adapter`, el cliente de TypeSafe que imita a Jev con un LLM.
 
 El dominio es la neumología y la neumología intervencionista:
 - **triaje** de mensajes (a qué departamento va, urgencia, si es clínico, si es hostil, si hay
@@ -124,6 +126,9 @@ todo salvo Decider-35B y AnyJev-32B.
    | GLiNER | `gliner2 transformers sentencepiece protobuf peft numpy` | `--opt labels=desc` |
    | Laya | `laya` | `--opt variant=router` |
    | Julia-1 | `snapshot_download('SupersonicLabs/Julia-1')` + `pip install -e` | CPU |
+   | LLM (`llm`) | `"system-one-adapter[openai]==0.2.1"` | API; `--opt mode=probabilities\|discrete`, `OPENAI_API_KEY` |
+   | Nimble-9B | `transformers==5.17.0 peft==0.21.0 accelerate==1.15.0` | CUDA bf16; scorer oficial fijado y verificado por hash |
+   | Tev1 | `transformers==5.17.0` | CUDA bf16; 4B y 0.8B usan el mismo adaptador |
 
 2. Ejecuta la batería con el adaptador correspondiente. Ejemplos:
 
@@ -131,6 +136,8 @@ todo salvo Decider-35B y AnyJev-32B.
    python3 -m jevbench.run decider --run decider_4b --opt model=Mapika/decider-4b --phases all+new
    python3 -m jevbench.run anyjev  --run anyjev_qwen3_8b_l0 --opt model=Qwen/Qwen3-8B --phases all+new
    python3 -m jevbench.run gliner  --run gliner_decide_desc --opt model=fastino/GLiNER2.5-Decide --opt labels=desc --opt device=cuda
+   python3 -m jevbench.run nimble  --run nimble_9b --opt model=bespokelabs/Bespoke-Nimble-9B --phases all+new
+   python3 -m jevbench.run tev1    --run tev1_4b --opt model=togethercomputer/Tev1-4B-experimental --phases all+new
    ```
 
 3. Puntúa con `jevbench.score` como en el nivel 1. Decider, AnyJev L0 y Laya son deterministas: los

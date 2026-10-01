@@ -15,6 +15,12 @@ import traceback
 
 from . import adapters, store
 from .battery import EXTRA_PHASES, PHASES, load_phase, missing_abstracts, questions_hash
+from .redact import redact_options
+
+
+def safe_opts(opts):
+    """opts as stored in meta; the adapter still receives the original values."""
+    return redact_options(opts)
 
 
 def git_rev():
@@ -49,7 +55,7 @@ def main():
         qs, cases = load_phase(phase)
         doc = store.load(args.run, phase) or {"meta": {}, "cases": {}}
         doc["meta"].update({
-            "adapter": args.adapter, "opts": opts, **model.meta(), "phase": phase,
+            "adapter": args.adapter, "opts": safe_opts(opts), **model.meta(), "phase": phase,
             "questions_hash": questions_hash(qs), "host": platform.node(), "arch": platform.machine(),
             "python": sys.version.split()[0], "git": git_rev(),
             "updated": dt.datetime.now().isoformat(timespec="seconds")})
@@ -65,13 +71,19 @@ def main():
                 out = model.decide(c.state, qs)
                 rec = {"answers": out["answers"], "ms": round((time.time() - t1) * 1000),
                        "cost": out.get("cost"), "model": out.get("model")}
+                if "usage" in out:  # compact telemetry only; never prompts or bodies
+                    rec["usage"] = {k: v for k, v in out["usage"].items()
+                                    if isinstance(v, (int, float, str, bool, type(None)))}
                 if "raw" in out:
                     rec["raw"] = out["raw"]
                 short = " ".join(f"{k}={v.get('choice', v.get('score', v.get('noul')))!s:.6}" for k, v in out["answers"].items())
                 print(f"{phase} {c.id}: {short} | {rec['ms']}ms", flush=True)
             except Exception as e:  # keep going; the case is stored with its error
                 traceback.print_exc()
-                rec = {"error": f"{type(e).__name__}: {e}"[:300]}
+                rec = {"error": f"{type(e).__name__}: {e}"[:300], "ms": round((time.time() - t1) * 1000)}
+                diag = getattr(e, "diag", None)
+                if isinstance(diag, dict) and diag:
+                    rec["diag"] = diag
                 print(f"{phase} {c.id}: ERROR {rec['error'][:120]}", flush=True)
             doc["cases"][c.id] = rec
             doc["meta"].update(model.meta())

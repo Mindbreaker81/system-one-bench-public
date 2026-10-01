@@ -14,3 +14,4 @@ Notas:
 | fecha | alias → versión resuelta | resultado |
 |---|---|---|
 | 2026-09-27 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.13-20260917` · `typesafe:jev-latest` → `jev-1.13.0` · `typesafe:jev-preview` → `jev-1.13.0` | sin cambios |
+| 2026-10-01 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.13-20260917` · `typesafe:jev-latest` → `jev-1.13.0` · `typesafe:jev-preview` → `jev-1.13.0` | sin cambios |

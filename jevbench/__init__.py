@@ -5,6 +5,6 @@ Una única versión semántica para todo el repo (ver CHANGELOG.md):
 - minor: runs, modelos, experimentos o funciones nuevas;
 - patch: docs y arreglos.
 """
-__version__ = "0.5.0"
+__version__ = "0.13.3"
 PUBLIC_REPO = "https://github.com/Mindbreaker81/system-one-bench-public"
 AUTHOR_URL = "https://github.com/Mindbreaker81"

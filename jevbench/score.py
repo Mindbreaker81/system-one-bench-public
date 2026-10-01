@@ -106,17 +106,38 @@ def print_phase(phase, results, ref=None):
             print(f"- {r['run']}: " + "; ".join(parts))
 
 
+ADJ_PHASES = PHASES + EXTRA_PHASES + ["adv4", "adv5"]
+
+
+def adjusted(run):
+    """Margen sobre la línea base trivial: media por fase de (acierto - mayoría)/(100 - mayoría)
+    x100. 100 = perfecto, 0 = responder siempre lo más frecuente, <0 = peor que el trivial.
+    Returns (valor, n_fases completas)."""
+    vals, n = [], 0
+    for ph in ADJ_PHASES:
+        x = score_run(run, ph)
+        if not x or x["n_ok"] < x["n"]:
+            continue
+        n += 1
+        b = baseline(ph)["pct"]
+        if b < 100:  # ood está saturado (mayoría=100 %): se excluye de la media
+            vals.append((x["pct"] - b) / (100 - b))
+    return (100 * sum(vals) / len(vals), n) if vals else (None, n)
+
+
 def summary(runs):
     """One row per run with the headline numbers of every phase; returns the markdown table."""
     lines = []
-    lines.append("| run | triaje ES | triaje EN | dept ES+EN | papers | ρ relevancia | skip LOO | adv dept (1+2) | adv total "
+    lines.append("| run | ajustado | triaje ES | triaje EN | dept ES+EN | papers | ρ relevancia | skip LOO | adv dept (1+2) | adv total "
           "| triaje ext ES/EN | adv3 dept | adv3 total | Brier noul | ms mediana |")
-    lines.append("|" + "---|" * 14)
+    lines.append("|" + "---|" * 15)
     base = {ph: baseline(ph) for ph in PHASES + EXTRA_PHASES}
     for run in runs:
         r = {ph: score_run(run, ph) for ph in PHASES + EXTRA_PHASES}
         if not any(r.values()):
             continue
+        adj, n_adj = adjusted(run)
+        adj_s = f"{adj:.0f}" + ("*" if n_adj < len(ADJ_PHASES) else "") if adj is not None else "—"
 
         def g(ph, f, d="—"):
             return f(r[ph]) if r[ph] else d
@@ -125,7 +146,7 @@ def summary(runs):
                   if load_phase(x["phase"])[0][q]["type"] == "noul"]
         ms = sorted(m for x in r.values() if x for m in x["ms_all"])
         lines.append("| " + " | ".join([
-            run, g("triage_es", lambda x: fmt(x["pct"])), g("triage_en", lambda x: fmt(x["pct"])),
+            run, adj_s, g("triage_es", lambda x: fmt(x["pct"])), g("triage_en", lambda x: fmt(x["pct"])),
             f"{sum(r[p]['per_q']['department'] for p in ('triage_es', 'triage_en') if r[p]):g}/28",
             g("papers32", lambda x: fmt(x["pct"])), g("papers32", lambda x: fmt(x.get("spearman"), 2)),
             g("papers32", lambda x: f"{x['cascade']['skip_recall_loo']}/{x['cascade']['n_skip']}"),
@@ -137,13 +158,17 @@ def summary(runs):
             fmt(ms[len(ms) // 2], 0) if ms else "—"]) + " |")
     b = base
     lines.append("| " + " | ".join([
-        "*mayoría (oráculo)*", fmt(b["triage_es"]["pct"]), fmt(b["triage_en"]["pct"]),
+        "*mayoría (oráculo)*", "0", fmt(b["triage_es"]["pct"]), fmt(b["triage_en"]["pct"]),
         f"{b['triage_es']['per_q']['department'] + b['triage_en']['per_q']['department']:g}/28",
         fmt(b["papers32"]["pct"]), "—", "0/10",
         f"{b['adv1']['per_q']['department'] + b['adv2']['per_q']['department']:g}/20",
         fmt((b["adv1"]["pct"] + b["adv2"]["pct"]) / 2),
         f"{fmt(b['triage_ext_es']['pct'])} / {fmt(b['triage_ext_en']['pct'])}",
         f"{b['adv3']['per_q']['department']:g}/{b['adv3']['n']}", fmt(b["adv3"]["pct"]), "—", "—"]) + " |")
+    lines.append("\n*ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 "
+                 "(ood queda excluida: la mayoría ya acierta todo). "
+                 "0 = responder siempre lo más frecuente, <0 = peor que el trivial; "
+                 f"`*` = no tiene las {len(ADJ_PHASES)} fases.*")
     return "\n".join(lines)
 
 

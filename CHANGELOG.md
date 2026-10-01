@@ -13,6 +13,247 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [0.13.3] - 2026-10-01 — Revisión de la web de resultados
+
+### Web y sitio
+- La cabecera de la portada ya no fija «26–27 sep 2026»: muestra la versión del banco y su fecha,
+  que `jevbench.web.version_date()` lee del CHANGELOG (marcador `__VERSION_DATE__`).
+- Versión de Jev comprobada de nuevo (`check_versions --log`): sigue en jev-1.13 a 1-oct.
+- Conclusiones al día con los runs de 29-sep a 1-oct: tarjeta de Nimble-9B (mejor abierto de una
+  pasada, ajustado 44) y Tev1-4B; descartes ampliados con Tev1-0.8B y los Qwen3.8 locales;
+  gpt-6-luna como revisor en la tarjeta y la nota de revisores.
+- La alerta de manipulación pinta también las cascadas con LLM (`llm_gpt6luna_jevrev`, 25/30 y
+  1 FP; `decider_4b_llmrev`, 20/30 y 2 FP), que ya se calculaban pero no se mostraban.
+- «Las pruebas, en orden» incluye los seis bloques de 29-sep a 1-oct (línea base LLM, cascadas
+  LLM, Span-01 y score ajustado, LLM locales, Nimble/Tev1, robustez del adaptador).
+- Coste del circuito con las medias medidas (~$0.000035 + ~$0.00005 por caso), no la estimación
+  antigua; tamaño de los sets «10 a 32 casos»; colores de Nimble/Tev1 en el tema oscuro forzado.
+- `tests/test_site.py` comprueba que la cabecera lleva versión + fecha y ningún «sep 2026» fijo.
+
+### Publicación del espejo (arreglo)
+- **Fallo:** el tag público `v0.13.2` (commit `2d525b0` del espejo) añadió los ficheros nuevos,
+  pero dejó README, CHANGELOG y `jevbench/__init__.py` en 0.5.0. Causa: `jevbench.publish`
+  exportaba el snapshot al clon y **después** `publish()` hacía `git reset --hard origin/main`,
+  que devolvía a su versión anterior todo fichero ya existente (y recuperaba los que tenían que
+  borrarse); solo sobrevivían los nuevos. La simulación sin `--push` tenía el mismo defecto y
+  daba un falso «todo bien».
+- **Arreglo:** `prepare_clone()` (antes `clone_or_fetch`) deja el clon en `origin/main`, o en una
+  rama huérfana si el espejo está vacío, y vacía el árbol **antes** del export; `publish()` ya no
+  hace reset ni checkout. `export()` devuelve el id de blob de git de cada fichero y
+  `verify_commit()` exige que el commit contenga exactamente ese snapshot (mismos ficheros y
+  mismos bytes) antes de crear el tag o subir nada, también en la simulación.
+- **Regresión:** `tests/test_publish.py::PublishGit` usa un remoto local que parte de un README
+  en 0.5.0 y de un fichero fuera del manifiesto: el commit debe llevar la versión nueva, el
+  fichero añadido y la eliminación; si se restaura contenido viejo tras el export, falla sin
+  etiquetar. Cubre también el espejo vacío.
+- El tag público `v0.13.2` no se reescribe (las versiones publicadas son inmutables): la
+  corrección se publica como `v0.13.3`.
+
+## [0.13.2] - 2026-10-01 — Cierre y alineación de la documentación
+
+### Documentación
+- Alineados README, guía de agentes, infraestructura y fichas con los adaptadores y modelos
+  presentes en el código: Nimble-9B y Tev1 ya aparecen en los inventarios y en la tabla pública.
+- Marcados como ejecutados los planes del revisor local y de robustez LLM; eliminadas referencias
+  pendientes ya resueltas en los planes e informes históricos, y aclarado el carácter histórico
+  del run Flash anterior a los límites.
+- Corregida la descripción de Nimble: usa un forward por campo, no una sola pasada por estado.
+- Actualizadas y regeneradas la web interactiva y el sitio público.
+
+## [0.13.1] - 2026-10-01 — Nota pública sobre la robustez del adaptador `llm`
+
+### Documentación
+- Añadida en la ficha, el informe, el artifact y el sitio público una explicación del
+  problema encontrado y de su corrección: el timeout no cubría todo el caso, faltaba un
+  tope de salida y la telemetría se descartaba. Desde 0.13.0 hay presupuesto total,
+  `max_tokens`, diagnóstico persistido y redacción de secretos. La nota aclara que no
+  cambiaron el prompt, las preguntas, el GT, el scorer ni los resultados históricos.
+
+## [0.13.0] - 2026-10-01 — Robustez del adaptador `llm` (JEV-44)
+
+### Añadido
+- **Límites del adaptador `llm`** (`jevbench/adapters/llm.py`): `case_timeout`
+  (presupuesto de pared por caso que incluye las correcciones por JSON mal formado;
+  cada petición usa `min(timeout, restante)` y falla antes de abrir otra petición si la
+  bolsa está agotada), `max_tokens` (traducido a `max_output_tokens` en Responses,
+  `max_completion_tokens` en Chat Completions oficial y `max_tokens` en endpoints
+  compatibles) y `timeout` ahora efectivo también con OpenAI directo — antes se ignoraba
+  si no había `base_url`/`extra_body`. `extra_body` fuera de Chat Completions y los
+  límites con provider=anthropic/gemini fallan con error explícito en vez de ignorarse.
+  Los miembros privados de `system-one-adapter==0.2.1` se concentran en
+  `_openai_internals()` con test de compatibilidad.
+- **Telemetría persistida:** `jevbench.run` guarda `usage` compacto (tokens, reintentos,
+  `attempts`, latencia) en los casos exitosos y `ms` + `diag` seguro (intentos, tipo de
+  error, categorías de reintento) en los errores. Nunca prompts, estados ni cuerpos HTTP.
+- **Redacción de secretos:** las opciones `--opt` cuyo nombre contiene `api_key`,
+  `token`, `secret` o `password` se guardan como `<redacted>` en `meta.opts`; el
+  adaptador sigue recibiendo el valor real. La redacción también recorre JSON anidado
+  en `extra_body` (incluidos `Authorization`, credenciales y cookies) antes de guardar
+  o imprimir el `meta`.
+- **Validación de límites:** `timeout`, `case_timeout` y `max_tokens` rechazan cero y
+  valores negativos; el parche de API privada comprueba además la versión exacta 0.2.1.
+- **Pruebas offline** (`tests/test_llm_adapter.py`, `tests/test_run.py`): transporte
+  OpenAI contra servidor HTTP local de vida corta (esquema, `extra_body`,
+  `structured=false`, `max_tokens` en las tres APIs, 429/500, conexión cerrada,
+  respuesta truncada, timeout), reintentos por JSON mal formado, presupuesto por caso
+  con reloj inyectado, telemetría del runner y secretos centinela, también dentro de
+  `extra_body`. 18 tests en el venv y 5 del runner con el Python del sistema.
+- **Entorno `.venv-llm` reconstruido** con uv + Python 3.12 gestionado (el anterior
+  quedó roto tras actualizar el sistema a 3.14): `system-one-adapter[openai]==0.2.1`,
+  `typesafe-sdk==0.7.1`, `openai==3.16.2`, `httpx2==2.13.0`, `httpcore2==2.13.0`. El
+  roto se conserva apartado como `.venv-llm.broken-20261001` (no versionado).
+- **`scripts/smoke_llm.py`**: smoke diagnóstico de 6 casos fijados × N repeticiones
+  contra un endpoint compatible (control OOD, adv2/adv3/triage_ext/triage_es), con
+  registro de ms, tokens, intentos y memoria. Salida en `results/logs/`, no es un run.
+
+### Smoke DGX .81
+- 18 ejecuciones (6 casos × 3 reps) contra `qwen3.8-flash-next` (mismo endpoint del
+  run `llm_qwen38flash_prob`, contenedor `vllm-fn-tp1`) con `timeout=1800`,
+  `case_timeout=600`, `max_tokens=16384`: todas ok, 1 petición cada una, 16–170 s,
+  sin errores de transporte (`results/logs/smoke_llm_jev44.json`).
+- Comprobación dirigida: `case_timeout=45` aborta el caso a los 45.0 s exactos sin
+  dejar petición viva y el caso normal posterior responde en 30.9 s; un intento con
+  generación desbocada terminó en `finish_reason=length` al llegar al tope de
+  salida, error acotado que demuestra que `max_tokens` llega al servidor.
+
+## [0.12.0] - 2026-09-30 — Nimble-9B y Tev1 (4B y 0.8B), JEV-41/42/43
+
+### Añadido
+- **Adaptador `nimble`** (`jevbench/adapters/nimble.py`) sobre el `ParallelScorer`
+  oficial que embarca el repo HF de Bespoke-Nimble-9B (verifica los SHA256 del
+  prompt de entrenamiento y del codebook antes de correr). Mapea `noul`→boolean,
+  `choice`→enum con `choice_descriptions` y `score`→enum de enteros
+  (`score` = `expected_score`). Una pasada forward por pregunta: cada prompt lleva
+  el estado + el esquema completo; no hay pasada única multi-pregunta.
+- **Run `nimble_9b`** (195 casos, 0 errores, DGX .81): `bespokelabs/Bespoke-Nimble-9B`
+  rev `bd792f44` (LoRA PEFT sobre `Qwen/Qwen3.5-9B@c2022362`), T=1.0 del checkpoint
+  actual, torch 2.14.1+cu130, transformers 5.17, peft 0.21. Ajustado **44**, entre
+  Jev (45) y Decider-4B (33): triaje 92.9/88.6, papers 70.3 (ρ 0.48), adv3 85.5,
+  adv4 79.0, adv5 81.5, ood 100 %, Brier noul 0.084, mediana 1.6 s/estado. Sin
+  diferencias significativas frente a jev_v3 / decider_4b / gpt-6-luna salvo
+  `urgency` de adv4, donde supera a gpt-6-luna (9–0, p<0.01). Es el open-weight
+  puro más fuerte de los evaluados sin revisor; hace una pasada forward por pregunta.
+- **Adaptador `tev1`** (`jevbench/adapters/tev1.py`) para los Tev1 de Together:
+  system prompt y JSON `{state, question, options}` oficiales, y en lugar de
+  generar la letra hace softmax sobre los logits de las letras candidatas en el
+  primer token (equivale al argmax restringido del contrato: temperature=0 +
+  regex, `enable_thinking=false`). Una inferencia por pregunta; cada caso guarda
+  `raw.generations`.
+- **Run `tev1_4b`** (195 casos, 0 errores, DGX .81):
+  `togethercomputer/Tev1-4B-experimental` rev `0b7becf0` (Qwen3.5-4B, bf16).
+  Ajustado **27**, por debajo de Nimble-9B (44), Jev (45) y Decider-4B (33):
+  triaje 87.1/87.1, papers 64.4 (ρ 0.83), adv3 75.0, adv4 77.5, adv5 72.5,
+  ood 100 %, Brier noul 0.115, mediana 0.45 s/estado. Sin diferencias
+  significativas frente a los incumbentes salvo `depth` de papers32, donde
+  gpt-6-luna le gana (16–2, p<0.01). Licencia de los pesos pendiente de
+  publicación según la propia ficha.
+- **Run `tev1_0.8b`** (195 casos, 0 errores, DGX .81):
+  `togethercomputer/Tev1-0.8B-experimental` rev `6bb2dff1` (Qwen3.5-0.8B,
+  bf16), mismo adaptador sin cambios. **Resultado negativo:** ajustado −7,
+  bajo la mayoría trivial (triaje 67.9/72.1, adv total 58.5 vs 79.0 del
+  baseline, adv3 64.0, Brier 0.171, 12 binarios en 0.45–0.55 en adv3). El 4B
+  le gana en `same_day` de adv4 (10–1, p=0.01) y los incumbentes en varias
+  preguntas (department adv3/ext_es, clinical triaje ES). Mediana
+  0.14 s/estado. Licencia de los pesos también pendiente.
+
+## [0.11.0] - 2026-09-30 — LLM local Qwen3.8-Flash-Next (negativo), JEV-39
+
+### Añadido
+- **Run `llm_qwen38flash_prob`**: Qwen3.8-Flash-Next NVFP4 servido con vLLM en el DGX .81,
+  mediante `system-one-adapter` con thinking activado (sin él fallaba el smoke). Resultado
+  negativo y peor que el 27B: ajustado −40, triaje 65.7/55.0, papers 38.1 (ρ −0.01), adv3
+  65.3 y Brier 0.317. Jev y gpt-6-luna son significativamente mejores en múltiples preguntas;
+  el Flash no obtiene ninguna ventaja significativa. Tras reintentar entrega 191/195 respuestas
+  (4 timeouts), con mediana 49.7 s/caso y ~14.7 h de pared entre ambas pasadas.
+- Documentado un límite operativo del adaptador: `timeout` se aplica por petición y los
+  reintentos internos pueden alargar un caso; este run no fijó un máximo total ni de tokens.
+
+## [0.10.0] - 2026-09-29 — score ajustado y alerta de manipulación con Span-01, JEV-40
+
+### Añadido
+- **Score ajustado** (`jevbench.score.adjusted`, columna en `--summary` y en la
+  tabla de la web): media por fase de (acierto − línea base de mayoría) /
+  (100 − línea base). 0 = responder siempre lo más frecuente, <0 = peor que el
+  trivial; `ood` queda excluida (mayoría = 100 %) y `*` marca cobertura
+  incompleta de las 11 fases. Jev→Jev 64, gpt-6-luna→Jev 71, Jev solo 45,
+  gpt-6-luna solo 61, Decider-4B 33, Span-01 pro 18.
+- **Alerta de manipulación con Span-01 (negativo):** como detector de una sola
+  pasada (misma pregunta `manipulation` y umbral 0.5 del revisor), pro detecta
+  8/30 y lite 5/30 en adv3–5 con 0 falsos positivos — muy por debajo del
+  criterio (≥7/10 por set) y del revisor Jev (25/30). Runs
+  `span01_pro_alert_raw` / `span01_lite_alert_raw`; documentado en
+  `docs/experimentos/alerta_manipulacion.md`.
+
+### Corregido
+- Coste de Span-01 pro: era "~10× más barato que Jev"; medido: $0.0032 los 195
+  casos ($0.000016/caso), ~2× menos que Jev ($0.000035) y ~12× menos que
+  gpt-6-luna ($0.000194).
+- Web: matiz sobre el LLM generalista — gpt-6-luna supera a Jev en agregado
+  (61 vs 45) y gpt-6-luna→revisor Jev es la mejor configuración medida (71), a
+  ~5× coste/latencia por mensaje.
+
+## [0.9.0] - 2026-09-29 — Span-01 y Span-01 Lite (Respan), JEV-40
+
+### Añadido
+- **Adaptador `respan`** (`jevbench/adapters/respan.py`) para Span-01 de Respan,
+  clasificador de comportamientos hiper-paralelo (anunciado 24-sep-2026). Dos
+  caminos: API nativa `api.respan.ai/api/v1/scores` (`provider=respan`, clave
+  `RESPAN_API_KEY`; `span-01-pro` requiere créditos Respan, `span-01-free` es
+  Lite gratis) y OpenRouter `/api/alpha/decisions` (`provider=openrouter`, donde
+  Respan solo admite `noul`, así que `choice`/`score` se expanden a una noul por
+  opción). Mapeo: `noul` → una definición; `choice`/`score` → una por opción;
+  en nativo p = present/(present+absent) (`not_observable` = evidencia neutra).
+- **Runs `span01_pro`** (OpenRouter, resuelto `span-01-20260925`, $0.003 los 185
+  casos), **`span01_lite`** (API nativa `span-01-free`, gratis) y
+  **`span01_lite_or`** (Lite vía OpenRouter, `span-01-lite-20260925`), todos con
+  all+new + adv4 + adv5 y 0 errores. Competitivo pero por debajo de Jev en
+  conjunto: triaje 85.0/84.3, adv3 72.0 (pro) vs 88.6/90.0 y 87.5 de Jev; Jev le
+  gana con significación en `same_day` de triaje ext (p<0.05) y en urgency de
+  adv3. Span-01 sí supera a Jev en `depth` de papers32 (17/32 vs 6/32, p=0.01).
+  Coste medido: $0.000016/caso (~2× menos que Jev, ~12× menos que
+  gpt-6-luna). Lite y pro dan prácticamente lo mismo por OpenRouter.
+
+## [0.8.0] - 2026-09-29 — LLM local en DGX: Qwen3.8-27B (negativo), JEV-39
+
+### Añadido
+- **Adaptador `llm`: opciones `extra_body`, `api_key` y `timeout`** para endpoints
+  OpenAI-compatibles (SGLang/vLLM en los Sparks): `chat_template_kwargs` (thinking on/off),
+  muestreo recomendado por la ficha y timeout largo para modelos con thinking.
+- **Run `llm_qwen38_27b_prob`** (`RadixArk/Qwen3.8-27B-NVFP4-BF16-LMHead` en SGLang, .80):
+  195 casos, 2 errores por timeout. **Resultado negativo**: apenas por encima de la línea
+  base trivial (triaje 73.6, papers 52.2, ρ −0.17, adv total 58.5 < 79.0 del baseline,
+  Brier 0.231, ~6.8 s/caso). Thinking `low` no mejora y encarece la latencia. Un LLM
+  grande no basta si no sigue el contrato System One.
+- En marcha en .81: `llm_qwen38flash_prob` (Qwen3.8-Flash-Next NVFP4 en vLLM, thinking on).
+
+## [0.7.0] - 2026-09-29 — cascadas LLM: revisor LLM y LLM → revisor Jev
+
+### Añadido
+- **Cascada `llm_gpt6luna_jevrev_*`** (LLM → revisor Jev, JEV-38): mejor configuración medida —
+  adv total 92.0, adv5 88.5, Brier noul 0.045, alerta 9/10 con 1 FP. Estadísticamente
+  equivalente a `jev_cascade_audit` a ~4× el coste y la latencia.
+- **Cascada `decider_4b_llmrev_*`** (revisor LLM sobre Decider-4B): recupera el 77 % de la
+  ganancia de Jev en adv3+adv5 (primer revisor no-Jev que pasa del 50 % ahí), pero no cumple
+  JEV-32 por triaje (28 %) ni por la alerta de manipulación (6/10). Detalle:
+  `docs/experimentos/cascada_jev.md`.
+
+## [0.6.0] - 2026-09-29 — línea base LLM (system-one-adapter + gpt-6-luna)
+
+### Añadido
+- **Adaptador `llm`** (`jevbench/adapters/llm.py`) sobre `system-one-adapter` 0.2.1 de TypeSafe
+  (sustituto de `system_one` con un LLM: OpenAI, Anthropic, Gemini o endpoint compatible con
+  OpenAI). Opciones `mode=probabilities|discrete`, `structured`, `base_url`, `usd_in`/`usd_out`.
+  Venv local `.venv-llm` con versiones fijadas (≥ 7 días). Test offline con proveedor falso:
+  `tests/test_llm_adapter.py` (se salta si la librería no está instalada). JEV-38.
+- **Runs `llm_gpt6luna_prob` y `llm_gpt6luna_disc`**: gpt-6-luna por API directa de OpenAI,
+  fases `all+new`, `adv4` y `adv5` (195 casos, 0 errores). En una pasada queda al nivel de la
+  cascada de Jev: triaje 93.6/95.7, papers 78.8, adv 18/20, adv3 17/20, adv5 83.5, Brier noul
+  0.053. Frente a `jev_v3`, solo `depth` de papers es significativo (p < 0.01, a favor del LLM);
+  frente a `jev_cascade_audit`, solo `urgency` de adv4 (p = 0.01, a favor de la cascada). Coste
+  $0.00019/caso (5.5× Jev) y mediana 3.1 s (5× Jev). `discrete` calibra peor (Brier 0.077).
+- Familia `LLM` en el marcador, la web y el sitio (color `--f-llm`); `OPENAI_API_KEY` en
+  `.env.example`.
+
 ## [0.5.0] - 2026-09-27 — versionado, licencias y espejo público
 
 ### Añadido

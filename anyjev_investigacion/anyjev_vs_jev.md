@@ -1,4 +1,9 @@
-Investigación completada ayer: AnyJev (Nokia Applied Research)
+> **Estado posterior (27-sep-2026):** se eligió la opción B y se evaluaron Qwen3-8B y
+> Qwen3-32B L0 en DGX. Ninguno reemplaza a Jev; los resultados vigentes están en
+> `docs/modelos.md` y `docs/resultados.md`. El texto siguiente se conserva como informe
+> histórico del 25-sep, antes de esa decisión.
+
+Investigación completada: AnyJev (Nokia Applied Research)
 evaluación contra Jev/Laya/GLiNER con la batería completa (triaje ES/EN, papers32,
 adversario x2, OOD). Resumen ejecutivo:
 
@@ -13,7 +18,7 @@ todo, y su marginalización de permutaciones resiste el relleno de palabras clav
 que GLiNER fallaba entera). Advertencia: probado con su modelo más pequeño (Qwen3-1.7B,
 L0, cero etiquetas, CPU ARM, determinista, $0/caso).
 
-Decisión pendiente: (A) cerrar y archivar / (B) segunda ronda DGX Spark con
+Decisión que estaba pendiente al redactar el informe: (A) cerrar y archivar / (B) segunda ronda DGX Spark con
 Qwen3-8B o 32B L0 ($0, solo descarga) / (C) quedarnos solo con la idea L0 como
 capa antivuelco. Adjunto tarball con informe completo + scripts + resultados JSON.
 
@@ -110,7 +115,7 @@ registro de investigaciones con resultados negativos, limitaciones declaradas
 13/14 y 12/14 en hostile).
 
 =======================================================================
-4. DECISIÓN PENDIENTE
+4. DECISIÓN EN EL MOMENTO DEL INFORME
 =======================================================================
 Opcion A: cerrar aquí (Jev sigue; AnyJev archivado como "mejor open
 zero-shot visto, insuficiente").

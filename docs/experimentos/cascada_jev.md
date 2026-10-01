@@ -171,3 +171,35 @@ Conclusiones:
    iguala a Jev → Jev. Si los datos no pueden salir del centro, hoy no hay revisor local que
    cumpla el listón; Decider-35B NVFP4 es la mejor opción disponible y aporta una mejora
    modesta y segura sobre D1.
+
+## LLM como revisor y LLM + revisor Jev (JEV-38, 29-sep, GT v3)
+
+Revisor = **gpt-6-luna** vía `system-one-adapter` 0.2.1 (API OpenAI, `mode=probabilities`,
+salida estructurada estricta). Runs `decider_4b_llmrev_*` (D1 = `decider_4b`). Y al revés:
+`llm_gpt6luna_jevrev_*` (D1 = `llm_gpt6luna_prob`, revisor Jev). Coste de la 2ª pasada:
+$0.105 con revisor LLM y $0.010 con revisor Jev.
+
+| run (regla `audit`) | triaje ES/EN | papers (ρ) | adv total | triaje ext ES/EN | adv3 total | adv4 total | adv5 total | Brier noul |
+|---|---|---|---|---|---|---|---|---|
+| Decider-4B (D1) | 85.7/85.7 | 65.9 (0.78) | 71.5 | 90.8/90.0 | 77.0 | 83.0 | 75.0 | 0.102 |
+| → Jev | 90.7/93.6 | 72.2 (0.76) | 88.5 | 93.1/92.3 | 93.5 | 86.0 | 85.0 | 0.066 |
+| → **LLM** | 87.9/87.1 | 76.2 (0.78) | 81.0 | 91.9/91.9 | 88.5 | 83.0 | 84.0 | 0.096 |
+| LLM (D1) | 93.6/95.7 | 78.8 (0.87) | 87.0 | 93.5/93.5 | 88.0 | 78.5 | 83.5 | 0.053 |
+| → **Jev** | 93.6/97.1 | 76.9 (0.82) | 92.0 | 95.0/95.0 | 92.0 | 84.0 | 88.5 | 0.045 |
+| Jev (D1) → Jev | 91.4/93.6 | 73.8 (0.87) | 88.5 | 94.6/93.5 | 92.0 | 85.0 | 85.0 | 0.055 |
+
+**Criterio JEV-32 sobre el revisor LLM:** adv3+adv5 +10.25 (77 % de la ganancia de Jev) ✓;
+triaje (media ES/EN) +1.8 (28 %) ✗; sin pérdidas > 2 puntos ✓; alerta adv5 6/10 con 1 FP ✗
+(< 7/10). **No cumple**, aunque es el primer revisor no-Jev que recupera ≥ 50 % en
+adv3+adv5; le fallan las ganancias en triaje y la alerta de manipulación (se escapan E03,
+E06, E09, E10).
+
+**LLM + revisor Jev** es, en números absolutos, la mejor configuración medida: adv total 92.0,
+adv5 88.5, mejor Brier noul (0.045), alerta 9/10 con 1 FP. Frente al LLM sin revisor, solo `urgency` de
+adv4 mejora de forma significativa (McNemar p = 0.02); frente a `jev_cascade_audit`, ninguna
+diferencia significativa en ninguna fase. Coste por caso ≈ $0.00019 (D1) + $0.00005 (revisor)
+≈ 4.1× el de Jev → Jev, y ~4.6 s frente a ~1.3 s.
+
+Conclusión: el LLM sirve como revisor intermedio (mejor que cualquier local, peor que Jev en
+triaje y alerta), y la cascada LLM → Jev iguala a Jev → Jev en acierto — a ~4× el coste y la
+latencia. Jev sigue siendo el revisor más barato y fiable; la lectura de fondo se mantiene.

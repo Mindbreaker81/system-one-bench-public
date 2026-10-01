@@ -19,6 +19,10 @@ REGISTRY = {
     "anyjev": "jevbench.adapters.anyjev:AnyJev",
     "gliner": "jevbench.adapters.gliner:Gliner",
     "julia": "jevbench.adapters.julia:Julia",
+    "llm": "jevbench.adapters.llm:LLM",
+    "respan": "jevbench.adapters.respan:Respan",
+    "nimble": "jevbench.adapters.nimble:Nimble",
+    "tev1": "jevbench.adapters.tev1:Tev1",
 }
 
 

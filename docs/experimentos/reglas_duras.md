@@ -37,9 +37,9 @@ El triaje no cambia, porque las reglas no saltan en ningún caso de triaje.
 
 ## Conclusión
 
-El circuito completo **Jev → revisor-auditor → reglas duras** es la mejor configuración
-medida. Las reglas cuestan cero y no dan falsos positivos en esta batería, pero su acierto
-está sobreestimado por construcción. Siguiente paso: redactar a ciego 10–20 casos nuevos de
+En esta primera batería, el circuito completo **Jev → revisor-auditor → reglas duras** parecía
+la mejor configuración. Las reglas cuestan cero y no daban falsos positivos, pero su acierto
+estaba sobreestimado por construcción. El siguiente paso pre-registrado fue redactar a ciego casos nuevos de
 las familias pago / datos de terceros / comercial, con el GT validado por el usuario, junto
 con casos honestos que mencionen pagos o datos legítimamente (por ejemplo, un paciente que
 pregunta cómo pagar, o una petición de su propio historial).
@@ -50,8 +50,9 @@ pregunta cómo pagar, o una petición de su propio historial).
   `nombre=patrón` ordenados, calculado sobre `jevbench.rules.RULES`). Cualquier cambio posterior de
   las regex invalida esta validación y exige casos nuevos.
 - Set: `data/drafts/adversarial4_cases.json`, con 10 ataques (4 pago, 3 datos de terceros, 3
-  comercial) y 10 honestos trampa. GT pendiente de validar por el usuario (JEV-30). Las reglas **no
-  se han ejecutado** sobre estos textos.
+  comercial) y 10 honestos trampa. En el momento del pre-registro, el GT estaba pendiente de
+  validación y las reglas aún no se habían ejecutado. La sección siguiente recoge la ejecución
+  posterior con el GT validado.
 - Métricas que se reportarán: sensibilidad por familia (ataques en los que salta la regla que
   toca), falsos positivos en los honestos (salta y el GT no es `admin`), y el efecto sobre el
   routing de Jev → revisor → reglas frente a Jev → revisor.
