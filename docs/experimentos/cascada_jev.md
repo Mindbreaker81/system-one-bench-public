@@ -203,3 +203,33 @@ diferencia significativa en ninguna fase. Coste por caso ≈ $0.00019 (D1) + $0.
 Conclusión: el LLM sirve como revisor intermedio (mejor que cualquier local, peor que Jev en
 triaje y alerta), y la cascada LLM → Jev iguala a Jev → Jev en acierto — a ~4× el coste y la
 latencia. Jev sigue siendo el revisor más barato y fiable; la lectura de fondo se mantiene.
+
+## Revisor local: Clef-27B (JEV-48, 3-oct, GT v3)
+
+Revisor = **Clef-27B** (`Cloudflare/clef`, adaptador `clef`, en el .81). D1 = `decider_4b`.
+Runs `decider_4b_clefrev_{raw,review,audit,avg}`; 195 casos revisados, 0 errores. La alerta
+`manipulation` del revisor se mide sobre `decider_4b_clefrev_raw`.
+
+| run (regla `audit`) | triaje ES/EN | papers (ρ) | adv dept 1+2 | adv total | triaje ext ES/EN | adv3 dept | adv3 total | adv4 total | adv5 total | ajustado |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Decider-4B (D1) | 85.7/85.7 | 65.9 (0.78) | 14/20 | 71.5 | 90.8/90.0 | 12/20 | 77.0 | 83.0 | 75.0 | 33 |
+| → Jev | 90.7/93.6 | 72.2 (0.76) | 19/20 | 88.5 | 93.1/92.3 | 18/20 | 93.5 | 86.0 | 85.0 | 64 |
+| → **Clef-27B** | 90.0/89.3 | 77.8 (0.90) | 12/20 | 83.0 | 92.7/92.7 | 15/20 | 90.5 | 88.0 | 85.0 | 58 |
+
+**Criterio JEV-32 sobre el revisor Clef:** adv3+adv5 +11.75 (89 % de la ganancia de Jev) ✓;
+triaje (media ES/EN) +3.93 (61 %) ✓; ninguna fase empeora >2 puntos ✓ (ood queda igual);
+alerta adv5 9/10 con 1 FP (E11, el mismo FP que Jev) ✓. **CUMPLE: primer revisor no-Jev
+—y primer revisor 100 % local— que pasa el listón.** gpt-6-luna quedó en 77 %/28 %/alerta
+6/10; los open-weight anteriores en ≤45 %.
+
+Con Clef además mejora papers (77.8 frente a 72.2 de Jev como revisor; ρ 0.90, la mejor
+medida) y adv5 iguala a Jev (85.0). Donde pierde frente a Jev-revisor es el `department`
+de adv1+2 (12/20 frente a 19/20): el revisor Clef no manda a `admin` los ataques antiguos
+con la misma fiabilidad. Latencia del revisor ~1–1.5 s/caso en GB10 (papers ~5 s; el estado
+de revisión es largo), todo local y sin coste de API.
+
+Conclusión: por primera vez hay una cascada **enteramente local** que se acerca a Jev → Jev
+(ajustado 58 frente a 64, y muy por encima de Jev solo, 45): Decider-4B de D1 + auditoría
+Clef-27B. Es además la primera alerta de manipulación local que cumple (ver
+`alerta_manipulacion.md`, alerta de una pasada 27/30 TP y 1 FP frente a
+25/30 del revisor Jev, sin diferencia significativa: McNemar p=0.50).

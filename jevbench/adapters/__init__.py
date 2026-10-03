@@ -23,6 +23,7 @@ REGISTRY = {
     "respan": "jevbench.adapters.respan:Respan",
     "nimble": "jevbench.adapters.nimble:Nimble",
     "tev1": "jevbench.adapters.tev1:Tev1",
+    "clef": "jevbench.adapters.clef:Clef",
 }
 
 

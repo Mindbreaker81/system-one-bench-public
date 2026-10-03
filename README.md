@@ -2,7 +2,7 @@
 
 # system-one-bench: banco de pruebas de decisores "System One"
 
-**Versión 0.14.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
+**Versión 0.19.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
 
 Banco de pruebas para comparar **Jev** (TypeSafe), un modelo cerrado que no genera texto sino
 que responde preguntas tipadas con probabilidades, con las alternativas abiertas que prometen lo

@@ -1,6 +1,6 @@
 # Resultados consolidados
 
-Última actualización editorial: 1-oct-2026 (**GT v3**, fijado el 27-sep: P04 corregido +
+Última actualización editorial: 3-oct-2026 (**GT v3**, fijado el 27-sep: P04 corregido +
 adjudicación de la 2ª anotación, ver `data/GT_CHANGELOG.md`). Todo se regenera desde
 `results/` con el harness:
 
@@ -15,7 +15,8 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
     anyjev_qwen3_32b_l0 anyjev_qwen3_8b_l0 anyjev_qwen3_1.7b_l0 gliner_decide_desc gliner_decide_bare \
     gliner_decide_1b_desc gliner_multi_decide_desc julia_1 laya_router laya_typed \
     legacy_laya_v2 span01_pro span01_lite span01_lite_or nimble_9b \
-    tev1_4b tev1_0.8b
+    tev1_4b tev1_0.8b decider_4b_clefrev_review decider_4b_clefrev_audit clef_27b \
+    clm_v0.1_8b strands_2b_hobson_v19_xpu strands_2b_hobson_v19_xpu_trunc
 ```
 <!-- /AUTO:comando -->
 
@@ -66,6 +67,12 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | nimble_9b | 44 | 92.9 | 88.6 | 24/28 | 70.3 | 0.48 | 3/10 | 12/20 | 75.5 | 93.1 / 90.8 | 15/20 | 85.5 | 0.084 | 1620 |
 | tev1_4b | 27 | 87.1 | 87.1 | 26/28 | 64.4 | 0.83 | 7/10 | 14/20 | 69.5 | 89.2 / 91.5 | 12/20 | 75.0 | 0.115 | 452 |
 | tev1_0.8b | -7 | 67.9 | 72.1 | 23/28 | 64.7 | 0.70 | 7/10 | 9/20 | 58.5 | 78.8 / 81.2 | 11/20 | 64.0 | 0.171 | 142 |
+| decider_4b_clefrev_review | 59 | 90.7 | 90.7 | 24/28 | 80.0 | 0.88 | 8/10 | 12/20 | 82.5 | 93.1 / 93.1 | 15/20 | 89.5 | 0.076 | — |
+| decider_4b_clefrev_audit | 58 | 90.0 | 89.3 | 25/28 | 77.8 | 0.90 | 7/10 | 12/20 | 83.0 | 92.7 / 92.7 | 15/20 | 90.5 | 0.081 | — |
+| clef_27b | 52 | 89.3 | 90.7 | 23/28 | 75.6 | 0.88 | 5/10 | 9/20 | 80.0 | 93.5 / 93.8 | 16/20 | 88.5 | 0.064 | 870 |
+| clm_v0.1_8b | -35 | 67.9 | 58.6 | 13/28 | 50.6 | 0.49 | 4/10 | 5/20 | 52.5 | 67.3 / 66.5 | 9/20 | 59.0 | 0.238 | 80 |
+| strands_2b_hobson_v19_xpu | 21* | 83.6 | 83.6 | 20/28 | 59.4 | 0.79 | 7/10 | 9/20 | 70.0 | 78.5 / 82.3 | 13/20 | 75.5 | 0.134 | 126 |
+| strands_2b_hobson_v19_xpu_trunc | 21 | 83.6 | 83.6 | 20/28 | 59.1 | 0.77 | 7/10 | 9/20 | 70.0 | 78.5 / 82.3 | 13/20 | 75.5 | 0.134 | 125 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.6 | — | 0/10 | 17/20 | 79.0 | 57.7 / 57.7 | 5/20 | 59.0 | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
@@ -77,7 +84,8 @@ papers que no merecen lectura, cuántos descarta la cascada (umbral por leave-on
 adv dept = routing correcto en adversarial-1+2. triaje ext = T15–T40 (26 casos nuevos, validados
 el 26-sep). adv3 = adversarial-3 equilibrado (20 casos: 10 manipulados y 10 honestos, 5 por
 departamento). Brier = media de las preguntas sí/no
-(más bajo es mejor). ms = mediana por caso (Jev por API; el resto en GPU GB10).
+(más bajo es mejor). ms = mediana por caso (Jev por API; CLM y Strands en Intel Arc
+Pro B70; otros modelos según su ficha, principalmente GPU GB10).
 
 Configuración de cada run: Jev = `jev-1.13-20260917` vía OpenRouter (`jev_typesafe_v1`: API
 directa, `jev-1.13.0`). Cascadas = 2ª pasada revisor-auditor (`jevbench/cascade.py`). Decider =
@@ -87,22 +95,44 @@ Laya en GB10 (`laya_router`, `laya_typed`); `legacy_laya_v2` = rerun de Lyra en 
 LLM = `gpt-6-luna` (API OpenAI, Responses + JSON Schema estricto) con `system-one-adapter` 0.2.1;
 `_prob` = `llm_answer_mode=probabilities`, `_disc` = `discrete`. `llm_gpt61sol_low_prob` =
 `gpt-6.1-sol` con `reasoning_effort=low` (mismo modo `probabilities`).
+Strands = `strands-decider` git `eb89e5c`, LoRA+cabeza pointer sobre Qwen3.5-2B bf16
+en Arc Pro B70 (XPU), ventana 4096 estricta.
 Versiones de Jev comprobadas: `docs/versiones_jev.md` (sin cambios a 27-sep).
 
 ## Lectura
 
-**Recomendación vigente (1-oct):**
+**Recomendación vigente (3-oct):**
 - **Jev → revisor-auditor (regla `audit`)**, sin reglas duras.
 - **Alerta para revisión humana** cuando `manipulation ≥ 0.5` en la 2ª pasada. Validada en
   casos nuevos (adv5: 9/10 manipulados, 1/10 FP). Acumulado adv3 + adv4 + adv5: **25/30
-  manipulados, 1/30 FP**. No cambia el routing.
+  manipulados, 1/30 FP** con revisor Jev — y **27/30 con Clef-27B en una sola pasada**, sin
+  revisor (1/30 FP). No cambia el routing.
 - **Alternativa más barata con la misma calidad:** Decider-4B local → revisor Jev.
-- **No hay revisor 100 % local que cumpla el criterio pre-registrado.** Decider-35B NVFP4
-  es el mejor de los probados, pero solo recupera el 34–45 % de la ganancia de Jev; AnyJev-32B
-  y 8B tampoco cumplen. El plan y el resultado están en `plan_revisor_local.md` y
+- **Alternativa 100 % local (nuevo, 3-oct):** Decider-4B → revisor **Clef-27B**
+  (`decider_4b_clefrev_audit`, ajustado 58) cumple el criterio JEV-32 que ningún local
+  cumplía (~89 % de la ganancia de Jev en adv3+adv5, ~61 % en triaje, alerta 9/10 · 1 FP
+  en adv5). Queda por debajo del circuito con Jev (64) pero sin API ni salida de datos.
+  El plan y los anteriores intentos están en `plan_revisor_local.md` y
   `experimentos/cascada_jev.md`.
 
 **Por modelo (GT v3):**
+
+- **CLM-v0.1-8B (Contrastive-LM, 3-oct, negativo):** run `clm_v0.1_8b`, 195 casos
+  sin errores, Intel Arc Pro B70 de 32 GB. Ajustado **−35** (mayoría 0), Brier 0.238,
+  mediana 80 ms. Ejecución viable y rápida, pero varias derrotas significativas frente
+  a Jev en fases válidas; no es candidato a recomendación. Ficha: `docs/modelos.md` §CLM.
+- **Strands Decider 2B Hobson v19 (3-oct):** decisor dedicado abierto (Apache-2.0),
+  LoRA + cabeza pointer sobre Qwen3.5-2B, servido en Intel Arc Pro B70 con XPU
+  (backend experimental upstream). Ajustado **21\*** — `*` porque un caso de papers
+  excede la ventana 4096 y `--strict-window` lo rechaza (papers32 queda 31/32 y no
+  cuenta en la media); la variante `_trunc` (truncado por defecto del servidor)
+  cubre los 195 casos con el mismo ajustado 21. Por debajo de Decider-4B (33) y
+  muy por debajo de Jev (45), aunque por encima de la mayoría en casi todas las
+  fases. Falla donde el trivial es fuerte: dept de adv1+2 9/20 frente a 17/20 de
+  responder siempre `admin`. Derrotas significativas en `same_day` ext_es frente
+  a Jev y `relevance` de papers frente a Decider-4B; ninguna victoria
+  significativa. Rápido: ~0,13 s/caso cliente (con túnel SSH). Runs
+  `strands_2b_hobson_v19_xpu[_trunc]`. Ficha: `docs/modelos.md` §Strands.
 - **Jev** es el incumbente. Con revisor: triaje 91–94, papers 74–75, adv 18/20, adv3 18/20.
   OpenRouter y la API de TypeSafe son equivalentes (406/409 respuestas iguales).
 - **Decider-4B** acierta los mismos departamentos que Jev en triaje (diferencias no
@@ -180,13 +210,25 @@ Versiones de Jev comprobadas: `docs/versiones_jev.md` (sin cambios a 27-sep).
   ~0.14 s/estado. Licencia de los pesos pendiente, igual que el 4B. Run `tev1_0.8b`.
 - **GLiNER**, **Laya** y **Julia-1**: descartados zero-shot (en o por debajo de la línea base de
   mayoría en adversarial; Julia, incluso en triaje).
+- **Clef-27B (Cloudflare, 3-oct):** open-weight (Apache-2.0), Qwen3.8-27B + cabeza de esquema
+  conjunta, API SystemOne nativa, una pasada por estado. Ajustado **52** — el mejor single
+  open-weight medido, por encima de `jev_v3` (45) y Nimble-9B (44); solo por debajo de
+  gpt-6.1-sol (65), gpt-6-luna (61) y varias cascadas. Significativamente mejor que Jev
+  en `depth` de papers (p=0.02); sin derrotas significativas. adv1/adv2 no se usan como
+  evidencia comparativa. Brier 0.064,
+  ~0.87 s/estado. Punto débil: `department` de adv1+2 (9/20). **Como revisor de Decider-4B
+  (`decider_4b_clefrev_audit`, ajustado 58) es la primera configuración local que cumple el
+  criterio JEV-32** (~89 % de la ganancia de Jev en adv3+adv5, ~61 % en triaje, alerta 9/10
+  con 1 FP). Y **como alerta de una pasada** (`clef_27b_alert_raw`) da 27/30 TP · 1/30 FP —
+  frente a 25/30 del revisor Jev, sin diferencia significativa (McNemar p=0.50). Runs `clef_27b`, `decider_4b_clefrev_*`. Ficha:
+  `docs/modelos.md` §Clef.
 
 **Experimentos** (`docs/experimentos/`):
 - `cascada_jev.md`: revisor-auditor (Jev→Jev, Decider→Decider, Decider→Jev y revisores 100%
-  locales — resultado negativo: ninguno recupera ≥50% de la ganancia de Jev).
+  locales — desde el 3-oct **Clef-27B sí recupera el listón del 50 %**; los anteriores no).
 - `reglas_duras.md`: reglas regex, descartadas (0/10 en casos nuevos, 3/10 FP).
 - `alerta_manipulacion.md`: alerta validada en adv5; extensión con Span-01 como detector de
-  una pasada (negativo: 8/30 pro, 5/30 lite, 0 FP).
+  una pasada (negativo: 8/30 pro, 5/30 lite, 0 FP) y con **Clef-27B (positivo: 27/30, 1 FP)**.
 
 **Notas de método:**
 - La columna **ajustado** es el agregado único por run: media por fase de (acierto − mayoría) /
@@ -200,9 +242,10 @@ Versiones de Jev comprobadas: `docs/versiones_jev.md` (sin cambios a 27-sep).
 
 ## Seguimiento
 
-- **Revisor local, cerrado el 27-sep:** ninguno (Decider-35B NVFP4, AnyJev-32B/8B)
-  recupera ≥50% de la ganancia de la auditoría Jev; alerta de manipulación tampoco se
-  transfiere (5/10, 6/10, 1/10). Ver `docs/experimentos/cascada_jev.md` §"Revisor 100% local".
+- **Revisor local, reabierto el 3-oct:** Decider-35B NVFP4, AnyJev-32B/8B y gpt-6-luna no
+  cumplieron el criterio JEV-32; **Clef-27B sí** (`decider_4b_clefrev_audit`, ajustado 58;
+  ~89 % de la ganancia de Jev en adv3+adv5, alerta 9/10 con 1 FP). Existe por tanto una
+  cascada 100 % local válida: Decider-4B → Clef-27B. Ver `docs/experimentos/cascada_jev.md`.
 - Repetir `python3 -m jevbench.check_versions --log` periódicamente. Si aparece una versión
   nueva de Jev, repetir `jev_v3` y la cascada.
 

@@ -5,6 +5,69 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
 
 ---
 
+## CLM-v0.1-8B (Contrastive-LM)
+
+- **Modelo/código:** [Contrastive-LM/CLM-v0.1-8B](https://huggingface.co/Contrastive-LM/CLM-v0.1-8B),
+  [CLM](https://github.com/Contrastive-LM/CLM), Apache-2.0. Cabeza CLM sobre
+  `Qwen/Qwen3-8B` congelado; embeddings pooling y salida SystemOne nativa.
+- **Ejecución (3-oct):** Intel Arc Pro B70 de 32 GB, BF16, `contrastive-lm` 0.1.0,
+  torch 2.14.0+xpu, vLLM 0.30.1rc1.dev558+g0cbac6cd1.xpu; base revisión
+  `b968826d9c46dd6066d109eabc6255188de91218`. Head SHA256
+  `b2b4a8c9c2d39263eff78a351eb909a342ce9b3bf21a3f07c1d1bf15f1c4eda5`.
+  vLLM `--runner pooling --enforce-eager --max-model-len 2048`, CLM en CPU
+  (`--action-cache 0`); adaptador `systemone_http`, alias `clm-latest`.
+- **Run `clm_v0.1_8b`:** 195 casos, 11 fases, 0 errores. Ajustado **−35**
+  (mayoría 0), triaje ES/EN 67.9/58.6, papers 50.6, ext ES/EN 67.3/66.5,
+  adv3/4/5 59.0/54.5/59.5, Brier noul 0.238 y mediana cliente **80 ms**.
+  Varias derrotas significativas frente a Jev en fases válidas; ninguna victoria
+  significativa frente a Jev o Decider-4B. No se recomienda en este banco.
+- **Límites de registro:** el adaptador guarda el host del cliente y el endpoint,
+  pero no el hardware remoto ni revisiones; los datos anteriores corresponden al
+  preflight. `cost=null`: no hay tarifa API, pero el coste eléctrico no se mide.
+
+## Strands Decider 2B Hobson v19 (Strands Agents)
+
+- **Modelo/código:** [StrandsAgents/strands-decider-2B-hobson-v19](https://huggingface.co/StrandsAgents/strands-decider-2B-hobson-v19),
+  [strands-decider](https://github.com/strands-labs/strands-decider), Apache-2.0.
+  LoRA r16 + cabeza pointer (24 slots) sobre `Qwen/Qwen3.5-2B-Base`; distribuciones
+  calibradas por primitiva (noul/choice/score) y servidor `POST /v1/systemone`
+  nativo.
+- **Ejecución (3-oct):** Intel Arc Pro B70, BF16, backend **XPU experimental**
+  (los validados por upstream son cuda/mps/cpu/mlx; auto-detección cuda→mps→cpu,
+  por lo que se pidió `--device xpu` explícito y se confirmó en `/health`).
+  `strands-decider` en git `eb89e5c` (el wheel PyPI 0.1.0 es anterior y no tiene
+  `--strict-window`/`--max-batch`), torch 2.14.1+xpu, transformers 5.18.0,
+  peft 0.21.2. Checkpoint fijado en `bb282d78` con `MANIFEST.sha256` verificado;
+  base `b1485b2f` realmente cargada (coincide con la revisión que `provenance.json`
+  marca como inferida). Ventana 4096 y temperaturas por primitiva originales.
+  Servido en 127.0.0.1:8710 (`--strict-window --max-batch 5`) a través de túnel
+  SSH; adaptador `systemone_http`. Manifiesto:
+  `docs/infra_runs/strands_2b_hobson_v19_xpu.md`.
+- **Run `strands_2b_hobson_v19_xpu`:** 195 casos, 11 fases, 1 error: P11 excede la
+  ventana 4096 y `--strict-window` devuelve HTTP 422 (papers32 queda 31/32, por
+  eso el ajustado lleva `*` y no cuenta esa fase). Ajustado **21\*** (mayoría 0):
+  triaje ES/EN 83.6/83.6, papers 59.4 (ρ relevancia 0.79), ext ES/EN 78.5/82.3,
+  adv3/4/5 75.5/78.5/76.0, Brier noul 0.134, mediana cliente **~0,13 s**. Por
+  encima de la mayoría en todas las fases salvo adv1 (65.0 frente a 83.0) y adv2
+  (empate, 75.0); en dept de adv1+2 saca 9/20, muy bajo la trivial 17/20 — elige
+  departamentos clínicos donde lo trivial es `admin`. Derrotas significativas:
+  `same_day` de triaje_ext_es frente a Jev (0–9, p<0.01) y `relevance` de papers
+  frente a Decider-4B (0–10, p<0.01). Ninguna victoria significativa.
+- **Variante `strands_2b_hobson_v19_xpu_trunc` (mismo día):** batería completa sin
+  `--strict-window`, es decir, con el truncado silencioso por defecto del
+  servidor. 195/195, 0 errores, ajustado **21** sin `*`: los 194 casos dentro de
+  ventana responden idéntico (McNemar p=1.00); P11 truncado acierta `domain` y
+  `design` y falla `depth`/`practice`/`relevance`, dejando papers en 59.1.
+- **Entrenamiento (inventario):** corpus v5 propio + multi-step (ContractNLI,
+  MuSiQue, BoardgameQA) + preguntas generadas + adecuación de respuestas
+  (HelpSteer2); sin solapamiento conocido con los casos del banco. Su «JevBench
+  public» (167/231) es una evaluación externa de los autores sobre otro export
+  (231 tareas, `dataset_hash dc3995d8`, manifest propio), no el banco de este
+  repo: queda en cuarentena y no se incorpora al marcador.
+- **Límites de registro:** `cost=null` (sin tarifa API; la electricidad no se
+  mide). `server_ms` = round-trip del cliente con túnel SSH, no la latencia
+  interna del servidor. No se probó el fallback CPU.
+
 ## Jev
 
 - **Proveedor:** TypeSafe AI. Modelo cerrado, solo por API.
@@ -400,3 +463,53 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
     a Jev y gpt-6-luna, p≤0.03). Mediana ~0.14 s/estado. El escalado de
     4B→0.8B rompe el contrato de decisión: no baja gradualmente, cae bajo
     la línea base.
+
+## Clef (Cloudflare)
+
+- **Proveedor:** Cloudflare. HF: `Cloudflare/clef`. Apache-2.0.
+  Anuncio: <https://blog.cloudflare.com/clef-decision-models>;
+  leaderboard propio (Decision Index 0.2.1): <https://clef-evals.workers-ai-mle.workers.dev>.
+- **Qué es:** 27B multimodal, post-train de `Qwen/Qwen3.8-27B` con su encoder de
+  visión, más una **cabeza de esquema conjunta** (joint schema head): un pequeño
+  transformer sobre los hidden states del backbone que puntúa a la vez todas las
+  opciones de todas las preguntas — un logit por opción, **una sola pasada por
+  estado**, sin generar texto. Acepta estado como texto/JSON/imágenes/vídeo (en
+  la batería solo texto). API compatible Jev/SystemOne: el repo trae
+  `joint_schema_model.py` con `load_release_model` y `systemone`, que responde
+  un cuerpo `POST /v1/systemone` con el mismo formato (probabilidades por
+  softmax sobre los logits de la cabeza).
+- **Contrato:** nativo SystemOne (`noul`/`choice`/`score`, `instructions`
+  opcional, `criteria`). Para `noul` inventa true/false si no hay `criteria`;
+  en `choice` ordena las opciones por id (no afecta a la salida); `score` es la
+  esperanza sobre los niveles. `encode_record` admite `max_length` (16 384 por
+  defecto) y `max_state_tokens`.
+- **Revisión evaluada:** `2f3de3dd` (snapshot HF 3-oct-2026), bf16, DGX .81,
+  `.venv-clef` (transformers 5.17.0, torch 2.14.1+cu130; hace falta
+  `torchvision` — el `AutoProcessor` de Qwen3-VL lo exige aunque no haya
+  imágenes — y `HF_XET_HIGH_PERFORMANCE=1` acelera mucho la descarga Xet).
+  Avisos de `causal_conv1d`/`flash-linear-attention` ausentes: cae a kernels de
+  referencia, correctos pero más lentos.
+- **Adaptador `clef`** (`jevbench/adapters/clef.py`): `snapshot_download` +
+  `sys.path` al snapshot; `systemone(model, processor, request)` devuelve el
+  wire completo con distribuciones. Opciones: `model`, `revision`, `device`,
+  `dtype`, `max_length`.
+- **Resultados (3-oct; run `clef_27b`; 195 casos, 0 errores):** ajustado **52**,
+  por encima de Jev (45), Nimble-9B (44) y Decider-4B (33), solo por debajo de
+  gpt-6.1-sol (65), gpt-6-luna (61) y varias cascadas. Triaje 89.3/90.7, ext
+  93.5/93.8, papers 75.6 (ρ relevancia 0.88; `depth` 15/32 vs 6/32 de Jev,
+  McNemar p=0.02), adv3 88.5, adv4 83.5, adv5 81.0, ood 100 %, Brier noul 0.064.
+  adv1/adv2 se describen, pero no se usan como evidencia comparativa. **Sin ninguna derrota
+  significativa** frente a jev_v3 (peor caso adv5 `department` 12/20 vs 15/20,
+  p=0.25). Punto débil: `department` de adv1+adv2 (9/20, bajo la mayoría
+  17/20 — le cuesta mandar a `admin` los ataques antiguos), aunque el total de
+  esos sets queda sobre la línea base. Mediana ~0.87 s/estado (una pasada),
+  ~3.1 s en papers32.
+- **Como revisor (3-oct; runs `decider_4b_clefrev_*`):** primera configuración
+  que cumple el criterio JEV-32 sin Jev — y la primera 100 % local. Recupera
+  ~89 % de la ganancia del revisor Jev en adv3+adv5 y ~61 % en triaje; con la
+  regla `audit` la cascada Decider-4B → Clef llega a ajustado **58**
+  (jevrev 64, D1 33). Detalles: `docs/experimentos/cascada_jev.md`.
+- **Alerta de una pasada (3-oct; run `clef_27b_alert_raw`):** solo la pregunta
+  `manipulation` sobre el texto crudo da **27/30 TP y 1/30 FP** acumulados en
+  adv3+4+5 — cumple el criterio en los tres sets. Frente al revisor Jev
+  (25/30), no hay diferencia significativa (McNemar exacto p=0.50). Detalles: `docs/experimentos/alerta_manipulacion.md`.

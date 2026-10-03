@@ -13,6 +13,114 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [0.19.0] - 2026-10-03 — Variante trunc de Strands y token HF persistente
+
+- Nuevo run `strands_2b_hobson_v19_xpu_trunc`: batería completa (195/195, 0 errores)
+  sin `--strict-window`, es decir, con el truncado silencioso por defecto del
+  servidor. Ajustado **21** (sin `*`); los 194 casos dentro de ventana responden
+  idéntico al run estricto y P11 truncado acierta 2/5 preguntas (papers 59.1).
+  El run primario del marcador sigue siendo el estricto (`_xpu`, 21*).
+- Token HF del repo persistido en `~/.cache/huggingface/token` de .70, .80 y .81
+  (a petición del usuario; verificado como `Mindbreaker81`).
+- Web/sitio: fila de Strands en la tabla de modelos, latencias de CLM y Strands
+  en la nota, hardware con la Arc Pro B70, y `coste.html` corrige que los
+  abiertos ya no corren solo en GB10.
+
+## [0.18.0] - 2026-10-03 — Strands Decider 2B Hobson v19 en Intel XPU (JEV-51)
+
+- Nuevo run `strands_2b_hobson_v19_xpu`: `StrandsAgents/strands-decider-2B-hobson-v19`
+  (checkpoint `bb282d78`, MANIFEST verificado; base `Qwen/Qwen3.5-2B-Base` `b1485b2f`,
+  coincidente con la revisión inferida de `provenance.json`), servido con
+  `strands-decider` git `eb89e5c` en Intel Arc Pro B70 (estación .70, backend XPU
+  experimental confirmado por `/health`), ventana 4096 estricta y
+  `--max-batch 5`; adaptador `systemone_http` por túnel SSH.
+- 195 casos / 11 fases, 1 error pre-registrado: P11 excede la ventana (HTTP 422),
+  papers32 queda 31/32 y el ajustado lleva `*`. Ajustado **21\***: por debajo de
+  Decider-4B (33) y de Jev (45), por encima de la mayoría en casi todas las fases;
+  falla en dept de adv1+2 (9/20 frente a 17/20 trivial). Derrotas significativas en
+  `same_day` de triaje_ext_es frente a Jev y `relevance` de papers frente a
+  Decider-4B (p<0.01); ninguna victoria significativa. Mediana ~0,13 s/caso cliente.
+- Primer manifiesto remoto: `docs/infra_runs/strands_2b_hobson_v19_xpu.md`
+  (hardware, revisiones, `/health`, comando efectivo, plan de ventana
+  pre-registrado). `docs/dgx-spark.md` documenta la estación .70.
+- Ficha en `docs/modelos.md` (incluye el inventario de entrenamiento — ContractNLI,
+  MuSiQue, BoardgameQA, HelpSteer2, generados — sin solapamiento conocido, y la
+  cuarentena de su «JevBench public» de 231 tareas) y marcador, web y sitio con la
+  familia nueva "Strands" (color propio).
+
+## [0.17.1] - 2026-10-03 — Procedimientos y controles de publicación (JEV-52)
+
+- Skills y procedimientos de evaluación/web: evidencia de viabilidad por dispositivo,
+  manifiesto remoto, entrega delegada y concurrencia, validación independiente del scorer,
+  criterio de cascada con valores sin redondear y McNemar pareado para alertas.
+- Cierre por alcance: distinguir batería, integración local y despliegue remoto;
+  preservar cambios preexistentes y no exigir despliegues no solicitados.
+- Sitio: entorno verificado por run en `extra.env`; un endpoint HTTP genérico no implica
+  GPU NVIDIA ni cuantización, y un LLM con endpoint propio no se etiqueta como API OpenAI.
+- Regresiones: presencia y familia de runs en ambas webs (con excepciones históricas
+  explícitas), etiquetas remotas correctas y ausencia de inferencias desde el host cliente.
+- Exportador del espejo: elimina endpoints de metadatos y opciones anidadas, que
+  conservaban la IP privada de CLM; regresión que verifica que las predicciones no cambian.
+- actualizar-web: «Historia del marcador» documentada — `RUN_DATES` obligatorio para
+  fusiones de cascada sin `meta.updated` y `HIST_EVENTS` solo para hitos del relato.
+
+## [0.17.0] - 2026-10-03 — Historial del marcador en la web (JEV-50)
+
+### Añadido
+- **Sección «Historia del marcador»** en la web y la portada del sitio
+  (`docs/web/template.html`, sección `#historia` + nav): línea temporal con
+  cada run como punto (color por familia, tooltip con fecha/tipo/cobertura) y
+  tres récords escalonados — decisor dedicado de una pasada (Jev → Clef-27B),
+  una pasada incluyendo LLM (Jev → gpt-6-luna → gpt-6.1-sol) y cualquier
+  configuración (Jev → Jev→Jev → luna→Jev). Hitos curados como marcadores
+  verticales (`HIST_EVENTS` en el template).
+- **`RUN_DATES` y `run_date()` en `jevbench/web.py`**: cada run lleva `when` —
+  el menor `meta.updated` de sus fases; para las fusiones de cascada (sin sello)
+  la fecha va fijada a mano en el mapa.
+
+## [0.16.0] - 2026-10-03 — CLM y revisión de conclusiones de Clef (JEV-49, JEV-48)
+
+### Evaluación de Contrastive-LM CLM-v0.1-8B en Intel Arc Pro B70 (JEV-49)
+- **Run `clm_v0.1_8b`** (`results/clm_v0.1_8b/`): batería completa de 195 casos
+  (`all+new` + `adv4`/`adv5`), 11 fases y 0 errores, servida mediante vLLM XPU en
+  la Arc Pro B70 de 32 GB. Mediana de 80 ms por caso.
+- Resultado negativo: ajustado **−35** frente a 0 de la mayoría, triaje ES/EN
+  67.9/58.6, papers 50.6, adversarial 1+2 52.5, adv3 59.0, adv4 54.5,
+  adv5 59.5 y Brier noul 0.238. No obtiene victorias significativas frente a
+  Jev o Decider-4B; no es candidato a recomendación.
+- Integrado CLM en marcador, artifact y sitio público, con familia propia y ficha.
+- Revisión de JEV-48: el criterio de cascada local de Clef se mantiene. Se retira
+  adv2 como evidencia comparativa y se matiza la alerta 27/30 frente a 25/30:
+  McNemar p=0.50, sin diferencia significativa. Corregida la nota de la web que
+  todavía decía que ningún revisor local superaba el listón.
+- Corregida la tabla de cascada Clef: adv4 = **88.0**, no 83.5; ganancia media
+  de triaje = 3.93 puntos. Ambos salen de los JSON mediante el scorer.
+
+## [0.15.0] - 2026-10-03 — Clef-27B (Cloudflare) y primera cascada 100 % local (JEV-48)
+
+### Añadido
+- **Adaptador `clef`** (`jevbench/adapters/clef.py`): carga `joint_schema_model.py`
+  del propio snapshot de HF y llama a `systemone` (API SystemOne nativa).
+  `scripts/alert_onepass.py`: alerta de una pasada (solo `manipulation`, umbral 0.5)
+  sobre adv3–adv5.
+- **Run `clef_27b`** (`results/clef_27b/`): 195 casos, 0 errores, bf16 en DGX .81
+  (revisión `2f3de3dd`). Ajustado **52** — el mejor single open-weight, por encima
+  de `jev_v3` (45) en agregado: victoria significativa en `depth` de papers
+  (p = 0.02), sin derrotas significativas. adv1/adv2 no se usan como evidencia
+  comparativa. Mediana ~0.87 s/estado.
+- **Cascada `decider_4b_clefrev_*`** (runs `raw/review/audit/avg`): Clef-27B es el
+  **primer revisor que cumple el criterio JEV-32 sin ser Jev** — ~89 % de su
+  ganancia en adv3+adv5, ~61 % en triaje, sin fase peor >2 puntos y alerta 9/10 ·
+  1 FP en adv5. `decider_4b_clefrev_audit` = ajustado **58**, la primera cascada
+  100 % local que da la talla.
+- **Alerta de una pasada `clef_27b_alert_raw`**: 27/30 TP · 1/30 FP en adv3+4+5,
+  cumple el criterio en los tres sets; frente al revisor Jev (25/30), la diferencia
+  no es significativa (McNemar exacto p = 0.50).
+- Documentación: ficha en `docs/modelos.md`, secciones nuevas en
+  `docs/experimentos/cascada_jev.md` y `alerta_manipulacion.md`, recomendación
+  vigente actualizada en `docs/resultados.md`; web y sitio con la familia Clef
+  (color `--f-clef`, dumbbell y unidades de alerta).
+
 ## [0.14.0] - 2026-10-01 — gpt-6.1-sol con razonamiento `low` (JEV-47)
 
 ### Añadido

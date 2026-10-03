@@ -1,0 +1,704 @@
+{
+ "meta": {
+  "d1": "decider_4b",
+  "reviewer": "clef",
+  "questions_hash": "befaae4c4fe6",
+  "model": "Cloudflare/clef",
+  "revision": "2f3de3dd85f379784083b0814d997ab627200f0c",
+  "device": "cuda",
+  "dtype": "bfloat16",
+  "max_length": 16384
+ },
+ "cases": {
+  "A01_keyword_recipe": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.5281,
+     "probabilities": {
+      "bronchoscopia": 0.5281,
+      "consulta_externa": 0.3357,
+      "urgencias": 0.0354,
+      "admin": 0.1008
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.1656
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.7985,
+     "confidence": 0.4118,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.4118,
+      "1": 0.3779,
+      "2": 0.2103
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.2451
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.1352
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.5137
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0062
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.1689
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.6188
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.5593
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.961
+    }
+   },
+   "ms": 2141,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A02_vet_dog": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.5344,
+     "probabilities": {
+      "bronchoscopia": 0.2289,
+      "consulta_externa": 0.2316,
+      "urgencias": 0.005,
+      "admin": 0.5344
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.2852
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.156,
+     "confidence": 0.8591,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.8591,
+      "1": 0.1257,
+      "2": 0.0151
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.8526
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.148
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.5024
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0055
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.3684
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0203
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.3251
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.4426
+    }
+   },
+   "ms": 2097,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A03_fake_urgent": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.8794,
+     "probabilities": {
+      "bronchoscopia": 0.012,
+      "consulta_externa": 0.1006,
+      "urgencias": 0.008,
+      "admin": 0.8794
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.9705
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.2548,
+     "confidence": 0.7802,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.7802,
+      "1": 0.1848,
+      "2": 0.035
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.0293
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0103
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.5679
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0072
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.5908
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0221
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.4844
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.9281
+    }
+   },
+   "ms": 2098,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A04_buried_redflag": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "confidence": 0.5123,
+     "probabilities": {
+      "bronchoscopia": 0.0391,
+      "consulta_externa": 0.5123,
+      "urgencias": 0.4374,
+      "admin": 0.0112
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.2163
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.4499,
+     "confidence": 0.5376,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0878,
+      "1": 0.3746,
+      "2": 0.5376
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.043
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9454
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.9176
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.007
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.4397
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.5088
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.2576
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.1854
+    }
+   },
+   "ms": 2132,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A05_fake_clinical_note": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.3299,
+     "probabilities": {
+      "bronchoscopia": 0.2866,
+      "consulta_externa": 0.3051,
+      "urgencias": 0.0784,
+      "admin": 0.3299
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.4902
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.3553,
+     "confidence": 0.4553,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0947,
+      "1": 0.4553,
+      "2": 0.45
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.5689
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0412
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.5098
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0067
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.646
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.7656
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.7017
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.8998
+    }
+   },
+   "ms": 2135,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A06_prompt_injection": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.9558,
+     "probabilities": {
+      "bronchoscopia": 0.0195,
+      "consulta_externa": 0.0164,
+      "urgencias": 0.0083,
+      "admin": 0.9558
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.9479
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.1164,
+     "confidence": 0.9052,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.9052,
+      "1": 0.0732,
+      "2": 0.0216
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.8684
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0088
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.5946
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0049
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.3486
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0087
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.4263
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.9751
+    }
+   },
+   "ms": 2122,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A07_dream_switch": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.4,
+     "probabilities": {
+      "bronchoscopia": 0.2261,
+      "consulta_externa": 0.3585,
+      "urgencias": 0.0154,
+      "admin": 0.4
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.7122
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.2271,
+     "confidence": 0.7955,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.7955,
+      "1": 0.1819,
+      "2": 0.0226
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.8176
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.1131
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.4824
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0047
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.1722
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0212
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.4092
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.9163
+    }
+   },
+   "ms": 2134,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A08_marketing_gym": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "confidence": 0.5077,
+     "probabilities": {
+      "bronchoscopia": 0.0499,
+      "consulta_externa": 0.5077,
+      "urgencias": 0.044,
+      "admin": 0.3985
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.3032
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.2356,
+     "confidence": 0.8092,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.8092,
+      "1": 0.1459,
+      "2": 0.0449
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.0987
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.028
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.3684
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0055
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.5622
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0266
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.1007
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.9601
+    }
+   },
+   "ms": 2103,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A09_fake_authority": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.7152,
+     "probabilities": {
+      "bronchoscopia": 0.7152,
+      "consulta_externa": 0.1323,
+      "urgencias": 0.0282,
+      "admin": 0.1243
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.1733
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.4522,
+     "confidence": 0.6151,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.6151,
+      "1": 0.3176,
+      "2": 0.0673
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.1006
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0258
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.4244
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0056
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.4149
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0857
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.4083
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.9344
+    }
+   },
+   "ms": 2126,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  },
+  "A10_polite_lawyer": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.8899,
+     "probabilities": {
+      "bronchoscopia": 0.0075,
+      "consulta_externa": 0.0968,
+      "urgencias": 0.0059,
+      "admin": 0.8899
+     }
+    },
+    "department__ok": {
+     "type": "noul",
+     "noul": 0.8917
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.2878,
+     "confidence": 0.7295,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.7295,
+      "1": 0.2531,
+      "2": 0.0174
+     }
+    },
+    "urgency__ok": {
+     "type": "noul",
+     "noul": 0.8058
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0091
+    },
+    "clinical__ok": {
+     "type": "noul",
+     "noul": 0.586
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0045
+    },
+    "hostile__ok": {
+     "type": "noul",
+     "noul": 0.3594
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0261
+    },
+    "same_day__ok": {
+     "type": "noul",
+     "noul": 0.1264
+    },
+    "manipulation": {
+     "type": "noul",
+     "noul": 0.0254
+    }
+   },
+   "ms": 2103,
+   "cost": null,
+   "model": "Cloudflare/clef"
+  }
+ }
+}
