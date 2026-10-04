@@ -98,12 +98,15 @@ class Case:
 
 # Ground-truth revisions. JEVBENCH_GT=v1 loads the original Lyra files (used by the
 # regression tests); the default is the current, corrected GT. See data/GT_CHANGELOG.md.
+# Read at call time: a test module may set the variable before the first load
+# even if this module was already imported by an earlier test.
 GT_VERSION = os.environ.get("JEVBENCH_GT", "current")
 
 
 def _load(name):
-    if GT_VERSION != "current":
-        versioned = DATA / name.replace(".json", f".{GT_VERSION}.json")
+    version = os.environ.get("JEVBENCH_GT", GT_VERSION)
+    if version != "current":
+        versioned = DATA / name.replace(".json", f".{version}.json")
         if versioned.exists():
             return json.loads(versioned.read_text())
     return json.loads((DATA / name).read_text())

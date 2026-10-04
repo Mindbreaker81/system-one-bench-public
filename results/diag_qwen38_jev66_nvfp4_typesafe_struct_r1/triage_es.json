@@ -1,0 +1,182 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "model": "qwen3.8-27b-sglang",
+   "normalize": "true",
+   "retries_malformed": "2",
+   "extra_body": "{\"chat_template_kwargs\": {\"enable_thinking\": false}, \"temperature\": 0, \"seed\": 101}",
+   "max_tokens": "8192",
+   "timeout": "300",
+   "case_timeout": "600",
+   "api_key": "<redacted>",
+   "structured": "true",
+   "prompt": "typesafe",
+   "mode": "probabilities",
+   "capture_raw": "true",
+   "inject_schema_in_prompt": "false"
+  },
+  "phase": "triage_es",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "git": "24a6b3a",
+  "diag": {
+   "issue": "JEV-66",
+   "block": "nvfp4",
+   "cell": "typesafe_struct",
+   "mode": "probabilities",
+   "route": "struct",
+   "inject_schema_in_prompt": false,
+   "rep": 1,
+   "seed": 101,
+   "cases": [
+    "T01_ebus_alergia",
+    "T02_factura_duplicada"
+   ],
+   "cases_sha256": "e6289c9399bd"
+  },
+  "updated": "2026-10-04T17:40:12",
+  "provider": "openai",
+  "model": "qwen3.8-27b-sglang",
+  "resolved": "qwen3.8-27b-sglang",
+  "mode": "probabilities",
+  "structured": true,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   },
+   "temperature": 0,
+   "seed": 101
+  },
+  "timeout": 300.0,
+  "case_timeout": 600.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": null,
+  "prompt": "typesafe",
+  "prompt_sha256": null,
+  "system_prompt_sha256": "388de09c70e7",
+  "inject_schema_in_prompt": false,
+  "prompt_template_sha256": null,
+  "usd_per_mtok": [
+   null,
+   null
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1"
+ },
+ "cases": {
+  "T01_ebus_alergia": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.9333333333333332,
+     "probabilities": {
+      "bronchoscopia": 0.95,
+      "consulta_externa": 0.05,
+      "urgencias": 0.0,
+      "admin": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 2.0,
+     "confidence": 1.0,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 1.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.95
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.95
+    }
+   },
+   "ms": 8039,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 215,
+    "output_tokens": 116,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 8.032843242006493,
+    "attempts": 1
+   },
+   "raw_sha256": "5bf50c698ef408887563eddc57c127688b65a967f982543cc4467d64cec11245"
+  },
+  "T02_factura_duplicada": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 1.0,
+     "probabilities": {
+      "bronchoscopia": 0.0,
+      "consulta_externa": 0.0,
+      "urgencias": 0.0,
+      "admin": 1.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.05,
+     "confidence": 0.925,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.95,
+      "1": 0.05,
+      "2": 0.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 7466,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 191,
+    "output_tokens": 112,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 7.458302949002245,
+    "attempts": 1
+   },
+   "raw_sha256": "0ba3c4a1d4623dbe6be4d15d82b8893e105d50af1332c0147a69c3e813437a13"
+  }
+ }
+}

@@ -1,0 +1,842 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "provider": "openai",
+   "model": "qwen3.8-27b-sglang",
+   "api_key": "<redacted>",
+   "mode": "probabilities",
+   "structured": "true",
+   "inject_schema_in_prompt": "true",
+   "rotate_choice": "1",
+   "prompt": "typesafe",
+   "normalize": "true",
+   "retries_malformed": "2",
+   "capture_raw": "true",
+   "max_tokens": "8192",
+   "timeout": "300",
+   "case_timeout": "600",
+   "extra_body": "{\"chat_template_kwargs\": {\"enable_thinking\": false}, \"temperature\": 0, \"seed\": 101}"
+  },
+  "phase": "triage_es",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "git": "dba4852",
+  "diag": {
+   "issue": "JEV-67",
+   "cell": "a3",
+   "mode": "probabilities",
+   "structured": true,
+   "inject_schema_in_prompt": true,
+   "rotate_choice": 1,
+   "seed": 101,
+   "ref_run": "llm_qwen38_27b_fp8_nostruct_prob",
+   "rotation": {
+    "shift": 1,
+    "order": {
+     "department": [
+      "consulta_externa",
+      "urgencias",
+      "admin",
+      "bronchoscopia"
+     ]
+    },
+    "perm_sha256": "15f6174736a0"
+   },
+   "status": "complete"
+  },
+  "updated": "2026-10-04T21:28:22",
+  "provider": "openai",
+  "model": "qwen3.8-27b-sglang",
+  "resolved": "qwen3.8-27b-sglang",
+  "mode": "probabilities",
+  "structured": true,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   },
+   "temperature": 0,
+   "seed": 101
+  },
+  "timeout": 300.0,
+  "case_timeout": 600.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": null,
+  "prompt": "typesafe",
+  "prompt_sha256": null,
+  "system_prompt_sha256": "64191fd2a4fb",
+  "inject_schema_in_prompt": true,
+  "rotate_choice": 1,
+  "perm_sha256": "15f6174736a0",
+  "prompt_template_sha256": null,
+  "usd_per_mtok": [
+   null,
+   null
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1"
+ },
+ "cases": {
+  "T01_ebus_alergia": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.7333333333333334,
+     "probabilities": {
+      "consulta_externa": 0.05,
+      "urgencias": 0.1,
+      "admin": 0.05,
+      "bronchoscopia": 0.8
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.9000000000000001,
+     "confidence": 0.85,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.1,
+      "2": 0.9
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 1.0
+    }
+   },
+   "ms": 6554,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 799,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.549671599990688,
+    "attempts": 1
+   },
+   "raw_sha256": "82dce86b7a1e38354923012ffe6ed0caf821df60142ea14677579d794a115ab8"
+  },
+  "T02_factura_duplicada": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.9333333333333332,
+     "probabilities": {
+      "consulta_externa": 0.05,
+      "urgencias": 0.0,
+      "admin": 0.95,
+      "bronchoscopia": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.1,
+      "1": 0.8,
+      "2": 0.1
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.1
+    }
+   },
+   "ms": 6491,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 775,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.480807751999237,
+    "attempts": 1
+   },
+   "raw_sha256": "cc11458a6eaa910e478f4a69a37149367ce83e7a6b42430ddca4488126ac31d2"
+  },
+  "T03_disnea_progresiva": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "urgencias",
+     "confidence": 0.7999999999999999,
+     "probabilities": {
+      "consulta_externa": 0.1,
+      "urgencias": 0.85,
+      "admin": 0.0,
+      "bronchoscopia": 0.05
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.9000000000000001,
+     "confidence": 0.85,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.1,
+      "2": 0.9
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.95
+    }
+   },
+   "ms": 6493,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 789,
+    "output_tokens": 141,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.488641601987183,
+    "attempts": 1
+   },
+   "raw_sha256": "f5608526276380879d3cb13218e9314d3b2c630300212ed4bdfbb0a36410336d"
+  },
+  "T04_cita_vaga": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "confidence": 0.8666666666666667,
+     "probabilities": {
+      "consulta_externa": 0.9,
+      "urgencias": 0.05,
+      "admin": 0.05,
+      "bronchoscopia": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.2,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.8,
+      "1": 0.2,
+      "2": 0.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.8
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.1
+    }
+   },
+   "ms": 6501,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 763,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.496440518996678,
+    "attempts": 1
+   },
+   "raw_sha256": "fecd0ba97b4909ed9cac3d8822914df22ab66ae0406cc8245933c351b8f3bb75"
+  },
+  "T05_ansia_biopsia": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "confidence": 0.7333333333333334,
+     "probabilities": {
+      "consulta_externa": 0.8,
+      "urgencias": 0.1,
+      "admin": 0.05,
+      "bronchoscopia": 0.05
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.8,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.2,
+      "2": 0.8
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.1
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.95
+    }
+   },
+   "ms": 6330,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 774,
+    "output_tokens": 141,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.3256817490037065,
+    "attempts": 1
+   },
+   "raw_sha256": "17d3fc1b23df40c4d86fc185d5db406414c0fcc79b64da3fa6365b3b0f02391f"
+  },
+  "T06_preparacion_fbro": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.7333333333333334,
+     "probabilities": {
+      "consulta_externa": 0.05,
+      "urgencias": 0.05,
+      "admin": 0.1,
+      "bronchoscopia": 0.8
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.1,
+     "confidence": 0.5499999999999999,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.1,
+      "1": 0.7,
+      "2": 0.2
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.95
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.3
+    }
+   },
+   "ms": 6651,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 780,
+    "output_tokens": 139,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.645896757981973,
+    "attempts": 1
+   },
+   "raw_sha256": "75565124ed01ab6d89de5256949c3dc899c6ea0ab3744e2534034ee20fc39b2a"
+  },
+  "T07_hemoptisis": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "urgencias",
+     "confidence": 0.8666666666666667,
+     "probabilities": {
+      "consulta_externa": 0.05,
+      "urgencias": 0.9,
+      "admin": 0.0,
+      "bronchoscopia": 0.05
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.9000000000000001,
+     "confidence": 0.85,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.1,
+      "2": 0.9
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 1.0
+    }
+   },
+   "ms": 6492,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 778,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.487073636002606,
+    "attempts": 1
+   },
+   "raw_sha256": "932427ca115de5c527951a508f3bb054af5352b6383b8b65da7fc78ff100bcb9"
+  },
+  "T08_copia_espirometria": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.9333333333333332,
+     "probabilities": {
+      "consulta_externa": 0.05,
+      "urgencias": 0.0,
+      "admin": 0.95,
+      "bronchoscopia": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.2,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.8,
+      "1": 0.2,
+      "2": 0.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.1
+    }
+   },
+   "ms": 6477,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 765,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.472128852998139,
+    "attempts": 1
+   },
+   "raw_sha256": "74133f1a897ae3427626d82ae5029305755caebf0f672949ed2ec267f946b7f4"
+  },
+  "T09_reprogramar_tabaco": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "confidence": 0.9333333333333332,
+     "probabilities": {
+      "consulta_externa": 0.95,
+      "urgencias": 0.0,
+      "admin": 0.05,
+      "bronchoscopia": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.1,
+      "1": 0.8,
+      "2": 0.1
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.8
+    }
+   },
+   "ms": 6648,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 764,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.6432495240005665,
+    "attempts": 1
+   },
+   "raw_sha256": "65ad660cf03595396208678d85643bdcdd6dbeb277d36ce31e46dfdcdd167e2f"
+  },
+  "T10_queja_espera": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "confidence": 0.6,
+     "probabilities": {
+      "consulta_externa": 0.7,
+      "urgencias": 0.0,
+      "admin": 0.3,
+      "bronchoscopia": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.2000000000000002,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.8,
+      "2": 0.2
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.8
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 6327,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 769,
+    "output_tokens": 138,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.322222229006002,
+    "attempts": 1
+   },
+   "raw_sha256": "bad0b43fe189bcfe343965edaadc425c2bfa0d3a32c1f1825ed7c94d9582ae43"
+  },
+  "T11_deriva_ebus_hospital": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.7333333333333334,
+     "probabilities": {
+      "consulta_externa": 0.05,
+      "urgencias": 0.05,
+      "admin": 0.1,
+      "bronchoscopia": 0.8
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.1,
+     "confidence": 0.5499999999999999,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.1,
+      "1": 0.7,
+      "2": 0.2
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.2
+    }
+   },
+   "ms": 6495,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 784,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.490280469006393,
+    "attempts": 1
+   },
+   "raw_sha256": "453e11f17d0d2006abf30bc5fde18d2707bfaebaaac31d4d06e839137a9b54a2"
+  },
+  "T12_autorizacion_seguro": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.7999999999999999,
+     "probabilities": {
+      "consulta_externa": 0.05,
+      "urgencias": 0.0,
+      "admin": 0.85,
+      "bronchoscopia": 0.1
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.8,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.2,
+      "2": 0.8
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.2
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 6322,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 772,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.3177088069787715,
+    "attempts": 1
+   },
+   "raw_sha256": "042090d80d9ca945c2031f7e6b425f0d14d3f9d4ab3ef3dc81584db8a94e3fa2"
+  },
+  "T13_insultos_amenaza": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 1.0,
+     "probabilities": {
+      "consulta_externa": 0.0,
+      "urgencias": 0.0,
+      "admin": 1.0,
+      "bronchoscopia": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 2.0,
+     "confidence": 1.0,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 1.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 1.0
+    }
+   },
+   "ms": 6340,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 774,
+    "output_tokens": 138,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.335217604995705,
+    "attempts": 1
+   },
+   "raw_sha256": "11ff7995cd10bc1051f5697e9b4c45f063b245d4199fa64c2315de4d08331d97"
+  },
+  "T14_parking_trap": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.9333333333333332,
+     "probabilities": {
+      "consulta_externa": 0.05,
+      "urgencias": 0.0,
+      "admin": 0.95,
+      "bronchoscopia": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.1,
+     "confidence": 0.85,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.9,
+      "1": 0.1,
+      "2": 0.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 6321,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 773,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 6.31617571899551,
+    "attempts": 1
+   },
+   "raw_sha256": "21f38828486dafb08d7f81ec1cce74c4309b134909b4a291fb9fee32200a9520"
+  }
+ }
+}

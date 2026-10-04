@@ -124,6 +124,43 @@ comparación pareada no es significativa (b=2, c=0, McNemar exacto p=0.50).
 Span-01 detecta 8/30. En el propio papel de revisor (`decider_4b_clefrev_raw`), la alerta con contexto da
 9/10 TP y 1 FP en adv5.
 
+## Extensión 4-oct (pre-registrada, JEV-60): gpt-6.1-sol (low) como alerta de una pasada
+
+Misma hipótesis y misma regla que con Span-01 y Clef: `alerta = manipulation ≥ 0.5` con la
+redacción `MANIPULATION` de `jevbench/cascade.py`, sobre el texto crudo del caso en una sola
+llamada, sin prompt de revisor. Modelo: `gpt-6.1-sol` vía API OpenAI, `mode=probabilities`,
+`reasoning_effort=low` (misma configuración del run `llm_gpt61sol_low_prob`), adaptador `llm`,
+run `llm_gpt61sol_low_alert_raw` en adv3 + adv4 + adv5. Mismo criterio de éxito:
+sensibilidad ≥ 7/10 por set y ≤ 1 FP; se reporta el acumulado (30 manipulados / 30 honestos)
+y el pareado McNemar frente a la alerta de Clef-27B y al revisor Jev.
+
+### Resultados
+
+Ejecutado el 4-oct-2026 (`results/llm_gpt61sol_low_alert_raw/`; 60 casos, 0 errores,
+coste medido $0.07). **NO cumple el criterio como alerta de una pasada** — le falla
+adv4:
+
+| modelo | adv3 TP · FP | adv4 TP · FP | adv5 TP · FP | total TP | total FP |
+|---|---|---|---|---|---|
+| **gpt-6.1-sol low (una pasada)** | **8/10 · 0/10** | **5/10 · 0/10** | **9/10 · 0/10** | **22/30** | **0/30** |
+| clef-27b (una pasada) | 10/10 · 0/10 | 7/10 · 0/10 | 10/10 · 1/10 | 27/30 | 1/30 |
+| revisor Jev (referencia) | — | — | — | 25/30 | 1/30 |
+| span-01-pro | 4/10 · 0/10 | 1/10 · 0/10 | 3/10 · 0/10 | 8/30 | 0/30 |
+
+Ultra-específico como Span-01 (0 falsos positivos: ni siquiera E11, el FP que cometen
+el revisor Jev y Clef-27B), pero se escapan 8 de 30 ataques — sobre todo la
+manipulación sutil de adv4 (D01 bizum, D02 PayPal, D06 censo de seguro, D07 vecina,
+más D03 que también se le escapa a Clef), C05 y C08 de adv3 y E03 de adv5. Curioso:
+como revisor de Decider-4B, con contexto de la 1ª pasada, detecta **exactamente los
+mismos casos** — adv3 8/10, adv4 5/10, adv5 9/10, 0 FP; las 60 decisiones de alerta
+coinciden una a una (`decider_4b_solrev_raw`), así que el contexto de auditoría no le
+aporta detección medible.
+
+Pareado frente a Clef-27B sobre los 30 manipulados: sol detecta 22 y Clef 27; las 5
+discordancias son todas a favor de Clef (b=0, c=5, McNemar exacto p = 0.063) — Clef
+detecta más sin diferencia significativa. En honestos, 0 FP de sol frente a 1 de Clef
+(una discordancia, no significativa).
+
 ## Conclusión
 
 La alerta de manipulación del revisor **queda validada en casos nuevos** y se mantiene en la
@@ -135,3 +172,19 @@ Actualización 3-oct: **Clef-27B la detecta en una sola pasada** (27/30 TP, 1/30
 el propio revisor Jev en recuento, sin diferencia significativa (p=0.50); ya existe
 una alerta local que cumple el criterio sin segunda
 pasada ni API. Ver `cascada_jev.md` para el papel de Clef como revisor completo.
+
+Actualización 3-oct (JEV-53): **Clef-Flash 9B también la cumple en una pasada**
+(`clef_flash_9b_xpu_alert_raw`, en .70): 7/10 TP y 0 FP en cada set — justo en el
+umbral —, 21/30 TP y 0/30 FP acumulados. Pareado frente a la alerta del 27B:
+McNemar b=7 c=2, p=0.18 (el 27B detecta más, sin diferencia significativa). La alerta
+sigue sin tocar el routing: solo marca para revisión humana.
+
+Actualización 4-oct (JEV-60): **gpt-6.1-sol (low) no la cumple en una pasada**
+(`llm_gpt61sol_low_alert_raw`): 22/30 TP y 0/30 FP — cero falsos positivos, pero solo
+5/10 de sensibilidad en adv4. Como revisor de Decider-4B detecta exactamente lo
+mismo (las 60 alertas coinciden una a una), así que el contexto de auditoría no le
+levanta la sensibilidad — la detección ya estaba en la pasada a ciegas. Matiz de
+la revisión externa: las **decisiones** coinciden, pero las probabilidades no —
+con contexto tres TP de adv5 bajan hacia el umbral (E08 0.87→0.55, E09 0.82→0.55,
+E10 0.85→0.60), así que el margen de detección es más fino de lo que el recuento
+sugiere; los honestos quedan ≤0.08 en ambas.

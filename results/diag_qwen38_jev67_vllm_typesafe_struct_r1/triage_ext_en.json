@@ -1,0 +1,182 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "model": "qwen3.8-27b-vllm",
+   "api_key": "<redacted>",
+   "extra_body": "{\"chat_template_kwargs\": {\"enable_thinking\": false}, \"temperature\": 0, \"seed\": 101}",
+   "capture_raw": "true",
+   "timeout": "300",
+   "case_timeout": "600",
+   "max_tokens": "8192",
+   "structured": "true",
+   "prompt": "typesafe",
+   "mode": "probabilities",
+   "inject_schema_in_prompt": "false"
+  },
+  "phase": "triage_ext_en",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "git": "dba4852",
+  "diag": {
+   "issue": "JEV-66",
+   "block": "vllm",
+   "cell": "typesafe_struct",
+   "mode": "probabilities",
+   "route": "struct",
+   "inject_schema_in_prompt": false,
+   "rep": 1,
+   "seed": 101,
+   "cases": [
+    "T15_neumotorax_espontaneo",
+    "T16_epoc_saturacion"
+   ],
+   "cases_sha256": "e6289c9399bd"
+  },
+  "updated": "2026-10-04T22:08:34",
+  "provider": "openai",
+  "model": "qwen3.8-27b-vllm",
+  "resolved": "qwen3.8-27b-vllm",
+  "mode": "probabilities",
+  "structured": true,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   },
+   "temperature": 0,
+   "seed": 101
+  },
+  "timeout": 300.0,
+  "case_timeout": 600.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": null,
+  "prompt": "typesafe",
+  "prompt_sha256": null,
+  "system_prompt_sha256": "388de09c70e7",
+  "inject_schema_in_prompt": false,
+  "rotate_choice": 0,
+  "perm_sha256": null,
+  "prompt_template_sha256": null,
+  "usd_per_mtok": [
+   null,
+   null
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1"
+ },
+ "cases": {
+  "T15_neumotorax_espontaneo": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "urgencias",
+     "confidence": 1.0,
+     "probabilities": {
+      "bronchoscopia": 0.0,
+      "consulta_externa": 0.0,
+      "urgencias": 1.0,
+      "admin": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0,
+     "confidence": 0.0,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.3333333333333333,
+      "1": 0.3333333333333333,
+      "2": 0.3333333333333333
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 18962,
+   "cost": null,
+   "model": "qwen3.8-27b-vllm",
+   "usage": {
+    "input_tokens": 184,
+    "output_tokens": 151,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 18.957036554988008,
+    "attempts": 1
+   },
+   "raw_sha256": "35740434f789effe3d85f5203ef31059ac2d149061d9b49a8087ddf5d9cbda4e"
+  },
+  "T16_epoc_saturacion": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "urgencias",
+     "confidence": 1.0,
+     "probabilities": {
+      "bronchoscopia": 0.0,
+      "consulta_externa": 0.0,
+      "urgencias": 1.0,
+      "admin": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 2.0,
+     "confidence": 1.0,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 1.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 19214,
+   "cost": null,
+   "model": "qwen3.8-27b-vllm",
+   "usage": {
+    "input_tokens": 183,
+    "output_tokens": 153,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 19.205179329990642,
+    "attempts": 1
+   },
+   "raw_sha256": "dec046d0dcf13b8c8b8ba620cdec15152e0f499d9528ea34efdfc5912132cde9"
+  }
+ }
+}

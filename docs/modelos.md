@@ -193,6 +193,9 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   `timeout` (segundos por petición, ya también con OpenAI directo; con thinking activado
   hacen falta ≥ 1200), `case_timeout` (presupuesto de pared por caso: cada petición usa
   `min(timeout, restante)` y una corrección por JSON mal formado nunca reinicia la bolsa),
+  `min_interval` (espaciado mínimo entre inicios de petición consecutivas, correcciones
+  incluidas, para respetar límites de peticiones del proveedor; ojo: `usage.latency` y
+  `ms` incluyen esa espera, hay que restarla para la latencia real),
   `max_tokens` (tope de salida: `max_output_tokens` en Responses, `max_completion_tokens`
   en Chat Completions oficial, `max_tokens` en endpoints compatibles como vLLM/SGLang),
   `reasoning_effort` (`minimal`/`low`/`medium`/`high`: `reasoning={"effort": …}` en
@@ -201,9 +204,14 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   Los límites solo están implementados para `provider=openai`: con Anthropic/Gemini el
   adaptador falla al construirse en vez de ignorarlos. El cliente OpenAI conserva
   `max_retries=0` y cada llamada es bloqueante, así que al expirar un timeout no queda
-  trabajo en segundo plano. Cada caso exitoso guarda `usage` (tokens, reintentos,
-  `attempts`, latencia) y cada error guarda `ms` y un `diag` seguro (intentos y tipo de
-  error; nunca prompts, estados ni cuerpos HTTP). El parche usa miembros privados de
+  trabajo pendiente **en el cliente** (si el servidor remoto aborta la generación al
+  cortarse la petición no se ha comprobado vía `/metrics`). Cada caso exitoso guarda
+  `usage` (tokens, reintentos, `attempts`, latencia) y cada error guarda `ms` y un
+  `diag` seguro (intentos y tipo de error; nunca prompts, estados ni cuerpos HTTP).
+  Excepción deliberada: con `capture_raw=true` sí se guarda `raw` con los intentos,
+  incluido el cuerpo de la petición (`extra_body` incluido) — las claves viajan en
+  cabeceras y no se redactan en el raw, que no sale al espejo público (`publish.py`
+  lo elimina). El parche usa miembros privados de
   `system-one-adapter==0.2.1`, aislados en `_openai_internals()` con un test de
   compatibilidad (`tests/test_llm_adapter.py`).
 - **Modos:** `probabilities` = el LLM declara una distribución por pregunta (comparable con Jev en
@@ -229,8 +237,67 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   la consola). 195 casos, 0 errores, coste total medido **$0.56** (~$0.0029/caso) y
   mediana 3.4 s/caso. Ajustado 65: la mejor una pasada medida, a la par de
   `jev_cascade_audit` (64) y por encima de luna (61); ver `docs/resultados.md`.
-  **Alcance limitado por coste:** solo esta pasada; sin modo `discrete`, sin papel de revisor,
-  sin cascada gpt-6.1-sol → revisor Jev y sin alerta de manipulación.
+- **Alcance completo de sol (4-oct, JEV-60):** el modo `discrete` da ajustado 63
+  (`llm_gpt61sol_low_disc`, $0.38, 2.2 s/caso) — ~2 puntos bajo `probabilities`, como luna.
+  Como **revisor de Decider-4B** (`decider_4b_solrev_*`) cumple el criterio JEV-32 y es el
+  primer revisor que supera en ajustado al revisor Jev sobre ese D1: audit **66** / review
+  **68** frente a 64 (136 % de la ganancia en adv3+adv5, 105 % en triaje, alerta adv5
+  9/10 TP · 0 FP); significativo solo en `relevance` de papers frente al revisor Jev
+  (p = 0.04). Pasada-2: $1.05 (~$0.0054/caso, ~100× Jev). Como D1 con revisor Jev
+  (`llm_gpt61sol_jevrev_*`): ajustado 66, bajo `llm_gpt6luna_jevrev_audit` (71). Como
+  **alerta de una pasada** (`llm_gpt61sol_low_alert_raw`): 22/30 TP · 0/30 FP — no cumple
+  (adv4 5/10). Detalle: `docs/experimentos/cascada_jev.md` y
+  `docs/experimentos/alerta_manipulacion.md`.
+- **Probado (3-oct, JEV-54): `gpt-oss-120b` en la API de Cerebras**
+  (`https://api.cerebras.ai/v1`, Chat Completions vía `base_url`; el plan y el
+  pre-registro están en `docs/plan_cerebras.md` y el manifiesto en
+  `docs/infra_runs/llm_cerebras_gptoss120b_low_prob.md`). Precisión declarada:
+  `fp16` en el catálogo formato OpenRouter y `FP16/8 (weights only)` en el nativo —
+  discrepancia conservada, no se afirma FP16 completo. `reasoning_effort=low`,
+  `extra_body={"temperature":0,"reasoning_format":"parsed"}`, `max_tokens=8192`.
+  La cuenta tiene topes estrictos (5 req/min, 150 req/h) que se respetaron con la
+  opción nueva `min_interval=27`; sin pacing el smoke recibió 429s.
+  195 casos, 0 errores, coste medido **$0.12 (~$0.00062/caso, ~3× luna y ~18× Jev)**,
+  latencia API ~0.5 s/caso (los `ms` y `usage.latency` del run incluyen la espera
+  del pacing). Resultado: ajustado **34**, sobre la mayoría y muy por encima del
+  Qwen3.8-27B local NVFP4 (−16) — comparación descriptiva, no ablación de
+  cuantización — pero por debajo de Jev (45), Clef-27B (52), luna (61) y sol (65).
+  Sin victorias ni derrotas significativas por pregunta frente a Jev ni frente a
+  luna en las fases comparativas; la brecha agregada viene de adv3 (77.5 frente a
+  87.5/88.0), triaje ext_es (87.7), ρ relevancia de papers (0.64 frente a ~0.87) y
+  calibración (Brier noul 0.108 frente a ~0.05).
+- **Probado (3-oct, JEV-54): `qwen-3.8-27b` en la API de Cerebras** — mismo
+  protocolo que el run anterior salvo modelo y tarifas ($0.99/$1.49 por Mtok).
+  Precisión declarada: `fp16` (formato OpenRouter) frente a `FP16/FP8` (nativo).
+  Los límites de este modelo son mucho más holgados (450 req/min, 27 000 req/h —
+  los topes son **por modelo**, no solo por cuenta), así que corrió **sin
+  `min_interval`** y su `ms` es latencia real: mediana 0.77 s/caso. Su `low`
+  razona más que el de GPT-OSS (~700 vs ~230 tokens de salida por caso):
+  **$0.44 medidos** (~$0.0022/caso). 195 casos, 0 errores. Resultado: ajustado
+  **59** — por encima de Jev (45) y Clef-27B (52), solo por debajo de luna (61)
+  y sol (65). Gana a Jev en `same_day` de adv5 con significación (6–0, p = 0.03;
+  `urgency` de adv5 5–0 queda en p = 0.06); sin derrotas significativas frente a
+  Jev ni luna. Contrasta con el mismo tamaño servido local en NVFP4 (ajustado
+  −16): la comparación nube-local es descriptiva — difieren precisión, backend,
+  muestreo y razonamiento. **JEV-57 (4-oct), revisión:** FP8/SGLang
+  tiene 5/10 elecciones uniformes con esquema y 0/10 sin él (9/10 dept);
+  NVFP4 sin esquema acierta 9/10. Ollama tiene 8/10 uniformes con esquema
+  y 0/10 sin él (10/10 dept). Debilita una causa exclusiva de SGLang,
+  pero no aísla modelo, prompt/esquema compartido y servidor, ni precisión.
+  Dos casos sin normalizar contienen ceros; no extrapolarlo a todos.
+  FP8 sin esquema: **49**, 0/259 uniformes, Brier 0.080, ~6.4 s/caso;
+  NVFP4 sin esquema ya tiene batería completa (52, JEV-58). Registrar structured por run/set y
+  verificar respuestas crudas saneadas. Seguimiento JEV-58; manifiestos
+  `docs/infra_runs/llm_cerebras_qwen38_27b_low_prob.md` y
+  `docs/infra_runs/llm_qwen38_27b_fp8_nostruct_prob.md`.
+  **JEV-61 (revisión):** Cerebras probabilities con/sin esquema obtiene
+  **59/65** (Brier 0.060/0.056); discrete **58/58** (0.077/0.072).
+  Las cuatro baterías completan 195 casos sin errores; cada variante sin
+  esquema requirió un reintento por malformado. Mínimo McNemar entre
+  probabilities=0.0625: no significación al 5 %, no equivalencia demostrada.
+  Jev→Cerebras audit: **68/69**, Brier 0.064/0.065 frente a Jev→Jev
+  64 y 0.055; alerta 24/23 TP de 30, 0 FP. Coste pasada-2 $0.78/$0.73.
+  No demuestra superioridad global. Manifiestos en `docs/infra_runs/`.
 - **Como revisor de la cascada (luna)** (`--adapter llm` en `jevbench.cascade`): sobre Decider-4B
   recupera el 77 % de la ganancia de Jev en adv3+adv5 (el mejor revisor no-Jev), pero no cumple
   el criterio JEV-32 por triaje (28 %) y alerta adv5 (6/10, < 7/10). Como D1 con revisor Jev
@@ -238,12 +305,77 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   `docs/experimentos/cascada_jev.md`).
 - **LLM local en DGX (29-sep):** el adaptador funciona igual contra los endpoints de los Sparks
   (`--opt base_url=http://127.0.0.1:PUERTO/v1 --opt api_key=none` desde la propia máquina).
-  **Qwen3.8-27B** (`RadixArk/Qwen3.8-27B-NVFP4-BF16-LMHead` en SGLang, .80) es el primer
+  **Qwen3.8-27B** (`RadixArk/Qwen3.8-27B-NVFP4-BF16-LMHead` en SGLang, .80;
+  NVFP4 de 4 bits con LM head BF16, no backbone completo BF16) es el primer
   **resultado negativo** de un LLM grande: con thinking apagado + el muestreo de la ficha
   (temp 0.7, top_p 0.8, presence 1.5) queda apenas por encima de la línea base trivial
   (triaje 73.6, ρ papers −0.17, adv total 58.5 — peor que responder siempre `admin` —,
   Brier 0.231, ~6.8 s/caso). Thinking `low` no lo arregla y encarece la latencia
-  (18–45 s/caso). Run: `llm_qwen38_27b_prob`.
+  (18–45 s/caso). Run: `llm_qwen38_27b_prob`. **Revisión JEV-57/58:** NVFP4 sin esquema da
+  **52**, FP8 **49**, GGUF **48**, frente al histórico −16. También
+  cambian los límites respecto al histórico; no una ablación de una sola
+  variable. El diagnóstico documentado no separa documento, prompt/esquema
+  del adaptador y servidor; Flash-Next/vLLM es otro modelo. Las 11 fases
+  tienen 0/259 elecciones casi uniformes en los nuevos runs; el histórico
+  67/257. No inferir ceros crudos de uniformidad normalizada. Manifiestos:
+  `docs/infra_runs/llm_qwen38_27b_{nvfp4,fp8,gguf81}_nostruct_prob.md`.
+  **JEV-63 (4-oct), interacción observada:** matriz 12 casos × 2 prompts × 2 rutas ×
+  3 reps en NVFP4 (.80), FP8 (.81), Cerebras y GGUF en Intel Arc (.70): los
+  vectores nulos solo aparecen con **prompt TypeSafe × esquema forzado juntos**
+  en los tres backends locales (9/14/9 vectores por rep, mismos IDs en las tres reps);
+  `simple_struct` con el mismo esquema y ambas celdas sin esquema dan 0/0.
+  Cerebras no lo reproduce en ninguna celda. También se vio
+  una segunda forma degenerada: repetición hasta `max_tokens`
+  (`finish_reason=length`). Manifiesto: `docs/infra_runs/diag_qwen38_jev63.md`.
+  **JEV-65 (4-oct), ablación:** las dos frases anti-inyección no son ni
+  necesarias ni suficientes — quitarlas (V3) o sustituirlas por una redacción
+  que trata el documento como datos (V5) sigue produciendo vectores nulos bajo
+  esquema en ambos bloques, y añadirlas al prompt simple (V4) no lo provoca;
+  V3/V5 sin esquema: 0. En modo `discrete` la degeneración aparece como fallo
+  sistemático de salida (un `length` + timeouts en NVFP4, solo timeouts en
+  FP8), no como ceros.
+  **Causa raíz identificada (revisión externa 4-oct):** con `structured=true`
+  el adaptador envía solo el system prompt y el documento — las preguntas van
+  solo en el JSON Schema, que SGLang/llama.cpp no inyectan en el prompt (los
+  tokens de entrada lo confirman: 222 frente a 958 en Cerebras para el mismo
+  caso). En esas celdas el modelo **responde a ciegas**: los ceros y —por la
+  misma ruta de la librería— el −16/−40 históricos son el síntoma, no una
+  cualidad del modelo ni del prompt TypeSafe (los timeouts de `discrete` son
+  coherentes con ello, aunque discrete con inyección no se midió). La
+  no-inyección está verificada en las builds de SGLang y llama.cpp usadas;
+  OpenAI/Cerebras inyectan según los tokens; vLLM 0.29.0 y Ollama 0.32.14
+  tampoco inyectan (sonda JEV-67).
+  **Confirmado en JEV-66**: inyectando el esquema en
+  el system prompt con la misma gramática, 0 nulos en los tres bloques y el
+  control reproduce el síntoma. La variación FP8 14→11/16-13-13 es
+  compatible con ruido sobre respuestas a ciegas; si las frases modulan con
+  preguntas visibles queda sin medir. Sin sesgo de posición al rotar en discrete; el
+  control en `probabilities` lo cierra JEV-67 (ver abajo). Manifiestos:
+  `docs/infra_runs/diag_qwen38_jev63.md`,
+  `docs/infra_runs/diag_qwen38_prompt_ablacion.md`.
+  **JEV-67 (4-oct), batería con preguntas verificablemente visibles:**
+  thinking off, temp 0, seed, 195 casos × 11 fases en una pasada, con puerta
+  de visibilidad previa y regla de tokens por caso (primer intento = la
+  batería nostruct FP8 ± 2). Ruta `struct`+`inject`: FP8 **51**, NVFP4 **50**,
+  GGUF **48**; nostruct temp 0 en FP8 **51**; `discrete`+`inject`: NVFP4 y
+  GGUF **63** — la mejor ruta local medida, +13/+15 sobre `probabilities` en
+  la misma precisión (ganancia concentrada en `same_day`/`urgency`; el modo
+  cambia prompt y formato a la vez, así que no se puede atribuir al literal:
+  en Cerebras con thinking low el signo se invierte, 58 vs 59/65). La
+  gramática **no** cambia decisiones en FP8 con preguntas
+  visibles: 967/969 iguales frente a nostruct (Δ ajustado −0.2). Los
+  timeouts/`length` de discrete en JEV-65 eran del modelo a ciegas: con
+  inyección, 0 fallos en papers en ambos backends. Rotación de opciones
+  `choice`: 24/259 cambios, 3/24 conservan posición (sin exceso
+  significativo) y efecto pareado en acierto (+6.2 pp a favor de rot1 —
+  sensibilidad al orden ≈ 7 puntos de ajustado en esta configuración; la
+  media sobre órdenes no está medida).
+  `vLLM 0.29.0` tampoco inyecta el esquema (sonda T+C, D-vllm: 16 nulos
+  ciego / 0 inyectado); Ollama 0.32.14 tampoco (ver manifiesto).
+  Ruta recomendada local: `structured=true` + `inject_schema_in_prompt=true`;
+  `discrete` es la mejor medida (63) pero solo se probó en NVFP4 y GGUF —
+  en FP8 no hay discrete+inject. Manifiesto:
+  `docs/infra_runs/qwen38_jev67.md`.
   **Qwen3.8-Flash-Next** (`Mia-AiLab/Qwen3.8-Flash-Next-NVFP4`, revisión
   `925d7be6c14c6c9442ef83e8f05b5a3c39304f69`, vLLM, NVFP4, .81) da un resultado aún peor
   con thinking activado — sin él fallaba el smoke —: score ajustado −40, triaje 65.7/55.0,
@@ -261,7 +393,9 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   16–170 s con una sola petición HTTP, sin errores de transporte ni fugas de
   memoria (`results/logs/smoke_llm_jev44.json` y `.log`). Comprobación dirigida:
   con `case_timeout=45` el caso C09 aborta a los 45.0 s exactos
-  (`TypeSafeAPITimeoutError`, `diag={attempts:1}`, sin petición viva) y el caso
+  (`TypeSafeAPITimeoutError`, `diag={attempts:1}`, sin trabajo pendiente en el
+  cliente — que el servidor aborte la generación del caso cortado no se
+  comprobó vía `/metrics`) y el caso
   normal siguiente responde en 30.9 s; un intento intermedio cayó en
   `finish_reason=length` al llegar al tope de salida — error acotado que confirma
   que `max_tokens` se aplica.
@@ -513,3 +647,37 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   `manipulation` sobre el texto crudo da **27/30 TP y 1/30 FP** acumulados en
   adv3+4+5 — cumple el criterio en los tres sets. Frente al revisor Jev
   (25/30), no hay diferencia significativa (McNemar exacto p=0.50). Detalles: `docs/experimentos/alerta_manipulacion.md`.
+
+### Clef-Flash (9B)
+
+- **HF:** `Cloudflare/clef-flash`, Apache-2.0. Variante 9B: post-train de
+  `Qwen/Qwen3.5-9B` + la misma cabeza de esquema conjunta (una pasada por
+  estado, mismas API/contrato que el 27B).
+- **Revisión evaluada:** `17f0b0ad` (snapshot HF 3-oct-2026), bf16,
+  `device=xpu` en el Arc Pro B70 de .70, `.venv-clef-flash-xpu`
+  (transformers 5.18.0, torch 2.14.1+xpu). Ventana 16384 sin tocar: los 195
+  casos caben enteros (el más largo, P11, son 6988 tokens; comprobado con el
+  `encode_record` oficial). Kernels de Gated DeltaNet en fallback PyTorch
+  (sin `flash-linear-attention`): correctos, más lentos. Manifiesto:
+  `docs/infra_runs/clef_flash_9b_xpu.md`.
+- **Resultados (3-oct; run `clef_flash_9b_xpu`; 195 casos, 0 errores):**
+  ajustado **41** — por debajo de Clef-27B (52) y de Jev (45), por encima de
+  Decider-4B (33). Triaje 87.9/86.4, ext 90.8/92.7, papers 71.6 (ρ 0.90, la
+  tercera mejor relevancia de una pasada, tras gpt-6.1-sol y D35-A3B),
+  adv3/4/5 81.5/82.0/80.0, ood 100 %, Brier noul
+  0.087. Frente al 27B solo una pérdida significativa: `urgency` en adv2
+  (6/10 vs 9/10, p=0.03); `urgency` de adv1 queda al borde (5/0, p=0.06).
+  Frente a Jev, victoria significativa en `depth` de papers (13/32 vs 6/32,
+  8–1 pareado, p=0.04; también 9–0 frente a Decider-4B). Punto débil:
+  `department` de adv1+adv2 (9/20, bajo la mayoría 17/20) y el total de esos
+  sets queda bajo la línea trivial (74.5 frente a 79.0). Mediana
+  ~0.14 s/caso en XPU (vs ~0.87 s del 27B en GB10 — hardware distinto, no es
+  una comparación pura de modelo).
+- **Como revisor (`decider_4b_clefflashrev_*`):** ajustado **47** con `audit`
+  (D1 33, clefrev 58, jevrev 64). Recupera 38 % de la ganancia de Jev en
+  adv3+adv5 y ~50 % en triaje, sin empeorar ninguna fase — **no alcanza el
+  listón JEV-32** (queda 2º entre los revisores locales, tras Clef-27B).
+- **Alerta de una pasada (`clef_flash_9b_xpu_alert_raw`):** **7/10 TP y 0 FP
+  en cada set** (21/30 acumulado) — cumple el criterio justo en el límite;
+  el 27B sacó 27/30 con 1 FP. McNemar pareado: p=0.18, sin diferencia
+  significativa.

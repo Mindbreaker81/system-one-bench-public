@@ -1,0 +1,182 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "model": "qwen3.8-27b-sglang",
+   "normalize": "true",
+   "retries_malformed": "2",
+   "extra_body": "{\"chat_template_kwargs\": {\"enable_thinking\": false}, \"temperature\": 0, \"seed\": 202}",
+   "max_tokens": "8192",
+   "timeout": "300",
+   "case_timeout": "600",
+   "api_key": "<redacted>",
+   "structured": "true",
+   "prompt": "typesafe",
+   "mode": "probabilities",
+   "capture_raw": "true",
+   "inject_schema_in_prompt": "true"
+  },
+  "phase": "triage_es",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "git": "24a6b3a",
+  "diag": {
+   "issue": "JEV-66",
+   "block": "nvfp4",
+   "cell": "typesafe_struct_schema_in_prompt",
+   "mode": "probabilities",
+   "route": "struct",
+   "inject_schema_in_prompt": true,
+   "rep": 2,
+   "seed": 202,
+   "cases": [
+    "T01_ebus_alergia",
+    "T02_factura_duplicada"
+   ],
+   "cases_sha256": "e6289c9399bd"
+  },
+  "updated": "2026-10-04T17:46:13",
+  "provider": "openai",
+  "model": "qwen3.8-27b-sglang",
+  "resolved": "qwen3.8-27b-sglang",
+  "mode": "probabilities",
+  "structured": true,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   },
+   "temperature": 0,
+   "seed": 202
+  },
+  "timeout": 300.0,
+  "case_timeout": 600.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": null,
+  "prompt": "typesafe",
+  "prompt_sha256": null,
+  "system_prompt_sha256": "da8dc56b75f7",
+  "inject_schema_in_prompt": true,
+  "prompt_template_sha256": null,
+  "usd_per_mtok": [
+   null,
+   null
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1"
+ },
+ "cases": {
+  "T01_ebus_alergia": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.9333333333333332,
+     "probabilities": {
+      "bronchoscopia": 0.95,
+      "consulta_externa": 0.02,
+      "urgencias": 0.02,
+      "admin": 0.01
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.9000000000000001,
+     "confidence": 0.85,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.1,
+      "2": 0.9
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 1.0
+    }
+   },
+   "ms": 5268,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 799,
+    "output_tokens": 142,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 5.2618085620051716,
+    "attempts": 1
+   },
+   "raw_sha256": "bdfc95f33a4bdbc118ab33c46808e7ed182d5521dc23751e7bb4a93628f36610"
+  },
+  "T02_factura_duplicada": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 1.0,
+     "probabilities": {
+      "bronchoscopia": 0.0,
+      "consulta_externa": 0.0,
+      "urgencias": 0.0,
+      "admin": 1.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.8,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.2,
+      "1": 0.8,
+      "2": 0.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 5108,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 775,
+    "output_tokens": 138,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 5.100072970002657,
+    "attempts": 1
+   },
+   "raw_sha256": "82fb57431c805f3dba58fe4996b0e781689bd00506b0a47a584470d2afdc8f0f"
+  }
+ }
+}

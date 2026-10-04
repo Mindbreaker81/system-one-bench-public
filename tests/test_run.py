@@ -67,12 +67,13 @@ class Runner(unittest.TestCase):
 
     def test_safe_opts(self):
         opts = {"api_key": SENTINEL, "hf_token": "t", "client_secret": "s",
-                "db_password": "p", "model": "m", "timeout": "5"}
+                "db_password": "p", "model": "m", "timeout": "5", "max_tokens": "8192"}
         safe = run.safe_opts(opts)
         for k in ("api_key", "hf_token", "client_secret", "db_password"):
             self.assertEqual(safe[k], "<redacted>", k)
         self.assertEqual(safe["model"], "m")
         self.assertEqual(safe["timeout"], "5")
+        self.assertEqual(safe["max_tokens"], "8192")  # es un tope de salida, no una credencial
 
     def test_safe_opts_redacts_nested_json(self):
         opts = {"extra_body": json.dumps({

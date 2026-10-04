@@ -1,0 +1,156 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "model": "qwen-3.8-27b",
+   "normalize": "true",
+   "retries_malformed": "2",
+   "reasoning_effort": "low",
+   "extra_body": "{\"temperature\":0,\"reasoning_format\":\"parsed\"}",
+   "max_tokens": "8192",
+   "timeout": "120",
+   "case_timeout": "300",
+   "usd_in": "0.99",
+   "usd_out": "1.49",
+   "mode": "probabilities",
+   "structured": "false"
+  },
+  "provider": "openai",
+  "model": "qwen-3.8-27b",
+  "resolved": "qwen-3.8-27b",
+  "mode": "probabilities",
+  "structured": false,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "temperature": 0,
+   "reasoning_format": "parsed"
+  },
+  "timeout": 120.0,
+  "case_timeout": 300.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": "low",
+  "usd_per_mtok": [
+   0.99,
+   1.49
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1",
+  "phase": "triage_es",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "git": "0d26ca5",
+  "updated": "2026-10-04T07:26:21"
+ },
+ "cases": {
+  "T01_ebus_alergia": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.9333333333333332,
+     "probabilities": {
+      "bronchoscopia": 0.95,
+      "consulta_externa": 0.02,
+      "urgencias": 0.02,
+      "admin": 0.01
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.78,
+     "confidence": 0.6699999999999999,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.18,
+      "2": 0.8
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.9
+    }
+   },
+   "ms": 720,
+   "cost": 0.0019263099999999999,
+   "model": "qwen-3.8-27b",
+   "usage": {
+    "input_tokens": 823,
+    "output_tokens": 746,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 0.7153346270060865,
+    "attempts": 1
+   }
+  },
+  "T02_factura_duplicada": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.9333333333333332,
+     "probabilities": {
+      "bronchoscopia": 0.01,
+      "consulta_externa": 0.03,
+      "urgencias": 0.01,
+      "admin": 0.95
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.8,
+     "confidence": 0.3999999999999999,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.3,
+      "1": 0.6,
+      "2": 0.1
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.05
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.05
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.1
+    }
+   },
+   "ms": 446,
+   "cost": 0.00141979,
+   "model": "qwen-3.8-27b",
+   "usage": {
+    "input_tokens": 799,
+    "output_tokens": 422,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 0.4405404510034714,
+    "attempts": 1
+   }
+  }
+ }
+}

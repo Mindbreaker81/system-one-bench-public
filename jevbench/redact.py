@@ -4,7 +4,7 @@ import re
 
 
 SENSITIVE_NAME = re.compile(
-    r"api[_-]?key|token|secret|password|authorization|credential|cookie", re.I)
+    r"api[_-]?key|(?<!max[_-])token|secret|password|authorization|credential|cookie", re.I)
 
 
 def redact_value(value):

@@ -2,7 +2,7 @@
 
 # system-one-bench: banco de pruebas de decisores "System One"
 
-**Versión 0.19.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
+**Versión 0.32.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
 
 Banco de pruebas para comparar **Jev** (TypeSafe), un modelo cerrado que no genera texto sino
 que responde preguntas tipadas con probabilidades, con las alternativas abiertas que prometen lo
@@ -34,8 +34,11 @@ scorer.
 
 La mejor configuración medida es **Jev → revisor Jev**: una segunda llamada que audita la primera
 respuesta, más una **alerta para revisión humana** cuando el revisor detecta manipulación. Con
-Decider-4B en local como primera pasada y Jev como revisor se obtiene la misma calidad. Ningún
-revisor abierto alcanza a Jev.
+Decider-4B en local como primera pasada y Jev como revisor se obtiene la misma calidad, y el
+primer revisor abierto que cumple el criterio fijado es **Clef-27B** (cascada 100 % local
+Decider-4B → Clef-27B). En una sola pasada, el mejor agregado lo tiene gpt-6.1-sol (LLM por API)
+y, entre los abiertos, Clef-27B como decisor dedicado y **Qwen3.8-27B servido por Cerebras**
+(59, por encima de Jev) como LLM generalista.
 
 Detalle en [`docs/resultados.md`](docs/resultados.md) y [`docs/experimentos/`](docs/experimentos/).
 

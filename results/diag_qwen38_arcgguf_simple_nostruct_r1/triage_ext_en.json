@@ -1,0 +1,176 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "model": "Qwen3.8-27B-UD-Q4_K_M.gguf",
+   "mode": "probabilities",
+   "normalize": "true",
+   "retries_malformed": "2",
+   "extra_body": "{\"chat_template_kwargs\": {\"enable_thinking\": false}, \"temperature\": 0, \"seed\": 101}",
+   "max_tokens": "8192",
+   "timeout": "300",
+   "case_timeout": "600",
+   "api_key": "<redacted>",
+   "structured": "false",
+   "prompt": "simple",
+   "capture_raw": "true"
+  },
+  "provider": "openai",
+  "model": "Qwen3.8-27B-UD-Q4_K_M.gguf",
+  "resolved": "Qwen3.8-27B-UD-Q4_K_M.gguf",
+  "mode": "probabilities",
+  "structured": false,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   },
+   "temperature": 0,
+   "seed": 101
+  },
+  "timeout": 300.0,
+  "case_timeout": 600.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": null,
+  "prompt": "simple",
+  "prompt_sha256": "bd7b61cd2616",
+  "prompt_template_sha256": "f5a6d92a9ba7",
+  "usd_per_mtok": [
+   null,
+   null
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1",
+  "phase": "triage_ext_en",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "git": "fcaec64",
+  "diag": {
+   "issue": "JEV-63",
+   "config": "arcgguf",
+   "cell": "simple_nostruct",
+   "rep": 1,
+   "seed": 101,
+   "cases": [
+    "T15_neumotorax_espontaneo",
+    "T16_epoc_saturacion"
+   ],
+   "cases_sha256": "e6289c9399bd"
+  },
+  "updated": "2026-10-04T10:41:43"
+ },
+ "cases": {
+  "T15_neumotorax_espontaneo": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "urgencias",
+     "confidence": 1.0,
+     "probabilities": {
+      "bronchoscopia": 0.0,
+      "consulta_externa": 0.0,
+      "urgencias": 1.0,
+      "admin": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 2.0,
+     "confidence": 1.0,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 1.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 1.0
+    }
+   },
+   "ms": 7392,
+   "cost": null,
+   "model": "Qwen3.8-27B-UD-Q4_K_M.gguf",
+   "usage": {
+    "input_tokens": 384,
+    "output_tokens": 138,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 7.386920502991416,
+    "attempts": 1
+   },
+   "raw_sha256": "1869ce71eb185cc90c3bec7087c63abc35132cde880c69d248bbf6bd79417751"
+  },
+  "T16_epoc_saturacion": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "urgencias",
+     "confidence": 0.8666666666666667,
+     "probabilities": {
+      "bronchoscopia": 0.0,
+      "consulta_externa": 0.1,
+      "urgencias": 0.9,
+      "admin": 0.0
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 2.0,
+     "confidence": 1.0,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 1.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 1.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 1.0
+    }
+   },
+   "ms": 7477,
+   "cost": null,
+   "model": "Qwen3.8-27B-UD-Q4_K_M.gguf",
+   "usage": {
+    "input_tokens": 383,
+    "output_tokens": 138,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 7.469223335996503,
+    "attempts": 1
+   },
+   "raw_sha256": "7bcbac7976f6754e94b80e8a983db110668ef373d2e53bc8bbb160945e3ab16f"
+  }
+ }
+}

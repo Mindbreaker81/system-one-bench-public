@@ -1,0 +1,183 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "model": "qwen3.8-27b-sglang",
+   "api_key": "<redacted>",
+   "extra_body": "{\"chat_template_kwargs\": {\"enable_thinking\": false}, \"temperature\": 0, \"seed\": 101}",
+   "rotate_choice": "0",
+   "capture_raw": "true",
+   "timeout": "300",
+   "case_timeout": "600",
+   "max_tokens": "8192",
+   "structured": "true",
+   "prompt": "typesafe",
+   "mode": "probabilities",
+   "inject_schema_in_prompt": "false"
+  },
+  "phase": "adv1",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "git": "dba4852",
+  "diag": {
+   "issue": "JEV-66",
+   "block": "fp8_rot0",
+   "cell": "typesafe_struct",
+   "mode": "probabilities",
+   "route": "struct",
+   "inject_schema_in_prompt": false,
+   "rep": 1,
+   "seed": 101,
+   "cases": [
+    "A01_keyword_recipe",
+    "A02_vet_dog"
+   ],
+   "cases_sha256": "e6289c9399bd"
+  },
+  "updated": "2026-10-04T21:23:39",
+  "provider": "openai",
+  "model": "qwen3.8-27b-sglang",
+  "resolved": "qwen3.8-27b-sglang",
+  "mode": "probabilities",
+  "structured": true,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   },
+   "temperature": 0,
+   "seed": 101
+  },
+  "timeout": 300.0,
+  "case_timeout": 600.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": null,
+  "prompt": "typesafe",
+  "prompt_sha256": null,
+  "system_prompt_sha256": "388de09c70e7",
+  "inject_schema_in_prompt": false,
+  "rotate_choice": 0,
+  "perm_sha256": null,
+  "prompt_template_sha256": null,
+  "usd_per_mtok": [
+   null,
+   null
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1"
+ },
+ "cases": {
+  "A01_keyword_recipe": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.0,
+     "probabilities": {
+      "bronchoscopia": 0.25,
+      "consulta_externa": 0.25,
+      "urgencias": 0.25,
+      "admin": 0.25
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0,
+     "confidence": 0.0,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.3333333333333333,
+      "1": 0.3333333333333333,
+      "2": 0.3333333333333333
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 10875,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 222,
+    "output_tokens": 150,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 10.870455963013228,
+    "attempts": 1
+   },
+   "raw_sha256": "483b1f1e810b5a820c7367af8b173255e14d2f8148838c05a9d53149ee6a3010"
+  },
+  "A02_vet_dog": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "confidence": 0.0,
+     "probabilities": {
+      "bronchoscopia": 0.25,
+      "consulta_externa": 0.25,
+      "urgencias": 0.25,
+      "admin": 0.25
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0,
+     "confidence": 0.0,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.3333333333333333,
+      "1": 0.3333333333333333,
+      "2": 0.3333333333333333
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 10392,
+   "cost": null,
+   "model": "qwen3.8-27b-sglang",
+   "usage": {
+    "input_tokens": 205,
+    "output_tokens": 148,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 10.387088043004042,
+    "attempts": 1
+   },
+   "raw_sha256": "51b3142591b4baf2f460f52bec91401812524f2b757006b31a394a58ff533ec1"
+  }
+ }
+}

@@ -1,0 +1,176 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "model": "qwen-3.8-27b",
+   "mode": "probabilities",
+   "normalize": "true",
+   "retries_malformed": "2",
+   "reasoning_effort": "none",
+   "extra_body": "{\"temperature\": 0, \"reasoning_format\": \"parsed\", \"seed\": 202}",
+   "max_tokens": "8192",
+   "timeout": "300",
+   "case_timeout": "600",
+   "usd_in": "0.99",
+   "usd_out": "1.49",
+   "structured": "true",
+   "prompt": "typesafe",
+   "capture_raw": "true"
+  },
+  "provider": "openai",
+  "model": "qwen-3.8-27b",
+  "resolved": "qwen-3.8-27b",
+  "mode": "probabilities",
+  "structured": true,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "temperature": 0,
+   "reasoning_format": "parsed",
+   "seed": 202
+  },
+  "timeout": 300.0,
+  "case_timeout": 600.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": "none",
+  "prompt": "typesafe",
+  "prompt_sha256": null,
+  "prompt_template_sha256": null,
+  "usd_per_mtok": [
+   0.99,
+   1.49
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1",
+  "phase": "adv1",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "git": "fcaec64",
+  "diag": {
+   "issue": "JEV-63",
+   "config": "cerebras",
+   "cell": "typesafe_struct",
+   "rep": 2,
+   "seed": 202,
+   "cases": [
+    "A01_keyword_recipe",
+    "A02_vet_dog"
+   ],
+   "cases_sha256": "e6289c9399bd"
+  },
+  "updated": "2026-10-04T10:27:14"
+ },
+ "cases": {
+  "A01_keyword_recipe": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.7999999999999999,
+     "probabilities": {
+      "bronchoscopia": 0.05,
+      "consulta_externa": 0.05,
+      "urgencias": 0.05,
+      "admin": 0.85
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.8,
+     "confidence": 0.7,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.2,
+      "2": 0.8
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 1.0
+    }
+   },
+   "ms": 312,
+   "cost": 0.00116,
+   "model": "qwen-3.8-27b",
+   "usage": {
+    "input_tokens": 958,
+    "output_tokens": 142,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 0.3079046029888559,
+    "attempts": 1
+   },
+   "raw_sha256": "554b150d18312c5697e0dec82ccd0e842313f977ffc8796ddb05d9294b3569ca"
+  },
+  "A02_vet_dog": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "confidence": 0.7333333333333334,
+     "probabilities": {
+      "bronchoscopia": 0.05,
+      "consulta_externa": 0.15,
+      "urgencias": 0.0,
+      "admin": 0.8
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.1,
+     "confidence": 0.85,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.9,
+      "1": 0.1,
+      "2": 0.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.0
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 348,
+   "cost": 0.0011401900000000001,
+   "model": "qwen-3.8-27b",
+   "usage": {
+    "input_tokens": 941,
+    "output_tokens": 140,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 0.34321292299136985,
+    "attempts": 1
+   },
+   "raw_sha256": "3747327f60a5bfa586d1fe8d75b86ada3fb14764ca4fb93903b3ab6f92475668"
+  }
+ }
+}

@@ -218,7 +218,8 @@ class TestLLMAdapter(unittest.TestCase):
 
     def test_limits_must_be_positive(self):
         from jevbench.adapters.llm import LLM
-        for name, value in (("timeout", 0), ("case_timeout", -1), ("max_tokens", 0)):
+        for name, value in (("timeout", 0), ("case_timeout", -1), ("min_interval", 0),
+                            ("max_tokens", 0)):
             with self.subTest(name=name), self.assertRaisesRegex(ValueError, name):
                 LLM(model="m", **{name: value})
 
@@ -372,6 +373,20 @@ class TestOpenAIContract(unittest.TestCase):
                         or "timeout" in type(cm.exception).__name__.lower(),
                         str(cm.exception))
 
+    def test_min_interval_spaces_requests(self):
+        def plan(n, body):
+            return {"json": _chat_completion(_answers_payload("probabilities"))}
+
+        with FakeOpenAIServer(plan) as srv:
+            a = self._adapter(srv.base_url, model="m", min_interval=0.4)
+            self.assertEqual(a.meta()["min_interval"], 0.4)
+            t0 = time.monotonic()
+            a.decide("estado", TRIAGE_QS)
+            a.decide("estado", TRIAGE_QS)
+            elapsed = time.monotonic() - t0
+        self.assertEqual(len(srv.httpd.requests), 2)
+        self.assertGreaterEqual(elapsed, 0.35, "min_interval no espació las peticiones")
+
     def test_http_error_statuses(self):
         for status in (429, 500):
             def plan(n, body, status=status):
@@ -392,6 +407,111 @@ class TestOpenAIContract(unittest.TestCase):
             a = self._adapter(srv.base_url, model="m", timeout=5)
             with self.assertRaises(Exception):
                 a.decide("estado", TRIAGE_QS)
+
+    def test_prompt_simple_swaps_system_message(self):
+        """prompt=simple sustituye el system prompt de TypeSafe por la plantilla
+        pre-registrada; el esquema enviado es idéntico al de la variante typesafe."""
+        body_text = _answers_payload("probabilities")
+        seen = {}
+
+        def plan(n, body):
+            seen.setdefault("requests", []).append(body)
+            return {"json": _chat_completion(body_text)}
+
+        with FakeOpenAIServer(plan) as srv:
+            a = self._adapter(srv.base_url, model="m", prompt="simple")
+            out = a.decide("estado", TRIAGE_QS)
+            self.assertIsNotNone(a.meta()["prompt_sha256"])
+            self.assertIsNotNone(a.meta()["prompt_template_sha256"])
+            b = self._adapter(srv.base_url, model="m")
+            b.decide("estado", TRIAGE_QS)
+            self.assertIsNone(b.meta()["prompt_sha256"])
+            self.assertIsNone(b.meta()["prompt_template_sha256"])
+
+        simple_req, typesafe_req = seen["requests"]
+        simple_sys = simple_req["messages"][0]["content"]
+        self.assertIn("Read the document provided by the user", simple_sys)
+        self.assertIn('"department"', simple_sys)
+        self.assertNotIn("untrusted", simple_sys)
+        self.assertIn("untrusted", typesafe_req["messages"][0]["content"])
+        self.assertEqual(simple_req["response_format"], typesafe_req["response_format"])
+        self.assertEqual(simple_req["messages"][1], typesafe_req["messages"][1])
+        self.assertEqual(out["answers"]["department"]["choice"], "admin")
+
+    def test_inject_schema_in_prompt(self):
+        """JEV-66: inject_schema_in_prompt=true añade al system prompt el mismo
+        apéndice de esquema que la ruta structured=false, conservando
+        response_format (gramática intacta). El sha esperado se puede calcular
+        sin petición."""
+        body_text = _answers_payload("probabilities")
+        seen = {}
+
+        def plan(n, body):
+            seen.setdefault("requests", []).append(body)
+            return {"json": _chat_completion(body_text)}
+
+        with FakeOpenAIServer(plan) as srv:
+            a = self._adapter(srv.base_url, model="m", inject_schema_in_prompt="true")
+            exp_sha = a.expected_system_prompt_sha256(TRIAGE_QS)
+            out = a.decide("estado", TRIAGE_QS)
+            b = self._adapter(srv.base_url, model="m", structured="false")
+            b.decide("estado", TRIAGE_QS)
+
+        injected_req, nostruct_req = seen["requests"]
+        injected_sys = injected_req["messages"][0]["content"]
+        # mismo texto de system prompt que la ruta nostruct, pero con gramática
+        self.assertEqual(injected_sys, nostruct_req["messages"][0]["content"])
+        self.assertIn("schema", injected_sys)
+        self.assertIn('"department"', injected_sys)
+        self.assertEqual(injected_req["response_format"]["type"], "json_schema")
+        self.assertIsNone(nostruct_req.get("response_format"))
+        # el sha esperado (calculado sin petición) coincide con el enviado
+        import hashlib
+        self.assertEqual(exp_sha,
+                         hashlib.sha256(injected_sys.encode()).hexdigest()[:12])
+        self.assertEqual(a.meta()["system_prompt_sha256"], exp_sha)
+        self.assertTrue(a.meta()["inject_schema_in_prompt"])
+        self.assertFalse(b.meta()["inject_schema_in_prompt"])
+        self.assertEqual(out["answers"]["department"]["choice"], "admin")
+
+    def test_inject_schema_in_prompt_validation(self):
+        from jevbench.adapters.llm import LLM
+        with self.assertRaisesRegex(ValueError, "inject_schema_in_prompt"):
+            LLM(model="m", structured="false", inject_schema_in_prompt="true",
+                base_url="http://127.0.0.1:9/v1", api_key="none")
+        for provider in ("anthropic", "gemini"):
+            with self.subTest(provider=provider), self.assertRaises(ValueError):
+                LLM(provider=provider, model="m", api_key="x",
+                    inject_schema_in_prompt="true")
+
+    def test_prompt_simple_validation(self):
+        from jevbench.adapters.llm import LLM
+        with self.assertRaisesRegex(ValueError, "prompt"):
+            LLM(model="m", base_url="http://127.0.0.1:9/v1", api_key="none",
+                prompt="otro")
+        # sin proveedor propio no hay donde colgar el override: falla en decide()
+        a = LLM(model="m", prompt="simple")
+        with self.assertRaisesRegex(ValueError, "prompt=simple"):
+            a.decide("estado", TRIAGE_QS)
+
+    def test_capture_raw_attempts(self):
+        body_text = _answers_payload("probabilities")
+
+        def plan(n, body):
+            return {"json": _chat_completion(body_text)}
+
+        with FakeOpenAIServer(plan) as srv:
+            a = self._adapter(srv.base_url, model="m", capture_raw="true")
+            out = a.decide("estado", TRIAGE_QS)
+            b = self._adapter(srv.base_url, model="m")
+            out_b = b.decide("estado", TRIAGE_QS)
+        self.assertNotIn("raw", out_b)
+        attempts = out["raw"]
+        self.assertEqual(len(attempts), 1)
+        self.assertEqual(attempts[0]["request"]["model"], "m")
+        content = attempts[0]["llm_response"]["choices"][0]["message"]["content"]
+        self.assertEqual(json.loads(content), json.loads(body_text))
+        self.assertEqual(attempts[0]["debug_info"]["finish_reason"], "stop")
 
     def test_truncated_response(self):
         def plan(n, body):

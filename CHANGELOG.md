@@ -13,6 +13,530 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [0.32.0] - 2026-10-04 — JEV-67: Qwen3.8-27B local con preguntas visibles
+
+- **Batería con visibilidad verificada (JEV-67):** Qwen3.8-27B local, thinking
+  off, temp 0, con las preguntas en el prompt (ruta struct + inyección),
+  195 casos × 11 fases, 0 errores en las 8 celdas: FP8 prob **51**,
+  FP8 nostruct temp 0 **51**, NVFP4 prob **50**, NVFP4 discrete **63**,
+  GGUF prob **48**, GGUF discrete **63** (A3/A4 y sondas aparte).
+- **La gramática no cambia decisiones** en FP8/SGLang con preguntas visibles:
+  acuerdo A1↔A2 967/969 (99.8 %, IC95 inferior 99.3 %) y Δ ajustado −0.2.
+  El 56/56 de JEV-66 generaliza a la batería completa.
+- **Discrete supera a probabilities** (+12 a +15 ajustado, B2.b/C2.b
+  refutadas) con preguntas visibles en ambos backends; los timeouts/`length`
+  de papers de JEV-65 (a ciegas) desaparecen (0 fallos).
+- **Rotación choice (A3):** 24/259 cambios de etiqueta — inconclusa (cota
+  superior 13.5 %); 3/24 conservan posición, sin exceso significativo
+  (A3.b); el orden sí afecta al acierto pareado (A3.c, +6.2 pp [+2.6, +9.9]
+  a favor de rot1).
+- **Sonda de inyección (RQ6):** SGLang (.80/.81), llama.cpp (.70), vLLM
+  0.29.0 (.81) y Ollama 0.32.14 **no** hacen visibles las preguntas del
+  `response_format` (tokens del primer intento + canario conductual,
+  concordantes; D-vllm 16/0 y D-ollama 10/0 nulos); usar
+  `inject_schema_in_prompt`.
+- **Revisión externa (codex) sobre la ejecución:** cifras reproducidas;
+  corregidos — la vigilancia de tokens de las celdas discrete (offsets mal
+  cargados; comprobación posterior 195/195 OK), identidad e historial de
+  puertas (`gate_id` + referencia desde la batería), el análisis de «conserva
+  posición» (etiqueta nueva, no la vieja), la reanudación (claves operativas
+  separadas de la config congelada, pre-validación de todas las fases,
+  contadores reconstruidos), el informe (ausentes ≠ ok, máscaras NO
+  EVALUABLE, evidencia real de P+), `git_dirty` en meta y tests de regresión.
+- **`adapters/llm.py`:** opción `rotate_choice=<int>` (rota las claves de
+  criteria de las choice en prompt y esquema; meta lleva `perm_sha256`).
+- **Nuevos módulos:** `jevbench/rotation.py` (helpers movidos de diag65),
+  `jevbench/jev67.py` (puerta de visibilidad §5.1, supervisor de batería con
+  regla de tokens por caso, informe y clasificación §8.2 con IC en stdlib),
+  `jevbench/probe_injection.py` (sonda (T) de tokens + canario (C)).
+- **`diag66`:** `--prefix` para runs de diagnóstico JEV-67 (P+live, D-*).
+- Manifiesto: `docs/infra_runs/qwen38_jev67.md`.
+
+## [0.31.0] - 2026-10-04 — JEV-66: mecanismo de los vectores nulos confirmado
+
+- **Confirmación causal (JEV-66):** la celda `typesafe_struct` con el esquema
+  serializado además en el system prompt (`inject_schema_in_prompt=true`,
+  gramática `response_format` intacta) produce **0 vectores nulos** en los 12
+  casos JEV-63 × 3 reps en los tres backends locales (NVFP4/SGLang,
+  FP8/SGLang, GGUF/llama.cpp), mientras el control sin inyección en la misma
+  sesión reproduce la familia del síntoma (8–14 nulos/rep + `length` en T16;
+  firma por ID exacta solo en GGUF).
+  Predicción pre-registrada cumplida: los runs `structured` locales eran
+  **medición a ciegas** (el modelo no veía las preguntas).
+- **Revisión externa de JEV-66 (codex):** 4 hallazgos corregidos — los
+  informes `diag65`/`diag66` distinguen ahora «sin captura raw» de «captura
+  sin nulos» (columna nueva); la firma del control queda descrita como
+  familia reproducida, no idéntica, con las variaciones por rep anotadas;
+  se documenta la ejecución parcial preservada en nvfp4 r1; y se re-matiza
+  que la ablación JEV-65 no comparó las variantes con preguntas visibles, así
+  que un posible efecto de las frases en esa condición sigue sin medirse.
+- **`adapters/llm.py`:** opción `inject_schema_in_prompt` (opción A del
+  pre-registro) — añade al system prompt el mismo apéndice de esquema que la
+  librería usa en `structured=false`, conservando la gramática; el texto
+  enviado es byte a byte el de la ruta nostruct (test).
+  `expected_system_prompt_sha256` reproduce el prompt inyectado sin petición;
+  la opción queda en `meta` y en la protección de reanudación.
+- **`jevbench/diag66.py` + `diag66_report.py`:** runner de las dos celdas
+  pre-registradas (orden alternado, seeds 101/202/303, mismas protecciones
+  que diag65) e informe por celda/rep con nulos crudos, tokens de entrada,
+  acuerdo de decisiones y acierto diagnóstico.
+- **Tests:** `tests/test_diag66.py` (matriz, orden, reanudación, informe) y
+  dos tests nuevos del adaptador (payload inyectado = nostruct + gramática;
+  validación de la opción). 117 tests en verde.
+- **Manifiesto** `docs/infra_runs/diag_qwen38_jev66.md`; runs
+  `results/diag_qwen38_jev66_*/` (216 evaluaciones, solo GPU local). JEV-A-2
+  actualizado. Sin cambios de GT/scorer/históricos.
+
+## [0.30.1] - 2026-10-04 — correcciones de la revisión externa (JEV-60 + JEV-65)
+
+- **Conclusión JEV-65 matizada** (bloqueante): las frases anti-inyección no
+  son *necesarias ni suficientes* — quitarlas baja el conteo de nulos en FP8
+  (14→11/rep), así que no se excluye contribución parcial. Texto corregido en
+  CHANGELOG 0.30.0, resultados, modelos, manifiesto, web y sitio.
+- **`diag65.py`: reanudación estricta** (bloqueante): `_check_resume` compara
+  ahora la configuración efectiva completa (modelo, endpoint, límites,
+  normalización, `questions_hash` y el sha del system prompt **calculado para
+  la fase** — los prompts simples incrustan las preguntas; la familia
+  typesafe+nostruct queda marcada como no verificable sin petición) en ambas
+  direcciones, y los casos con error se conservan en vez de re-ejecutarse y
+  sobrescribirse (`--retry-errors` para repetirlos explícitamente).
+- **`diag65_report.py`:** acierto base/rot de la sección C ahora pareado
+  sobre la intersección de preguntas respondidas (con respuestas exclusivas
+  y casos sin pareja reportados aparte); `missing` cubre fases y
+  repeticiones enteras ausentes; la tasa de primera opción de los runs
+  rotados se cuenta sobre el orden rotado; la validación del raw exige
+  números finitos en [0,1] (los booleanos ya no valen), tolera estructuras
+  malformadas y registra min/max de sumas y las fuera de [0.95,1.05].
+- **`adapters/llm.py`:** `expected_system_prompt_sha256(questions)` reproduce
+  el prompt que se enviará (variantes simple + familia typesafe en struct).
+- **Alerta JEV-60:** corregida la afirmación de que el contexto del revisor
+  levanta la sensibilidad de sol — una pasada y revisor detectan los mismos
+  22/30 con 0 FP (las 60 decisiones coinciden una a una).
+- **Discrete JEV-65 matizado:** el agotamiento de salida solo está
+  demostrado en NVFP4 (`length` + timeouts); en FP8 solo hay timeouts de
+  300 s — texto corregido en todas las superficies.
+- **Manifiestos JEV-63/JEV-65:** revisiones HF de pesos verificadas por
+  hashes LFS (NVFP4-BF16-LMHead `009632fe…`, DSpark `b9a5dbdf…`, FP8
+  `017b9c7a…` con sha256 de pesos/tokenizer iguales a los OID del repo),
+  digest completo de la imagen y config efectiva del servidor; lo no
+  recuperable (tmux caído) queda marcado como reconstruido.
+- **Web:** dos nuevos pasos en «Las pruebas, en orden» narrando JEV-63/JEV-65
+  y JEV-60 con ejemplos de la evidencia (vector nulo crudo, frases abladas,
+  repetición a `length`, decisiones de alerta idénticas); JEV-A-2 (KB
+  YouTrack) actualizado y JEV-65 cerrada tras la revisión.
+- **Revisión externa de la web completa (claude, vía Herdr):** 14 afirmaciones
+  corregidas (coste Qwen-Cerebras ~64× —no 18×—, «mejor medida» →
+  «recomendada» del circuito, luna-revisor no empeora triaje —falla por
+  ganancia y alerta—, Strands trunc difiere en una decisión adv5, Clef acotado
+  a decisores dedicados, ~3× coste de luna→Jev —no 4×—, −16* parcial del
+  histórico NVFP4, matiz «menos ceros ≠ mejor salida» en V3) y 8 de
+  estructura (Clef-Flash pintado en la alerta y su revisor en REVIEWERS,
+  variante Cerebras con esquema en el dumbbell, listón acotado a los sets del
+  criterio, deduplicados los pasos de sol y reordenados por fecha, GGUF y
+  latencias DGX en la tabla de hardware, «LLM en claro» en la navegación,
+  media de 10 sets —ood excluido—). Las mismas cifras corregidas en
+  `cascada_jev.md`, `resultados.md`, `AGENTS.md` y el manifiesto de Strands.
+- **Causa raíz de los vectores nulos identificada (claude, 4-oct, verificado
+  en código y tokens):** con `structured=true` el `system-one-adapter` envía
+  solo el system prompt y el documento; las preguntas van únicamente al
+  `response_format`, que SGLang/llama.cpp/vLLM usan solo para la gramática —
+  el modelo local responde **a ciegas** (222 tokens de entrada frente a 958
+  en Cerebras, que sí inyecta el esquema). Así quedan reexplicados los ceros
+  de JEV-63/JEV-65, el −16 NVFP4 y el −40 Flash-Next (medidas inválidas del
+  modelo, no del contrato), los timeouts/`length` de `discrete` en papers y
+  la ausencia del síntoma en Cerebras. Documentado en los dos manifiestos,
+  `modelos.md`, `resultados.md`, web y sitio. Prueba de confirmación
+  pendiente de pre-registro (struct con el esquema inyectado en el prompt →
+  predicción 0 nulos) y control de posición en `probabilities` (el de
+  `discrete` no cubre el empate nulo→uniforme→primera clave del scorer).
+  Matices aplicados: las 60 alertas idénticas de sol tienen tres TP con
+  probabilidad empujada al borde del umbral; «sin petición viva» queda
+  acotado al lado cliente; `capture_raw` guarda cuerpos sin redactar
+  (documentado en `run.py`, `llm.py` y la ficha — `publish.py` lo elimina del
+  espejo). Marcador: los dos runs struct locales se etiquetan «sin
+  preguntas».
+- Tests: +11 en `tests/test_diag65.py` cubriendo los fixes.
+
+## [0.30.0] - 2026-10-04 — JEV-65: las frases anti-inyección no son necesarias ni suficientes
+
+- Ablación controlada del prompt (matriz pre-registrada, 720 evaluaciones nuevas
+  en NVFP4 .80 + FP8 .81): V3 (V1 sin las dos frases anti-inyección) y V5
+  (redacción alternativa) siguen emitiendo vectores nulos bajo esquema —
+  NVFP4 9 y 8–14/rep, FP8 11 y 13–16/rep — y V4 (V2 + las frases) sigue sano.
+  Las frases no son ni necesarias ni suficientes para la degeneración, aunque
+  en FP8 quitarlas baja el conteo de nulos (14→11/rep): la ablación no excluye
+  una contribución parcial. El componente necesario queda en otra parte del
+  prompt TypeSafe (inconcluso), con los históricos JEV-63 como referencia.
+- En `discrete` los vectores nulos no existen por construcción del esquema,
+  pero V1 + papers degenera igual: fallo sistemático de salida — `length` y
+  timeouts de 300 s en NVFP4, solo timeouts en FP8 (agotamiento demostrado
+  solo en NVFP4). Discrete oculta la forma, no la degeneración.
+- Control de posición: rotar una posición las claves choice (prompt y esquema)
+  apenas cambia decisiones ni acierto — sin sesgo de posición demostrado.
+- Adaptador `llm`: nuevas variantes `prompt=sin_antinj|simple_antinj|antinj_alt`
+  (transformación literal del prompt de la librería, conserva tail de modo y
+  apéndice nostruct) y `system_prompt_sha256` registrado en cada run.
+- `jevbench.diag65` + `diag65_report` (missing por ID, validación raw por tipo,
+  mediana con fallos, coste desconocido ≠ 0, acuerdo por decisiones) y
+  `tests/test_diag65.py`; prompts congelados en `docs/experimentos/`;
+  manifiesto `docs/infra_runs/diag_qwen38_prompt_ablacion.md`.
+- `battery._load` lee `JEVBENCH_GT` en tiempo de llamada: el orden de imports
+  de los tests ya no rompe el rescoring legacy.
+- Sin cambios de casos, GT, scorer ni históricos. Diagnóstico de 12/6 casos.
+
+## [0.29.0] - 2026-10-04 — JEV-60: alcance completo de gpt-6.1-sol (mejor revisor medido)
+
+- `llm_gpt61sol_low_disc` (modo `discrete`, 195 casos, $0.38): ajustado **63** —
+  ~2 puntos bajo `probabilities` (65), mismo patrón que luna y peor calibrado
+  (Brier noul 0.073).
+- `decider_4b_solrev_*` (sol como revisor de Decider-4B): **cumple JEV-32** y es el
+  primer revisor que supera en ajustado al revisor Jev sobre ese D1 — audit **66** /
+  review **68** frente a 64 (136 % de la ganancia en adv3+adv5, 105 % en triaje,
+  alerta adv5 9/10 TP · 0 FP). Significativo solo en `relevance` de papers (p = 0.04);
+  pasada-2 $1.05, ~100× la de Jev.
+- `llm_gpt61sol_jevrev_*` (sol como D1 + revisor Jev): ajustado **66**, por debajo de
+  `llm_gpt6luna_jevrev_audit` (71), que sigue siendo la mejor configuración medida.
+- `llm_gpt61sol_low_alert_raw` (alerta de una pasada, pre-registrada): **22/30 TP ·
+  0/30 FP — no cumple** (adv4 5/10); entre Span-01 (8/30) y Clef-27B (27/30).
+- Gasto total JEV-60: ~$1.50 medidos sobre el tope autorizado de $3.
+
+## [0.28.1] - 2026-10-04 — Revisión independiente JEV-63 y protocolo JEV-65
+
+- Verificados 576 casos evaluados, 96 vectores nulos crudos y 3 errores
+  NVFP4 por salida agotada; Cerebras $0.17217723 registrado por tokens/tarifas.
+- Acotada la conclusión a prompt completo × ruta estructurada en la muestra;
+  sin mecanismo interno ni exclusión de efectos de precisión/backend.
+- JEV-65 revisado: controles actuales, hipótesis anti-inyección no confirmada,
+  sesgo de posición en discrete y límites de seguridad/generalización.
+- Corregida regresión de exportación pública: capturas raw privadas se sustituyen
+  por hash en el snapshot; predicciones y JSON privados se conservan intactos.
+
+## [0.28.0] - 2026-10-04 — JEV-63: la degeneración era prompt TypeSafe × esquema juntos
+
+- Matriz reducida ejecutada: 12 casos fijados × 2 prompts × 2 rutas × 3 reps en
+  cuatro configuraciones (NVFP4 .80, FP8 .81, Cerebras, GGUF Q4_K_M en Intel Arc
+  .70 — la extensión opcional se completó también): 576 evaluaciones.
+- **Resultado:** los vectores nulos (`0.0` en todas las opciones, leídos del raw
+  antes de normalizar) solo aparecen en la celda `typesafe_struct` de los tres
+  backends locales — 9/14/9 vectores por rep en NVFP4/FP8/GGUF, deterministas —
+  y en ninguna otra celda ni en Cerebras. Mismo esquema con prompt simple: 0;
+  mismo prompt sin esquema: 0. Se observa la interacción del prompt completo de
+  TypeSafe con la ruta estructurada; no identifica el aviso anti-inyección ni
+  excluye efectos de precisión/backend. Segunda forma
+  degenerada observada: repetición hasta `max_tokens` (`finish_reason=length`)
+  en triage_ext_en/T16, determinista en las 3 reps.
+- Adaptador `llm`: nuevas opciones `prompt=typesafe|simple` (sustituye el system
+  prompt por la plantilla pre-registrada `docs/experimentos/
+  diag_qwen38_prompt_simple.txt`, renderizada con las preguntas del set) y
+  `capture_raw` (guarda por caso los intentos del proveedor: payload real y
+  respuesta sin normalizar, también en caso de error vía `diag.raw`).
+  `reasoning_effort=none` aceptado (solo Cerebras: thinking off verificado).
+- Nuevos módulos `jevbench.diag63` (runner de la matriz, runs
+  `diag_qwen38_<bloque>_<celda>_r<rep>` reanudables) y `jevbench.diag63_report`
+  (resumen por celda/rep: validez, ceros crudos, uniformes normalizadas,
+  acuerdo entre reps, tiempos, coste).
+- Infraestructura: FP8 oficial (29 GB) e imagen `lmsysorg/sglang:qwen38-27b`
+  copiados de .80 a .81 (mismo digest) para servir el bloque FP8 sin tocar el
+  servicio NVFP4 del usuario; llama-server SYCL en .70 para el bloque GGUF.
+- Coste Cerebras registrado por tokens/tarifas: $0.17218 (presupuesto JEV-63: $1).
+- Docs: manifiesto `docs/infra_runs/diag_qwen38_jev63.md`, plan actualizado a
+  ejecutado, `modelos.md`/`resultados.md`/webs con el diagnóstico de la interacción.
+- Sin cambios de casos, GT, scorer ni históricos. Diagnóstico de 12 casos:
+  no es puntuación del marcador.
+
+## [0.27.3] - 2026-10-04 — Adaptador explicado y diagnóstico reducido
+
+- Marcador por set: iconos vectoriales homogéneos para local/API y sus
+  cascadas; espacio reservado y elipsis para evitar recortes de etiquetas.
+- Leyenda del marcador: reutiliza los mismos iconos vectoriales local/API
+  de las filas, en vez de glifos de texto.
+- Skill actualizar-web y procedimiento: control de coherencia gráfica entre
+  marcas y leyenda, cascadas, etiquetas largas y revisión escritorio/móvil.
+
+- Explicación accesible en ambas webs: ejecución, contenido útil y confianza
+  son problemas distintos; conclusiones y límites separados.
+- JEV-63 pre-registra 12 casos × dos prompts × dos rutas × tres repeticiones
+  en NVFP4, FP8 y Cerebras, con extensión Intel opcional y bóveda ia-models.
+- Síntesis añadida a JEV-A-2. Sin nuevas inferencias ni cambios de GT/scoring.
+
+## [0.27.2] - 2026-10-04 — Conclusiones auditadas del adaptador LLM
+
+- Corregidas web/fichas/manifiestos: asociación con salida estructurada,
+  sin causa interna aislada ni equivalencia de rutas demostrada. El histórico
+  NVFP4 difiere también en límites; vLLM corresponde a otro modelo.
+- Cerebras sin esquema: un reintento por malformado en probabilities y otro
+  en discrete; cero errores finales. Mínimo McNemar probabilities=0.0625.
+- Cobertura del contador explícita: resumen 9 fases, batería completa 11;
+  histórico 53/218 vs 67/257. Sin cambios de scoring, GT o JSON históricos.
+- JEV-A-2 actualizado y JEV-62 registra integración local/QA; sin nuevas
+  inferencias ni push/despliegue. Las conclusiones previas se conservan como
+  histórico y quedan revisadas por esta entrada.
+
+## [0.27.1] - 2026-10-04 — Síntesis adaptador LLM en la web (JEV-58+61)
+
+- Tarjeta Qwen retitulada «48–52 sin él» con la ablación cerrada
+  (NVFP4 −16→52 misma variable) y la comparación de bandas local↔Cerebras.
+- Nota nueva «Salida válida ≠ salida sana»: JSON conforme y degenerado a la
+  vez; el esquema valida la forma, no el contenido; guardián `unif choice`.
+- Circuito recomendado: alternativa todo-API Jev → revisor Cerebras-Qwen
+  (68–69, ~$0.004/caso de pasada-2).
+- Entrada «LLM abiertos en los DGX»: el −16 queda como artefacto del protocolo.
+- `metodologia.html` cerrada con NVFP4 52 e independencia de esquema en
+  Cerebras; `modelos.md` marca JEV-57/58 resuelto con la matriz local.
+- JEV-A-2: sección de cierre con matriz, mecanismo y lecciones combinadas.
+
+## [0.27.0] - 2026-10-04 — JEV-58: el mecanismo aislado + batería GGUF (48) y NVFP4-nostruct
+
+- **Mecanismo cerrado (diagnóstico JEV-58 en .80):** la emisión de 0.0 bajo
+  esquema la dispara el **contenido difícil del documento**, no la
+  anti-inyección del prompt, el tamaño del esquema, la cuantización ni el
+  backend. Reproducido con réplica exacta del wire del adaptador
+  (system prompt + `<document>` + JSON Schema estricto). Mismo prompt+esquema
+  con caso normal → probabilidades reales.
+- **Métrica nueva `unif choice`** en `score --summary` y en el marcador:
+  decisiones `choice` casi uniformes (máx−mín < 0.05) por run — detecta el
+  síntoma en históricos: NVFP4+SGLang 53/218, Flash-Next+vLLM 31/215, todo lo
+  demás 0/219.
+- Runs nuevos:
+  `llm_qwen38_27b_gguf81_nostruct_prob` (llama.cpp/GGUF Q4_K_M en .81,
+  ajustado **48**, 0 errores, 0/219 unif — tercer backend reproduce el
+  «Qwen local sano» ~48-49);
+  `llm_qwen38_27b_nvfp4_nostruct_prob` (SGLang/NVFP4 en .80, la celda
+  pre-registrada de JEV-58);
+  smokes `smoke_qwen38_gguf81_nostruct`, `smoke_qwen38_nvfp4_struct_v2`.
+- Manifiesto `docs/infra_runs/llm_qwen38_27b_gguf81_nostruct_prob.md`;
+  tarjeta web y metodología reescritas con el mecanismo aislado.
+- **JEV-61 — cuadrícula Cerebras cerrada + revisor Cerebras:** la celda que
+  faltaba, `qwen-3.8-27b` en la API de Cerebras con `structured=false`, da
+  ajustado **65** (`llm_cerebras_qwen38_27b_nostruct_prob`, $0.40); las celdas
+  `discrete` dan 58/58. Las cuatro celdas con 0 vectores degenerados → la
+  salida de Cerebras no depende del esquema; la brecha 59↔49 con el FP8 local
+  queda en pesos/precisión/backend (descriptiva). Como revisor de `jev_v3`
+  (cascada todo-API): ajustado **68/69** en audit — sobre el 64 de Jev→Jev,
+  sin significación McNemar — y alerta 23–24/30 con 0 FP. Coste total de la
+  sesión: ~$2.51. Manifiestos en `docs/infra_runs/`.
+- La marca local/API (⌂/☁) de las cascadas muestra ahora las dos patas
+  (`d1_local`→`rev_local`); `run_local` lee también el campo `reviewer` de los
+  `_raw`, y el tooltip «Salida LLM solicitada» incluye el modo
+  (probabilities/discrete).
+
+## [0.26.1] - 2026-10-04 — Auditoría JEV-57 y salida LLM visible
+
+- Se matizan conclusiones: los smoke SGLang/Ollama señalan structured, pero
+  no aíslan modelo, prompt/esquema y servidor ni efectos de precisión.
+  FP8 sin esquema da 49; NVFP4 solo smoke. Corrección de «única variable»
+  y ranking papers. 0.25.0/0.26.0 se conservan como histórico revisado.
+- structured=true/false de metadatos por run/set visible en marcador y
+  entorno del sitio. Tests de procedencia/saneado, sin inferir soporte efectivo.
+- Cerebras se marca como API externa: una URL compatible OpenAI no implica
+  ejecución local. Se añade regresión frente al endpoint propio del DGX.
+- JEV-A-2 actualizado con evidencia/límites y Ollama. JEV-58 prepara NVFP4
+  completo y controles: sin nuevas inferencias. JEV-59 integra docs y ambas
+  webs localmente; sin push/despliegue.
+
+## [0.26.0] - 2026-10-04 — JEV-57, matriz completa: el modelo emite ceros bajo esquema forzado
+
+- **Réplica en Ollama/llama.cpp** (`qwen3.8:27b` GGUF, .80): con `structured=true`
+  también emite `0.0` (8/10 uniformes en adv1); con `structured=false`, 0/10
+  uniformes y **10/10** dept. Dos motores de gramática independientes (xgrammar
+  y llama.cpp) con tres cuantizaciones distintas (NVFP4, FP8, GGUF) producen el
+  mismo fallo → **comportamiento del modelo bajo decodificación restringida**,
+  no bug de backend ni de cuantización. Cerebras lo evita por su propio camino.
+- Smokes `smoke_qwen38_ollama_*`; manifiesto, marcador, fichas y tarjeta web
+  corregidos («era el esquema forzado»). Metodología: párrafo nuevo «Structured
+  output: la trampa silenciosa» + señal de alarma en `evaluar-modelo-nuevo.md`.
+- `MiaAI-Lab/Qwen3.8-27B-SGLang-DGX-Spark` en .80: `git pull` — sin commits
+  nuevos (build reciente, pin nightly con el fix sglang#35255).
+
+## [0.25.0] - 2026-10-04 — JEV-57 resuelta: era el structured output de SGLang, no la cuantización
+
+- **Ablación completa:** el FP8 oficial (`Qwen/Qwen3.8-27B-FP8`, vía ModelScope)
+  en el mismo SGLang de .80 reproduce la emisión de ceros con `structured=true`
+  (5/10 en adv1), y con `structured=false` desaparece en **NVFP4 y FP8 por
+  igual** (0/10, 9/10 dept). El culpable es el camino de decodificación
+  restringida por esquema de este build de SGLang en la familia híbrida GDN/VL —
+  no los pesos, ni el muestreo, ni el thinking.
+- Run nuevo `llm_qwen38_27b_fp8_nostruct_prob` (195 casos, 11 fases, 0 errores):
+  **ajustado 49**, por encima de Jev (45) — la lectura correcta del Qwen local.
+  0/259 decisiones choice uniformes; papers 80.3 (ρ 0.82, mejor de una pasada
+  tras sol); gana a Jev en `depth` (p<0.01) y `practice` (p=0.02). El −16 del
+  run NVFP4 queda explicado como artefacto de serving.
+- Manifiesto `docs/infra_runs/llm_qwen38_27b_fp8_nostruct_prob.md`, smokes
+  versionados (`smoke_qwen38_*`), marcador, ficha, tarjeta web y Seguimiento
+  actualizados con la resolución.
+
+## [0.24.0] - 2026-10-04 — JEV-57 ejecutado: la abstención del Qwen local no es el muestreo
+
+- Smoke discriminador en .80 sobre el mismo NVFP4/SGLang (`smoke_qwen38_t0`,
+  `smoke_qwen38_t0_think`, `smoke_qwen38_t0_nonorm`): la "abstención" es
+  **emisión literal de `0.0` en todas las opciones** — el `normalize` del
+  adaptador la convierte en uniforme y el desempate cae en la primera opción.
+- Ni `temperature=0` ni `enable_thinking` la apagan (6/10 y 8/10 en adv1 — el
+  thinking la empeora): no es la configuración de generación sino los pesos
+  NVFP4 de la comunidad o el backend. Batería local descartada por el criterio
+  pre-registrado; la ablación real (bf16/FP8 oficial) queda como fase 3.
+- Docs al día: mecanismo corregido en `resultados.md`, `modelos.md`, tarjeta web
+  y Seguimiento. Versión minor por experimento ejecutado.
+
+## [0.23.2] - 2026-10-03 — JEV-57 pre-registrado + docs al día
+
+- **JEV-57 creada**: discriminador config vs cuantización para el Qwen3.8-27B
+  local (NVFP4): smoke dirigido con `temperature=0` ± thinking sobre los casos
+  donde el run original se abstenía, y batería solo si la abstención en `choice`
+  cae por debajo del 5 %. Pre-registro completo en la issue; referencia en la
+  sección Seguimiento de `docs/resultados.md`.
+- AGENTS.md: añadido `docs/plan_cerebras.md` a la estructura, `plan_gpt61sol.md`
+  marcado como ejecutado y fila LLM generalista con Cerebras.
+
+## [0.23.1] - 2026-10-03 — Análisis NVFP4 local vs Cerebras + nota web
+
+- Análisis de la brecha Qwen3.8-27B local (−16) ↔ Cerebras (59): concentrada en
+  las preguntas `choice` (department/domain/depth); el run local declara
+  distribuciones casi uniformes en el **26 % de las decisiones de elección**
+  (0 % en la nube y en cualquier otro run) — el modelo se "abstiene" y el
+  desempate cae en la primera opción (en adv1 eligió `bronchoscopia` 7/10 veces,
+  6 mal). Documentado en `docs/resultados.md` y `docs/modelos.md`; comparación
+  descriptiva, no ablación de cuantización.
+- Web (`docs/web/template.html`, propagada a `banco-jev.html` y `site/index.html`):
+  tarjeta nueva «El mismo Qwen, de −16 a 59: pesaba cómo se servía», tarjeta
+  «Clef-27B lidera» actualizada con Qwen-Cerebras 59, fila LLM generalista con
+  los modelos Cerebras, latencias y alcance no medido.
+- `docs/site_src/metodologia.html`: la tabla de experimentos ya refleja que
+  Clef-27B sí cumple el criterio de revisor abierto (estaba obsoleta) y un
+  párrafo sobre los rate limits por modelo de Cerebras y `min_interval`.
+- README: «Resultado en una línea» actualizado (Clef-27B como revisor abierto
+  que sí cumple; Qwen3.8-27B·Cerebras en una pasada).
+
+## [0.23.0] - 2026-10-03 — Qwen3.8-27B en Cerebras (JEV-54, cierre)
+
+- Run `llm_cerebras_qwen38_27b_low_prob`: `qwen-3.8-27b` en la API de Cerebras con
+  el mismo protocolo que el run de GPT-OSS-120B, **sin `min_interval`**: sus
+  límites de cuenta son por modelo y mucho más holgados (450 req/min, 27 000 req/h
+  frente a 5 y 150), así que su `ms` (~0.77 s) sí es latencia real.
+- 195 casos, 11 fases, 0 errores en ~3 min; coste medido **$0.44** (~$0.0022/caso;
+  su `low` razona ~3× más tokens de salida que el de GPT-OSS).
+- Resultado: ajustado **59**, el mejor LLM generalista tras sol (65) y luna (61),
+  por encima de Jev (45) y Clef-27B (52). **Victoria significativa sobre Jev en
+  `same_day` de adv5 (6–0, p = 0.03)**; sin derrotas significativas frente a Jev
+  ni luna. El mismo tamaño en NVFP4 local daba −16 (comparación descriptiva, no
+  ablación). Marcador, ficha y ambas webs actualizadas; manifiesto en
+  `docs/infra_runs/llm_cerebras_qwen38_27b_low_prob.md`. Lección registrada en el
+  manifiesto y el plan: los rate limits de Cerebras son por modelo.
+
+## [0.22.0] - 2026-10-03 — GPT-OSS-120B en Cerebras (JEV-54) + `min_interval` en el adaptador llm
+
+- Nueva opción `min_interval=<s>` del adaptador `llm` (`provider=openai`): espacia el
+  inicio de peticiones HTTP consecutivas — correcciones por JSON mal formado incluidas —
+  para respetar límites de peticiones del proveedor. Se registra en `meta`. Test nuevo
+  `test_min_interval_spaces_requests`. La cuenta de Cerebras usada tiene topes de
+  5 req/min y 150 req/h; sin pacing el smoke recibió 429.
+- Run `llm_cerebras_gptoss120b_low_prob`: `gpt-oss-120b` en la API de Cerebras
+  (`base_url=https://api.cerebras.ai/v1`, Chat Completions), mismo protocolo
+  pre-registrado en `docs/plan_cerebras.md` (`reasoning_effort=low`, `temperature=0`,
+  `reasoning_format=parsed`, `max_tokens=8192`, `min_interval=27`). 195 casos,
+  11 fases, 0 errores, 0 reintentos, coste medido **$0.12**; manifiesto en
+  `docs/infra_runs/llm_cerebras_gptoss120b_low_prob.md`.
+- Resultado: ajustado **34**, entre la mayoría (0) y Jev (45)/Clef-27B (52)/luna (61)/
+  sol (65); muy por encima del Qwen3.8-27B local NVFP4 (−16, comparación descriptiva).
+  Sin diferencias significativas por pregunta frente a Jev ni luna; la brecha agregada
+  viene de adv3, ρ relevancia de papers y calibración. Marcador, ficha
+  (`docs/modelos.md` §LLM generalista) y ambas webs actualizadas; en las webs el `ms`
+  del run se publica como n/a porque incluye el pacing, no la latencia del modelo.
+- `docs/procedimientos/evaluar-modelo-nuevo.md`: nuevo paso sobre rate limits de API
+  (cabeceras `x-ratelimit-*`, `min_interval`, efecto en `ms`/`usage.latency`).
+- `qwen-3.8-27b` en Cerebras queda pendiente de autorización de gasto (JEV-54 sigue
+  abierto para esa parte).
+
+## [0.21.2] - 2026-10-03 — Introducción didáctica en la web (JEV-55)
+
+- YouTrack: propuesta editorial JEV-56 (pendiente), base de conocimiento JEV-A-1/A-2
+  con metodología, resultados y limitaciones al 3-oct; notas fechadas en HOM-A-2/A-8
+  distinguen evaluaciones terminadas de inventario de pesos/NAS no revalidado.
+- Nueva sección «Decisiones tipadas, no un chat» en `docs/web/template.html`,
+  antes de las conclusiones: explica el contrato System One (estado + preguntas
+  tipadas → distribuciones de probabilidad), los tipos `choice`/`score`/`noul`
+  con un ejemplo ficticio con barras de probabilidad, y la diferencia entre un
+  decisor especializado y un LLM generalista servido con `system-one-adapter`.
+- Tarjetas sobre cómo leer una probabilidad declarada (no garantiza calibración),
+  la cascada de revisión y qué demuestra —y qué no— el marcador, con enlaces a
+  método, lectura de métricas y marcador. Entrada «Qué es» en la navegación.
+- Se propaga a las dos salidas (artifact `docs/web/banco-jev.html` y portada
+  `site/index.html`) al regenerar con `jevbench.web` y `jevbench.site`.
+
+## [0.21.1] - 2026-10-03 — Historia del marcador legible (JEV-50)
+
+- Referencia fija de Jev en la historia y versión probada en el marcador por set:
+  etiquetas compactas Jev 1.13, versión completa `jev-1.13-20260917` en detalle,
+  extraída de los resultados y de las fuentes de cascada, no del alias latest.
+- Gráfico responsive compacto con solo tres récords diarios y tarjetas de líderes;
+  se elimina el scroll horizontal del gráfico y las etiquetas amontonadas.
+- Hitos separados en cronología (vertical en móvil) y tabla desplegable con todos
+  los runs, fechas y cobertura, incluidos resultados negativos y parciales.
+- Tooltips de récord accesibles por ratón, toque y teclado, con cierre al perder
+  foco o pulsar Escape. Los récords usan el máximo por fecha, sin inventar orden intradía.
+- Alineada la versión por encima de la entrada 0.21.0 ya presente en el changelog.
+- Correcciones de la ficha Clef-Flash (JEV-53): el `depth` de papers es una
+  victoria frente a Jev (8–1, p=0.04), no una derrota; su ρ 0.90 es la tercera
+  mejor relevancia de una pasada, no la mejor; `clefrev_avg` es ajustado 55, no 50;
+  añadido su punto débil en adv1+adv2 (bajo la línea trivial). `RUN_DATES` cubre
+  `decider_4b_clefflashrev_review` y la entrada del sitio precisa que el revisor
+  corrió en la Arc, no en GB10. Nueva entrada de Clef-Flash en «Las pruebas,
+  en orden».
+
+## [0.21.0] - 2026-10-03 — Clef-Flash 9B en Intel XPU (JEV-53)
+
+- Nuevo run `clef_flash_9b_xpu`: `Cloudflare/clef-flash` (9B, revisión `17f0b0ad`)
+  en el Intel Arc Pro B70 de .70, adaptador `clef` in-process (`device=xpu`, bf16,
+  ventana 16384 — los 195 casos caben sin truncado). 195/195, 0 errores.
+  Ajustado **41** (Clef-27B 52, Jev 45): única derrota significativa frente al 27B
+  en `urgency` de adv2 (p=0.03); ρ relevancia 0.90. ~0,14 s/caso.
+- Revisor `decider_4b_clefflashrev_{raw,review,audit,avg}`: ajustado 47 con `audit`;
+  recupera 38 % de la ganancia de Jev en adv3+adv5 → no pasa el listón JEV-32
+  (2º mejor revisor local). Alerta de una pasada `clef_flash_9b_xpu_alert_raw`:
+  7/10 TP · 0 FP por set — cumple el criterio en el límite.
+- Manifiesto `docs/infra_runs/clef_flash_9b_xpu.md`, ficha en `docs/modelos.md`,
+  secciones en `cascada_jev.md` y `alerta_manipulacion.md`, marcador, web y sitio
+  (familia Clef ya existente; fila compartida en la tabla de modelos).
+
+## [0.20.2] - 2026-10-03 — Cuantización de las líneas base Qwen
+
+- Historia del marcador (JEV-50): altura de 920 px también en móvil, etiquetas
+  de récord sin solapamiento entre sí y hitboxes alineadas con los puntos;
+  se mantiene el desplazamiento horizontal y no cambian los datos.
+- Preparado `docs/plan_cerebras.md` (JEV-54): acceso de catálogo confirmado a
+  Qwen3.8-27B y GPT-OSS-120B; dos baterías vía adaptador TypeSafe pre-registradas,
+  sin inferencias, implementación ni ejecución. Precisión nativa FP16/FP8
+  documentada sin confundirla con la etiqueta FP16 del formato OpenRouter.
+- Web y sitio: etiquetas NVFP4 para Qwen3.8-27B y Flash-Next; corregida la
+  etiqueta errónea BF16 del 27B, cuyo LM head sí conserva BF16.
+- Ficha y notas del marcador: la comparación Qwen NVFP4 frente a Clef BF16
+  no permite aislar el efecto de la cuantización del entrenamiento y la cabeza.
+
+## [0.20.1] - 2026-10-03 — Regresión web y procedimientos (JEV-52)
+
+- Nuevos tests `WebAssets` (`test_site.py`): cada familia de RUNS tiene color en las
+  cuatro ubicaciones (template ×3 temas, site.css, FAM de template y common.js), cada
+  familia tiene fila en la tabla «Modelos» de la portada y `run_local` clasifica
+  local/API correctamente, cascadas incluidas.
+- `evaluar-modelo-nuevo`: pre-registro de la política de ventana (strict primario,
+  variante `_trunc` aparte), comprobación de flags de la versión instalada (PyPI vs git)
+  y patrón .70 (venv + serve en 127.0.0.1 + túnel SSH); HF token ya persistido en
+  .70/.80/.81 (AGENTS.md, sección Secretos).
+- `actualizar-web`: checklist con la fila de la tabla «Modelos», la nota de
+  hardware/latencias y la marca automática local/API.
+- AGENTS.md: filas de CLM y Clef en la tabla de modelos (faltaban).
+
+## [0.20.0] - 2026-10-03 — Web: marca local/API e historia desplazable
+
+- El marcador por set distingue el modo de ejecución: `⌂` local (hardware
+  propio/LAN) y `☁` con API externa, en etiquetas, tabla, tooltip y leyenda.
+  `web.py` deriva el flag de `meta.adapter` (`llm` con `base_url` propio cuenta
+  como local; las fusiones de cascada se clasifican por el revisor de la
+  etiqueta).
+- «Historia del marcador» se expande en horizontal dentro de su propio contenedor
+  con scroll (ancho mínimo por día y por run, más aire entre puntos del mismo
+  día) en vez de comprimirse al ancho de la página.
+
 ## [0.19.0] - 2026-10-03 — Variante trunc de Strands y token HF persistente
 
 - Nuevo run `strands_2b_hobson_v19_xpu_trunc`: batería completa (195/195, 0 errores)
@@ -47,6 +571,13 @@ Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los co
   MuSiQue, BoardgameQA, HelpSteer2, generados — sin solapamiento conocido, y la
   cuarentena de su «JevBench public» de 231 tareas) y marcador, web y sitio con la
   familia nueva "Strands" (color propio).
+
+## [Unreleased]
+
+- Investigación de `Cloudflare/clef-flash` (9B, Apache-2.0): creada JEV-53 para
+  evaluar en Intel Arc Pro B70. Pesos ~17.75 GiB, contrato SystemOne compatible
+  con el adaptador `clef`; dependencias/imports comprobados, inferencia XPU pendiente.
+  El plan exige comprobar ausencia de truncado y comparar con Clef-27B.
 
 ## [0.17.1] - 2026-10-03 — Procedimientos y controles de publicación (JEV-52)
 

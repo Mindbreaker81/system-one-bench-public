@@ -51,6 +51,14 @@ def score_run(run, phase):
     out["ms"] = sum(ms) / len(ms) if ms else None
     out["ms_all"] = ms
     out["cost"] = sum(r.get("cost") or 0 for r in recs.values())
+    # Calidad de salida: decisiones `choice` casi uniformes (máx−mín < 0.05). La
+    # normalización del adaptador convierte vectores de ceros en uniformes, así
+    # que la tasa detecta la emisión degenerada de JEV-57 aunque el raw no esté.
+    cps = [a["probabilities"] for r in recs.values() if "error" not in r
+           for a in (r.get("answers") or {}).values()
+           if a.get("type") == "choice" and a.get("probabilities")]
+    out["n_choice"] = len(cps)
+    out["n_near_uniform"] = sum(1 for p in cps if max(p.values()) - min(p.values()) < 0.05)
     return out
 
 
@@ -129,8 +137,8 @@ def summary(runs):
     """One row per run with the headline numbers of every phase; returns the markdown table."""
     lines = []
     lines.append("| run | ajustado | triaje ES | triaje EN | dept ES+EN | papers | ρ relevancia | skip LOO | adv dept (1+2) | adv total "
-          "| triaje ext ES/EN | adv3 dept | adv3 total | Brier noul | ms mediana |")
-    lines.append("|" + "---|" * 15)
+          "| triaje ext ES/EN | adv3 dept | adv3 total | Brier noul | ms mediana | unif choice |")
+    lines.append("|" + "---|" * 16)
     base = {ph: baseline(ph) for ph in PHASES + EXTRA_PHASES}
     for run in runs:
         r = {ph: score_run(run, ph) for ph in PHASES + EXTRA_PHASES}
@@ -155,7 +163,8 @@ def summary(runs):
             f"{g('triage_ext_es', lambda x: fmt(x['pct']))} / {g('triage_ext_en', lambda x: fmt(x['pct']))}",
             g("adv3", lambda x: f"{x['per_q']['department']:g}/{x['n_ok']}"), g("adv3", lambda x: fmt(x["pct"])),
             fmt(sum(briers) / len(briers), 3) if briers else "—",
-            fmt(ms[len(ms) // 2], 0) if ms else "—"]) + " |")
+            fmt(ms[len(ms) // 2], 0) if ms else "—",
+            f"{sum(x['n_near_uniform'] for x in r.values() if x)}/{sum(x['n_choice'] for x in r.values() if x)}"]) + " |")
     b = base
     lines.append("| " + " | ".join([
         "*mayoría (oráculo)*", "0", fmt(b["triage_es"]["pct"]), fmt(b["triage_en"]["pct"]),
@@ -164,11 +173,12 @@ def summary(runs):
         f"{b['adv1']['per_q']['department'] + b['adv2']['per_q']['department']:g}/20",
         fmt((b["adv1"]["pct"] + b["adv2"]["pct"]) / 2),
         f"{fmt(b['triage_ext_es']['pct'])} / {fmt(b['triage_ext_en']['pct'])}",
-        f"{b['adv3']['per_q']['department']:g}/{b['adv3']['n']}", fmt(b["adv3"]["pct"]), "—", "—"]) + " |")
+        f"{b['adv3']['per_q']['department']:g}/{b['adv3']['n']}", fmt(b["adv3"]["pct"]), "—", "—", "—"]) + " |")
     lines.append("\n*ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 "
                  "(ood queda excluida: la mayoría ya acierta todo). "
                  "0 = responder siempre lo más frecuente, <0 = peor que el trivial; "
                  f"`*` = no tiene las {len(ADJ_PHASES)} fases.*")
+    lines.append("\n*`unif choice`: elecciones casi uniformes (máx−mín < 0.05) en las 9 fases base+nuevas; no incluye adv4/adv5. No demuestra vectores nulos crudos ni fallo automático.*")
     return "\n".join(lines)
 
 

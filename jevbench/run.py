@@ -31,6 +31,18 @@ def git_rev():
         return None
 
 
+def git_dirty():
+    """True si el árbol tiene cambios sin commitear: el meta.git de un run
+    ejecutado con código pendiente identifica la base, no el código."""
+    try:
+        out = subprocess.run(["git", "status", "--porcelain"],
+                             capture_output=True, text=True,
+                             cwd=store.ROOT.parent).stdout
+        return bool(out.strip()) or None
+    except OSError:
+        return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("adapter", choices=sorted(adapters.REGISTRY))
@@ -75,6 +87,10 @@ def main():
                     rec["usage"] = {k: v for k, v in out["usage"].items()
                                     if isinstance(v, (int, float, str, bool, type(None)))}
                 if "raw" in out:
+                    # excepción deliberada (capture_raw): incluye cuerpos de
+                    # petición y respuesta sin redactar — las claves van en
+                    # cabeceras, nunca en el cuerpo; publish.py lo elimina del
+                    # espejo público
                     rec["raw"] = out["raw"]
                 short = " ".join(f"{k}={v.get('choice', v.get('score', v.get('noul')))!s:.6}" for k, v in out["answers"].items())
                 print(f"{phase} {c.id}: {short} | {rec['ms']}ms", flush=True)

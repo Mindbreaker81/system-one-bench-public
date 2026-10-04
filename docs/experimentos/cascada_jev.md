@@ -67,7 +67,8 @@ Detalle (McNemar exacto frente a D1; b = solo D1 acierta, c = solo la cascada ac
 
 Conclusiones:
 1. El revisor-auditor **generaliza más allá del departamento**. Con una sola llamada extra
-   (~$0.00007/caso), mejora todas las valoraciones salvo same_day en adversarial.
+   (~$0.00005/caso medida), mejora todas las valoraciones salvo same_day en adversarial —
+   y con el GT v3 también baja 0.4 puntos el triaje ampliado ES (95.0 → 94.6).
 2. Entre `review` y `audit` hay poca diferencia; `audit` es más conservador (toca menos
    respuestas y mantiene el ρ). Recomendación: `audit` para producción, porque un error
    de la 2ª pasada solo entra cuando ella misma marca la 1ª como incorrecta.
@@ -122,7 +123,7 @@ Conclusiones:
 2. **Con Jev como revisor, Decider-4B alcanza a la cascada Jev → Jev** (misma banda en todo;
    adv3 93.5 frente a 92.0). La calidad la pone sobre todo el revisor.
 3. **Implicación práctica:** una 1ª pasada local con Decider-4B (gratis, ~200 ms en GB10) y
-   la auditoría de Jev (~$0.00007 por caso) iguala a Jev → Jev y ahorra la llamada D1 a la API.
+   la auditoría de Jev (~$0.00005 por caso medida) iguala a Jev → Jev y ahorra la llamada D1 a la API.
    Ojo: no reduce la exposición de datos, porque el revisor recibe el texto completo.
 
 ## Revisor 100% local (JEV-32, 27-sep, GT v3)
@@ -198,10 +199,10 @@ E06, E09, E10).
 adv5 88.5, mejor Brier noul (0.045), alerta 9/10 con 1 FP. Frente al LLM sin revisor, solo `urgency` de
 adv4 mejora de forma significativa (McNemar p = 0.02); frente a `jev_cascade_audit`, ninguna
 diferencia significativa en ninguna fase. Coste por caso ≈ $0.00019 (D1) + $0.00005 (revisor)
-≈ 4.1× el de Jev → Jev, y ~4.6 s frente a ~1.3 s.
+≈ 2.9× el de Jev → Jev, y ~4.6 s frente a ~1.3 s.
 
 Conclusión: el LLM sirve como revisor intermedio (mejor que cualquier local, peor que Jev en
-triaje y alerta), y la cascada LLM → Jev iguala a Jev → Jev en acierto — a ~4× el coste y la
+triaje y alerta), y la cascada LLM → Jev iguala a Jev → Jev en acierto — a ~3× el coste y la
 latencia. Jev sigue siendo el revisor más barato y fiable; la lectura de fondo se mantiene.
 
 ## Revisor local: Clef-27B (JEV-48, 3-oct, GT v3)
@@ -233,3 +234,77 @@ Conclusión: por primera vez hay una cascada **enteramente local** que se acerca
 Clef-27B. Es además la primera alerta de manipulación local que cumple (ver
 `alerta_manipulacion.md`, alerta de una pasada 27/30 TP y 1 FP frente a
 25/30 del revisor Jev, sin diferencia significativa: McNemar p=0.50).
+
+## Revisor local: Clef-Flash 9B (JEV-53, 3-oct, GT v3)
+
+Revisor = **Clef-Flash 9B** (`Cloudflare/clef-flash` `17f0b0ad`, adaptador `clef`,
+`device=xpu` en el Arc Pro B70 de .70). D1 = `decider_4b`. Runs
+`decider_4b_clefflashrev_{raw,review,audit,avg}`; 195 casos revisados, 0 errores.
+La alerta `manipulation` del revisor se mide sobre `decider_4b_clefflashrev_raw`.
+
+| run (regla `audit`) | triaje ES/EN | papers (ρ) | adv dept 1+2 | adv total | triaje ext ES/EN | adv3 dept | adv3 total | adv4 total | adv5 total | ajustado |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Decider-4B (D1) | 85.7/85.7 | 65.9 (0.78) | 14/20 | 71.5 | 90.8/90.0 | 12/20 | 77.0 | 83.0 | 75.0 | 33 |
+| → Jev | 90.7/93.6 | 72.2 (0.76) | 19/20 | 88.5 | 93.1/92.3 | 18/20 | 93.5 | 86.0 | 85.0 | 64 |
+| → Clef-27B | 90.0/89.3 | 77.8 (0.90) | 12/20 | 83.0 | 92.7/92.7 | 15/20 | 90.5 | 88.0 | 85.0 | 58 |
+| → **Clef-Flash 9B** | 89.3/88.6 | 70.3 (0.89) | 12/20 | 80.0 | 91.9/92.7 | 14/20 | 80.5 | 83.5 | 81.5 | 47 |
+
+**Criterio JEV-32 sobre el revisor Clef-Flash:** adv3+adv5 +5.0 (38 % de la ganancia de
+Jev) ✗; triaje (media ES/EN) +3.25 (~50 %, en el límite) ✓; ninguna fase empeora
+>2 puntos ✓ (todas mejoran o igualan). **NO CUMPLE el listón** — le falla la ganancia
+en adversarial. Es el segundo mejor revisor local medido (por encima de D35 NVFP4,
+34 %/45 %), pero lejos del 27B (89 %/61 %).
+
+El control `avg` (dos llamadas independientes promediadas) da el mismo ajustado que
+`audit` (47): aquí la auditoría no añade nada sobre el promedio — patrón distinto al
+27B, donde `audit` sí superaba claramente a `avg` (58 vs 55). La alerta de una pasada
+sí cumple el criterio (ver `alerta_manipulacion.md`).
+
+Conclusión: Clef-Flash como revisor mejora a Decider-4B en todas las fases y es el
+revisor local más barato (~0.14 s/caso en XPU), pero no llega al 50 % de la ganancia
+de Jev en adversarial; para revisor local la recomendación sigue siendo Clef-27B.
+
+## Revisor API: gpt-6.1-sol (JEV-60, 4-oct, GT v3)
+
+Revisor = **gpt-6.1-sol** (`reasoning_effort=low`, adaptador `llm`, `structured=true`,
+misma configuración que `llm_gpt61sol_low_prob`). D1 = `decider_4b`. Runs
+`decider_4b_solrev_{raw,review,audit,avg}`; 195 casos revisados, 0 errores. La alerta
+`manipulation` del revisor se mide sobre `decider_4b_solrev_raw`. Y al revés:
+`llm_gpt61sol_jevrev_*` (D1 = `llm_gpt61sol_low_prob`, revisor Jev). Pre-registrado
+en la descripción de JEV-60.
+
+| run (regla `audit`) | triaje ES/EN | papers (ρ) | adv dept 1+2 | adv total | triaje ext ES/EN | adv3 dept | adv3 total | adv4 total | adv5 total | ajustado |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Decider-4B (D1) | 85.7/85.7 | 65.9 (0.78) | 14/20 | 71.5 | 90.8/90.0 | 12/20 | 77.0 | 83.0 | 75.0 | 33 |
+| → Jev | 90.7/93.6 | 72.2 (0.76) | 19/20 | 88.5 | 93.1/92.3 | 18/20 | 93.5 | 86.0 | 85.0 | 64 |
+| → gpt-6-luna | 87.9/87.1 | 76.2 (0.78) | 18/20 | 81.0 | 91.9/91.9 | 17/20 | 88.5 | — | — | 52 |
+| → Clef-27B | 90.0/89.3 | 77.8 (0.90) | 12/20 | 83.0 | 92.7/92.7 | 15/20 | 90.5 | 88.0 | 85.0 | 58 |
+| → **gpt-6.1-sol** | **90.7/94.3** | **79.7 (0.86)** | 18/20 | **86.5** | 92.3/93.8 | **20/20** | **96.5** | 84.0 | **91.5** | **66** |
+
+**Criterio JEV-32 sobre el revisor sol (`audit`):** adv3+adv5 +18.0 (**136 %** de la
+ganancia de Jev) ✓; triaje (media ES/EN) +6.8 (**105 %**) ✓; ninguna fase empeora
+>2 puntos ✓; alerta adv5 **9/10 con 0 FP** (E03 se escapa; E11, el FP habitual de Jev
+y Clef, no salta) ✓. **CUMPLE — y es el primer revisor que supera en ajustado al
+revisor Jev sobre Decider-4B** (66 audit / 68 review frente a 64). gpt-6-luna quedó en
+77 %/28 %/alerta 6/10; Clef-27B en 89 %/61 %/9-10 con 1 FP.
+
+Frente al revisor Jev, McNemar por pregunta solo es significativo en `relevance` de
+papers (b=2, c=10, p = 0.04 a favor de sol); el resto sin diferencia. Frente al
+revisor luna, ninguna diferencia por pregunta es significativa (el más cercano es
+`relevance` de papers, p = 0.07) pese a la distancia de ajustado (66 frente a 52).
+
+Coste de la pasada-2: **$1.05 medidos (~$0.0054/caso, ~100× los ~$0.00005 del revisor
+Jev)** — el estado de revisión es largo y sol tarifa $2/$10 por Mtok. Latencia del
+revisor: mediana 5.7 s/caso de cliente (0.6 s el revisor Jev).
+
+**sol como D1 con revisor Jev:** `llm_gpt61sol_jevrev_audit`/`_review` dan ajustado
+**66** (adv3 91.5/92.5, adv5 85.5/86.5; alerta adv5 9/10 con 1 FP en E11). Por debajo
+de `llm_gpt6luna_jevrev_audit` (71), que sigue siendo la configuración con mayor
+ajustado medido; el D1 de sol no mejora al de luna cuando el revisor es Jev.
+
+Conclusión: sol es el **mejor revisor medido sobre Decider-4B** (y el primero que
+supera al revisor Jev en ajustado), pero a ~100× el coste de la pasada-2 de Jev. La
+recomendación general no cambia por coste: Jev → Jev audit sigue siendo el circuito,
+Decider-4B → Jev la opción barata y Clef-27B la 100 % local; Decider-4B → sol es la
+opción de máximo agregado cuando la 2ª pasada puede ser API de pago. Como alerta de
+una pasada sol no cumple (ver `alerta_manipulacion.md`).
