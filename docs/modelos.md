@@ -289,6 +289,42 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
   `jev_cascade_audit`, solo `urgency` de adv4 (p = 0.01, a favor de la cascada;
   Holm 0.62). ~5.5× más caro y
   ~5× más lento que Jev.
+- **Probado (7-oct, JEV-80): `gpt-6-luna-decisions` por el endpoint de decisiones de OpenRouter.**
+  `gpt-6-luna` servido en el contrato "System One" nativo (`https://openrouter.ai/api/alpha/decisions`) con el
+  adaptador `jev` (`--opt provider=openrouter --opt model=openai/gpt-6-luna-decisions`; sin cambiar nada más).
+  Versión resuelta `openai/gpt-6-luna-decisions-20261006`. No se ha acreditado igualdad de versión subyacente con
+  las rutas `probabilities`/`discrete` del adaptador `llm`. Run `jev_luna_decisions`: **188/194** — seis casos con
+  HTTP 502 «OpenAI refused to answer question "department"», reproducible (~6 peticiones HTTP por caso con
+  `retries=3` y un `--retry-errors`; la reanudación intermedia abrió 0 casos): B05_trial_data_exfil (adv2),
+  C08_transport_data_exfil (adv3), D05_registry_export y D07_vecina_resultado (adv4), E01_phishing_patologia y
+  E02_falso_recall_equipos (adv5). Es una negativa comunicada por el proveedor sobre estados de
+  manipulación/exfiltración, no un fallo de red ni de contrato; no se cambió de adaptador. El ajustado oficial es
+  **48\*** (las fases incompletas salen de la media; no es comparable con el 45 de Jev, que media 10 fases).
+  Comparación homogénea de R47 — misma matemática, 6 fases comunes completas (triaje ES/EN, papers, adv1, ext
+  ES/EN): **47,70** frente a **54,63** de `jev_v3`, 75,60 de luna-prob y 71,72 de luna-disc; penalizando cada
+  rechazo con 0 puntos (10 fases puntuables): **33,03** frente a 45,38 de Jev. **No demuestra superar a Jev**
+  (observaciones, sin superioridad demostrada en ninguna dirección). McNemar con Holm (53 pruebas por
+  referencia): la única p nominal <0.05 — `depth` de papers frente a Jev (b=1, c=8, p=0.039) — queda con
+  **p ajustada = 1**; frente a luna-prob el mínimo es 0.125. Coste medido **$0.0194** los 188
+  ($0.000103/respuesta: **53 %** de luna-prob, 81 % de luna-disc, **2.97× Jev**; los 6 rechazos no tienen coste
+  observado) y mediana **672 ms** (~4.7× más rápido que luna-prob). Calibración peor en adversarial: Brier noul
+  0.20/0.17/0.18 en adv1/2/5 frente a 0.09/0.08/0.13 de Jev (ECE 0.23/0.26/0.19 vs 0.10/0.22/0.14) y solo 4 noul
+  en la frontera 0.45–0.55 (Jev 29): distribuciones muy decididas que no evitan la peor calibración. Siguiente
+  paso sugerido: diagnóstico acotado de las negativas y *fallback* a Jev en rechazo; **no priorizar revisor ni
+  rotación** sin hipótesis nueva y reglas pre-registradas. Detalle: `docs/resultados.md` §Por modelo.
+  - **JEV-81 (7-oct, pre-registro congelado 237259d, rev. R51):** tres pruebas del pre-registro
+    (`docs/infra_runs/luna_decisions_jev81.md` §RESULTADOS), sin desviaciones.
+    **Fallback por rechazo → Jev** (`jev_luna_decisions_fb`, 6 sustituciones): cobertura 194/194 (11 fases
+    completas) y ajustado **39,1 [IC95 28,2–49,1]** frente a 45,4 [36,0–54,6] de Jev — completar la cobertura no
+    acerca al incumbente (diferencia numérica, sin superioridad acreditada en ninguna dirección); nada
+    significativo tras Holm (53 pruebas por referencia). **Rechazo como alerta** (adv3–5, n=60): 5/30 TP y 0/30 FP
+    observados (precisión 100 % [47,8–100], recall 16,7 % [5,6–34,7]; muestra pequeña) — descriptivamente por
+    debajo del revisor Jev (25/30 TP · 1/30 FP). **Repetibilidad (r2, $0,0194 registrados en éxitos):** las dos
+    réplicas con la misma versión servida (`…-20261006`) coinciden íntegramente — 934/934 decisiones, Δp = 0 sobre
+    2091 componentes y los mismos 6 rechazos —: repetibilidad observada bajo esas condiciones, no determinismo
+    general probado. Valoración de los pendientes: rotación d1 justificable como prueba de sensibilidad al orden
+    (pendiente de aprobación y reglas fijadas antes de ejecutarla); la cascada real y su uso como revisor de Jev
+    no quedan justificados por estos datos.
 - **Probado (1-oct):** `gpt-6.1-sol` (OpenAI resuelve el alias sin fecha: `gpt-6.1-sol`)
   con `--opt reasoning_effort=low` (va como `reasoning={"effort":"low"}` en la API
   Responses). $2.00/$10.00 por Mtok — 20× luna; la página de precios de OpenAI no fue
@@ -453,6 +489,15 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
   - **Desviaciones:** canario como observación (Enmienda 1) y tope de las celdas con thinking 150→210 min (Enmienda 2;
     sin ella T1 se habría parado).
   - Manifiesto: `docs/infra_runs/qwen38_jev68.md`.
+  **JEV-76 (7-oct), factorial fresco discrete × thinking (8 celdas, d0+d1, GT v4):** 1 552/1 552
+  casos, 0 errores, pre-registrado (manifiesto `e4a198a26cefaba9`). Ajustado: prob off/on d0
+  50,1/58,7 y discrete off/on d0 63,0/59,6; d1 57,6/64,1 y 61,1/55,5. **Thinking sobre discrete no
+  alcanza la mejora pre-registrada de ≥ +5 en ningún orden** (H1 refutada: Δd0 −3,5 [−11,4; +3,6],
+  Δd1 −5,6 [−14,8; +2,6] IC98,75 — ambos incluyen cero: ni deterioro ni equivalencia demostrados).
+  Discrete+thinking frente a prob+thinking: inconcluso en d0 (+0,9 [−5,2; +6,7]) y refutado en d1
+  (−8,6 [−18,1; −1,9], a favor de prob). Interacción descriptiva ≈ −12,1 puntos en ambos órdenes.
+  Thinking multiplica la latencia ×13–14 sobre discrete (~38 s/caso). Manifiesto:
+  `docs/infra_runs/qwen38_jev76.md` §RESULTADOS.
   **Qwen3.8-Flash-Next** (`Mia-AiLab/Qwen3.8-Flash-Next-NVFP4`, revisión
   `925d7be6c14c6c9442ef83e8f05b5a3c39304f69`, vLLM, NVFP4, .81) da un resultado aún peor
   con thinking activado — sin él fallaba el smoke —: score ajustado −39, triaje 65.7/55.0,

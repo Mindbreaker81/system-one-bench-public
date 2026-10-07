@@ -8,6 +8,7 @@ Pass 2 audits every pass-1 answer. Raw pass-2 answers go to results/<prefix>_raw
 each fusion rule is written as an ordinary run so jevbench.score can compare it.
 """
 import argparse
+import platform
 import time
 
 from . import adapters, store
@@ -92,49 +93,130 @@ def main():
     if args.adapter == "jev":
         opts.setdefault("provider", args.provider)
     jev = adapters.get(args.adapter)(**opts)
-    raw_run = f"{args.prefix}_raw"
     for phase in args.phases.split(","):
-        qs, cases = load_phase(phase)
-        d1doc = store.load(args.d1, phase)
-        raw = store.load(raw_run, phase) or {"meta": {}, "cases": {}}
-        rqs = review_questions(qs, phase)
-        raw["meta"].update({"d1": args.d1, "reviewer": args.adapter, "questions_hash": questions_hash(rqs),
-                            **jev.meta()})
-        for c in cases:
-            if c.id in raw["cases"] and "error" not in raw["cases"][c.id]:
-                continue
-            t0 = time.time()
-            try:
-                out = jev.decide(review_state(c.state, qs, d1doc["cases"][c.id]["answers"]), rqs)
-                raw["cases"][c.id] = {"answers": out["answers"], "ms": round((time.time() - t0) * 1000),
-                                      "cost": out.get("cost"), "model": out.get("model")}
-            except Exception as e:
-                raw["cases"][c.id] = {"error": f"{type(e).__name__}: {e}"[:300]}
-                print(f"{phase} {c.id}: ERROR {e}", flush=True)
-            store.save(raw_run, phase, raw)
-        # fusion runs
-        ctrl = store.load(args.control, phase) if args.control else None
-        fused = {k: {"meta": {"cascade": k, "d1": args.d1, "raw": raw_run}, "cases": {}}
-                 for k in ("review", "audit", "avg")}
-        control = {"meta": {"cascade": "avg2_control", "d1": args.d1, "second": args.control}, "cases": {}}
-        for c in cases:
-            r = raw["cases"].get(c.id, {})
-            if "answers" not in r:
-                for f in fused.values():
-                    f["cases"][c.id] = {"error": "no pass-2"}
-                continue
-            d1 = d1doc["cases"][c.id]["answers"]
-            for k, ans in fuse(qs, d1, r["answers"]).items():
-                fused[k]["cases"][c.id] = {"answers": ans, "cost": (d1doc["cases"][c.id].get("cost") or 0) + (r.get("cost") or 0)}
-            if ctrl and "answers" in ctrl["cases"].get(c.id, {}):
-                control["cases"][c.id] = {"answers": {n: average(d1[n], ctrl["cases"][c.id]["answers"][n], q)
+        run_phase(args.d1, args.prefix, jev, phase,
+                  reviewer=args.adapter, control=args.control,
+                  control_run=args.control_run)
+
+
+def run_phase(d1_run, prefix, jev, phase, reviewer=None, control=None,
+              control_run="jev_avg2_control", extra_meta=None,
+              expected_version=None):
+    """Una fase de la cascada: pasada 2 del revisor por caso + fusión
+    review/audit/avg (+ control avg2). La extrae el wrapper con cupo de
+    JEV-77 (jevbench.jev77_cascade), que pasa un adaptador proxy que
+    cuenta cada intento de red; la mecánica de casos/fusión es la de
+    cascada y no se duplica.
+    Reanudación con verificación de procedencia (R36): un doc raw previo
+    solo se reutiliza si su configuración registrada (d1, revisor,
+    questions_hash) coincide con la vigente y la versión del revisor
+    registrada por caso no difiere de la resuelta ahora — una cascada
+    no mezcla configuraciones en silencio. `extra_meta` liga la fusión
+    al encargo (host, sesión, manifiesto, cupo)."""
+    raw_run = f"{prefix}_raw"
+    qs, cases = load_phase(phase)
+    d1doc = store.load(d1_run, phase)
+    raw = store.load(raw_run, phase) or {"meta": {}, "cases": {}}
+    rqs = review_questions(qs, phase)
+    base_meta = {"d1": d1_run,
+                 "reviewer": reviewer or type(jev).__name__,
+                 "questions_hash": questions_hash(rqs),
+                 **jev.meta(), "host": platform.node()}
+    # compatibilidad antes de reutilizar un raw previo: si difiere en
+    # d1/revisor/questions_hash no autoriza continuar la fase
+    prev = raw.get("meta") or {}
+    for k in ("d1", "reviewer", "questions_hash"):
+        if prev.get(k) is not None and prev[k] != base_meta[k]:
+            raise SystemExit(
+                f"{raw_run}/{phase}: {k} previo {prev[k]!r} != vigente "
+                f"{base_meta[k]!r}: raw de otra configuración — no se "
+                "reutiliza")
+    # el manifiesto del encargo tampoco se reetiqueta: un raw hecho bajo
+    # otro manifiesto conserva su origen y detiene la reanudación — sin
+    # enmienda verificada no se reutilizan sus casos (R39 §1)
+    if extra_meta and extra_meta.get("manifest_sha256") is not None \
+            and prev.get("manifest_sha256") is not None \
+            and prev["manifest_sha256"] != extra_meta["manifest_sha256"]:
+        raise SystemExit(
+            f"{raw_run}/{phase}: raw generado con el manifiesto "
+            f"{prev['manifest_sha256']} y el vigente es "
+            f"{extra_meta['manifest_sha256']}: sin enmienda verificable "
+            "los casos previos conservan su origen y no se reutilizan")
+    raw["meta"].update(base_meta)
+    if extra_meta:
+        raw["meta"].update(extra_meta)
+    # versión del revisor congelada: la fija el encargo (parámetro), el
+    # raw previo o la PRIMERA respuesta de la fase — cada respuesta
+    # nueva se verifica contra ella; una discrepancia guarda la
+    # evidencia y detiene la pasada sin abrir el siguiente caso (R38 §6)
+    frozen_ver = expected_version or raw["meta"].get("reviewer_resolved")
+    for c in cases:
+        rec0 = raw["cases"].get(c.id)
+        if rec0 is not None and "error" not in rec0:
+            # la versión congelada registrada en el caso debe ser la
+            # vigente — si el revisor cambió, reutilizarlo corrompería
+            # la procedencia de la fusión
+            v0 = rec0.get("reviewer_version")
+            if v0 and frozen_ver and v0 != frozen_ver:
+                raise SystemExit(
+                    f"{phase}/{c.id}: caso revisado con {v0} y la "
+                    f"versión congelada es {frozen_ver}: se conserva "
+                    "lo revisado; lo pendiente queda NO EVALUABLE")
+            continue
+        t0 = time.time()
+        try:
+            out = jev.decide(review_state(c.state, qs, d1doc["cases"][c.id]["answers"]), rqs)
+            ver = jev.meta().get("resolved")
+            if frozen_ver is None:
+                frozen_ver = ver
+                if ver is not None:
+                    raw["meta"]["reviewer_resolved"] = ver
+            elif ver is not None and ver != frozen_ver:
+                # cambio de versión EN PLENA FASE: evidencia persistida
+                # y parada — la respuesta divergente no entra en el raw
+                raw["meta"]["version_drift"] = {
+                    "frozen": frozen_ver, "observed": ver,
+                    "case": c.id}
+                store.save(raw_run, phase, raw)
+                raise SystemExit(
+                    f"{phase}/{c.id}: la versión del revisor cambió "
+                    f"{frozen_ver} → {ver} durante la fase — se "
+                    "conserva lo revisado; lo pendiente queda NO "
+                    "EVALUABLE")
+            raw["cases"][c.id] = {"answers": out["answers"], "ms": round((time.time() - t0) * 1000),
+                                  "cost": out.get("cost"), "model": out.get("model"),
+                                  "reviewer_version": ver}
+        except Exception as e:
+            raw["cases"][c.id] = {"error": f"{type(e).__name__}: {e}"[:300]}
+            print(f"{phase} {c.id}: ERROR {e}", flush=True)
+        store.save(raw_run, phase, raw)
+    raw["meta"]["reviewer_resolved"] = frozen_ver or jev.meta().get("resolved")
+    store.save(raw_run, phase, raw)
+    # fusion runs
+    ctrl = store.load(control, phase) if control else None
+    fused = {k: {"meta": {"cascade": k, "d1": d1_run, "raw": raw_run,
+                          "host": platform.node(),
+                          **(extra_meta or {})}, "cases": {}}
+             for k in ("review", "audit", "avg")}
+    control_doc = {"meta": {"cascade": "avg2_control", "d1": d1_run, "second": control}, "cases": {}}
+    for c in cases:
+        r = raw["cases"].get(c.id, {})
+        if "answers" not in r:
+            for f in fused.values():
+                f["cases"][c.id] = {"error": "no pass-2"}
+            continue
+        d1 = d1doc["cases"][c.id]["answers"]
+        for k, ans in fuse(qs, d1, r["answers"]).items():
+            fused[k]["cases"][c.id] = {"answers": ans, "cost": (d1doc["cases"][c.id].get("cost") or 0) + (r.get("cost") or 0)}
+        if ctrl and "answers" in ctrl["cases"].get(c.id, {}):
+            control_doc["cases"][c.id] = {"answers": {n: average(d1[n], ctrl["cases"][c.id]["answers"][n], q)
                                                       for n, q in qs.items()}}
-        for k, doc in fused.items():
-            store.save(f"{args.prefix}_{k}", phase, doc)
-        if ctrl:
-            store.save(args.control_run, phase, control)
-        cost = sum(x.get("cost") or 0 for x in raw["cases"].values())
-        print(f"--- {phase}: {sum('answers' in x for x in raw['cases'].values())}/{len(cases)} reviewed, pass-2 cost ${cost:.5f}", flush=True)
+    for k, doc in fused.items():
+        store.save(f"{prefix}_{k}", phase, doc)
+    if ctrl:
+        store.save(control_run, phase, control_doc)
+    cost = sum(x.get("cost") or 0 for x in raw["cases"].values())
+    print(f"--- {phase}: {sum('answers' in x for x in raw['cases'].values())}/{len(cases)} reviewed, pass-2 cost ${cost:.5f}", flush=True)
 
 
 if __name__ == "__main__":

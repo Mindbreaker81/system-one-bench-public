@@ -1,7 +1,11 @@
-"""Supervisor de la sesión Qwen3.8-27B FP8 (SGLang en .81): JEV-68, JEV-71
-§1–2 y JEV-72 §2, siguiendo el pre-registro R13 §4–§6 (congelado antes de
-ejecutar). El operador arranca el servidor y abre el túnel 18001; este módulo
-solo gestiona puertas, calendario, topes y análisis.
+"""Supervisor de las sesiones Qwen3.8-27B FP8 (SGLang en .81): JEV-68, JEV-71
+§1–2 y JEV-72 §2 (perfil `jev68`, pre-registro R13 §4–§6 congelado antes de
+ejecutar) y el factorial discrete × thinking de JEV-76 (perfil `jev76`:
+ocho celdas frescas d0+d1 con estado, manifiesto, puertas, referencias y
+nombres de run propios — la sesión de JEV-68 no se reanuda ni se toca).
+El operador arranca el servidor y abre el túnel 18001; este módulo solo
+gestiona puertas, calendario, topes y análisis. Todos los subcomandos
+aceptan `--profile jev68|jev76` (por defecto `jev68`).
 
 Subcomandos:
 
@@ -39,7 +43,8 @@ Subcomandos:
       ciclo en papers32 y adv3. Caso a caso: vigilancia completa del primer
       intento (raw, cliente, thinking y regla de tokens; una violación
       invalida el run), 3 errores por fase, 10 por run, /health tras timeout,
-      topes por celda, tope de sesión de 10 h y tope duro acumulado de 5000
+      topes por celda, tope de sesión del perfil (10 h en jev68, ~14 h
+      en jev76) y tope duro acumulado de 5000
       peticiones (reserva durable asentada antes de abrir cada petición,
       con marca temporal para que una interrupción a media llamada cargue
       su tiempo contra sesión y celda al reanudar, nunca lo regale).
@@ -52,7 +57,8 @@ Subcomandos:
       sesión y gate_id; un reinicio del servidor exige --new-session y
       puertas nuevas, sin que el reinicio amplíe el presupuesto del
       encargo.
-      Pausa cooperativa: si existe results/logs/qwen_session.pause el
+      Pausa cooperativa: si existe el fichero de pausa del perfil
+      (results/logs/qwen_session.pause en jev68) el
       runner termina limpiamente al acabar el caso en curso (estado y
       tiempos cerrados, lock liberado, pending vacío); se reanuda con
       --resume tras borrar el fichero. Transición de manifiesto
@@ -104,6 +110,7 @@ from types import SimpleNamespace
 
 from . import adapters, metrics, score, store
 from . import jev67 as j67
+from .adapters.jev import PROVIDERS as _JEV_PROVIDERS
 from .battery import DATA, load_phase, questions_hash
 from .diag65 import CONFIG_KEYS, _check_resume, _merge_meta, _meta_with_expected
 from .diag65_report import (_decisions, _raw_answers, _validate_raw_discrete,
@@ -129,6 +136,10 @@ SLUG_MODE = {v: k for k, v in MODE_SLUG.items()}
 # Bloque común de cliente (R13 §4): structured+inject, capture_raw, límites
 # elevados para alojar thinking; temp 0 y seed 101 por defecto.
 def _extra_body(thinking, seed):
+    # thinking=None: familia sin modo thinking configurable (Gemma en
+    # JEV-77 §3.4): la petición no declara enable_thinking en absoluto
+    if thinking is None:
+        return json.dumps({"temperature": 0, "seed": seed})
     return json.dumps({"chat_template_kwargs": {"enable_thinking": thinking},
                        "temperature": 0, "seed": seed})
 
@@ -240,6 +251,290 @@ OP_DIAG_KEYS = ("status", "stopped_cases", "no_usage_cases", "gate_id",
                 "manifest_amendment_resumes")
 
 
+# ------------------------------------------------- perfil JEV-76 (factorial)
+#
+# Factorial discrete × thinking, alcance (b) decidido por el usuario en
+# JEV-76 (comentario del 7-oct-2026, diseño revisado en R30): OCHO celdas
+# frescas d0+d1 ejecutadas e intercaladas en una sesión NUEVA — F0′/T0′/D0′
+# son controles repetidos adrede en la misma sesión (los runs de JEV-68/71
+# quedan solo como referencia descriptiva) y D1/DT0/DT1 son celdas nuevas.
+# Mismos topes por celda que JEV-68 tras su Enmienda 2 (off 90 min,
+# on 210 min); tope de sesión ~14 h y el mismo tope duro de peticiones.
+# Estado, manifiesto, pausa, referencias tokenizer y directorios de
+# puerta son PROPIOS del perfil: la sesión JEV-68 (qwen_session.json,
+# qwen_manifest*.json, gate_qwen_*) queda intacta; solo se comparte el
+# lock (un solo escritor sobre el mismo servidor) y la referencia
+# histórica de tokens off de REF_RUN.
+CELLS_76 = {
+    "F0p": {"run": "llm_qwen38_27b_fp8_jev76_off_d0_prob", "issue": "JEV-76",
+            "mode": "probabilities", "thinking": False, "order": "d0",
+            "seed": 101, "phases": PHASES_ALL, "budget_s": 90 * 60},
+    "T0p": {"run": "llm_qwen38_27b_fp8_jev76_on_d0_prob", "issue": "JEV-76",
+            "mode": "probabilities", "thinking": True, "order": "d0",
+            "seed": 101, "phases": PHASES_ALL, "budget_s": 210 * 60},
+    "D0p": {"run": "llm_qwen38_27b_fp8_jev76_off_d0_disc", "issue": "JEV-76",
+            "mode": "discrete", "thinking": False, "order": "d0",
+            "seed": 101, "phases": PHASES_ALL, "budget_s": 90 * 60},
+    "DT0": {"run": "llm_qwen38_27b_fp8_jev76_on_d0_disc", "issue": "JEV-76",
+            "mode": "discrete", "thinking": True, "order": "d0",
+            "seed": 101, "phases": PHASES_ALL, "budget_s": 210 * 60},
+    "F1p": {"run": "llm_qwen38_27b_fp8_jev76_off_d1_prob", "issue": "JEV-76",
+            "mode": "probabilities", "thinking": False, "order": "d1",
+            "seed": 101, "phases": PHASES_ALL, "budget_s": 90 * 60},
+    "T1p": {"run": "llm_qwen38_27b_fp8_jev76_on_d1_prob", "issue": "JEV-76",
+            "mode": "probabilities", "thinking": True, "order": "d1",
+            "seed": 101, "phases": PHASES_ALL, "budget_s": 210 * 60},
+    "D1":  {"run": "llm_qwen38_27b_fp8_jev76_off_d1_disc", "issue": "JEV-76",
+            "mode": "discrete", "thinking": False, "order": "d1",
+            "seed": 101, "phases": PHASES_ALL, "budget_s": 90 * 60},
+    "DT1": {"run": "llm_qwen38_27b_fp8_jev76_on_d1_disc", "issue": "JEV-76",
+            "mode": "discrete", "thinking": True, "order": "d1",
+            "seed": 101, "phases": PHASES_ALL, "budget_s": 210 * 60},
+}
+
+# Rotación por fase del factorial: alterna orden (d0/d1), modo y thinking
+# para repartir la deriva temporal entre las ocho celdas (88 slots).
+CALENDAR_76 = ["F0p", "DT1", "D0p", "T1p", "F1p", "DT0", "D1", "T0p"]
+
+# --------------------------------------------------------------- JEV-77
+# MedGemma/Gemma/Qwen en .80 (medgemma_jev77.md): 18 celdas sobre 5
+# checkpoints, un modelo cargado a la vez, calendario por BLOQUES de
+# checkpoint con rotación por fase (§8.3-8.4). thinking=None en la
+# familia Gemma = sin flag configurable (§3.4: el razonamiento emergente
+# solo se registra); en Qwen es False = enable_thinking=false declarado
+# Y observado.
+#
+# Congelado A4 (medgemma_jev77.md §A3/A4, evidencia a3_smoke.jsonl):
+# `served` = nombre servido en /v1/models de la rama A; `args` = argv
+# efectivo del servidor (Gemma: rama A común con
+# --disable-prefill-cuda-graph — sin él el warmup falla; Qwen: los de
+# qwen38_jev76/server_identity.json con el peso montado en
+# /mnt/ai-models de .80); `max_tokens` = tope de generación (≥60× el
+# output máximo observado en A3: 123 tokens); `a01_margin` = margen del
+# control negativo ciego, medido por TOKENIZACIÓN (render visible−ciego
+# de adv1/A01, nunca por aciertos) menos 64 tokens de holgura — la
+# familia Gemma comparte plantilla/tokenizer idénticos (sha
+# 7de1c58e208eda46).
+_GEMMA77_ARGS_TAIL = ["--dtype", "bfloat16", "--grammar-backend",
+                      "xgrammar", "--mem-fraction-static", "0.70",
+                      "--context-length", "32768",
+                      "--max-running-requests", "1",
+                      "--trust-remote-code", "--disable-prefill-cuda-graph",
+                      "--constrained-json-disable-any-whitespace"]
+CKPTS_77 = {
+    "medgemma27b": {"checkpoint": "google/medgemma-27b-it",
+                    "sha": "2d3e00ea38b50018bf5dd3aa1009457cd2d5a48f",
+                    "served": "medgemma-27b-it", "thinking": None,
+                    "max_tokens": "8192", "a01_margin": 304,
+                    "args": ["--model-path",
+                             "/mnt/ai-models/hf/google/medgemma-27b-it",
+                             "--served-model-name", "medgemma-27b-it"]
+                            + _GEMMA77_ARGS_TAIL},
+    "gemma3_27b": {"checkpoint": "google/gemma-3-27b-it",
+                   "sha": "005ad3404e59d6023443cb575daa05336842228a",
+                   "served": "gemma-3-27b-it", "thinking": None,
+                   "max_tokens": "8192", "a01_margin": 304,
+                   "args": ["--model-path",
+                            "/mnt/ai-models/hf/google/gemma-3-27b-it",
+                            "--served-model-name", "gemma-3-27b-it"]
+                           + _GEMMA77_ARGS_TAIL},
+    "qwen38fp8": {"checkpoint": "Qwen/Qwen3.8-27B-FP8",
+                  "sha": "017b9c7af6b5689d5dd426a76e0bc077eb5ca20a",
+                  "served": "qwen3.8-27b-sglang", "thinking": False,
+                  "max_tokens": "16384", "a01_margin": 292,
+                  "args": ["--model-path", "Qwen/Qwen3.8-27B-FP8",
+                           "--served-model-name", "qwen3.8-27b-sglang",
+                           "--trust-remote-code", "--mem-fraction-static",
+                           "0.95", "--sleep-on-idle",
+                           "--attention-backend", "flashinfer",
+                           "--chunked-prefill-size", "8192",
+                           "--disable-prefill-cuda-graph",
+                           "--kv-cache-dtype", "fp8_e4m3",
+                           "--mamba-ssm-dtype", "bfloat16",
+                           "--mamba-full-memory-ratio", "4.21",
+                           "--mamba-radix-cache-strategy",
+                           "extra_buffer_lazy",
+                           "--max-mamba-cache-size", "40",
+                           "--max-running-requests", "10",
+                           "--context-length", "262144",
+                           "--speculative-algorithm", "EAGLE",
+                           "--speculative-num-steps", "3",
+                           "--speculative-eagle-topk", "1",
+                           "--speculative-num-draft-tokens", "4",
+                           "--reasoning-parser", "qwen3",
+                           "--tool-call-parser", "qwen3_coder",
+                           "--sampling-defaults", "model",
+                           "--enable-metrics", "--enable-cache-report",
+                           "--host", "0.0.0.0", "--port", "8000",
+                           "--model-path",
+                           "/mnt/ai-models/hf/Qwen/Qwen3.8-27B-FP8",
+                           "--constrained-json-disable-any-whitespace"]},
+    "medgemma4b": {"checkpoint": "google/medgemma-1.5-4b-it",
+                   "sha": "91850547d9f0b2fdd21aa7c5f4f3d1a8a52c243b",
+                   "served": "medgemma-1.5-4b-it", "thinking": None,
+                   "max_tokens": "8192", "a01_margin": 304,
+                   "args": ["--model-path",
+                            "/mnt/ai-models/hf/google/medgemma-1.5-4b-it",
+                            "--served-model-name", "medgemma-1.5-4b-it"]
+                           + _GEMMA77_ARGS_TAIL},
+    "gemma3_4b": {"checkpoint": "google/gemma-3-4b-it",
+                  "sha": "093f9f388b31de276ce2de164bdc2081324b9767",
+                  "served": "gemma-3-4b-it", "thinking": None,
+                  "max_tokens": "8192", "a01_margin": 304,
+                  "args": ["--model-path",
+                           "/mnt/ai-models/hf/google/gemma-3-4b-it",
+                           "--served-model-name", "gemma-3-4b-it"]
+                          + _GEMMA77_ARGS_TAIL},
+}
+
+
+def _cell77(run, mode, order, ckpt, budget_s):
+    return {"run": run, "issue": "JEV-77", "mode": mode, "order": order,
+            "seed": 101, "phases": PHASES_ALL, "budget_s": budget_s,
+            "ckpt": ckpt, "thinking": CKPTS_77[ckpt]["thinking"]}
+
+
+# Topes por celda calibrados por LATENCIA A3 (nunca por aciertos):
+# regla común M/G y d0/d1 — tope ≥ 194 × peor latencia A3 del modo con
+# ≥30 % de holgura, y en probabilities además cobertura de los prompts
+# largos de papers32 (hasta 6.693 tokens en las refs, por encima del
+# máximo 2.196 que midió el smoke A3): 27B prob 150 min (peor A3 34,4 s
+# → 111 min; 150 = +34,9 %), 27B disc 45 min (8,4 s → ~27 min), Qwen
+# disc 90 min (12 s/caso → ~39 min), 4B prob/disc 45 min (9,4 s →
+# ~30 min). Suma = 22 h ≤ 40 h del encargo (medgemma_jev77.md §A3/A4).
+CELLS_77 = {
+    # bloque MedGemma 27B (puertas 1-4): M-D0 = candidato H1/H2 y entrada
+    # de la cascada
+    "MD0": _cell77("llm_medgemma_27b_it_bf16_jev77_d0_disc",
+                   "discrete", "d0", "medgemma27b", 45 * 60),
+    "MP0": _cell77("llm_medgemma_27b_it_bf16_jev77_d0_prob",
+                   "probabilities", "d0", "medgemma27b", 150 * 60),
+    "MD1": _cell77("llm_medgemma_27b_it_bf16_jev77_d1_disc",
+                   "discrete", "d1", "medgemma27b", 45 * 60),
+    "MP1": _cell77("llm_medgemma_27b_it_bf16_jev77_d1_prob",
+                   "probabilities", "d1", "medgemma27b", 150 * 60),
+    # bloque Gemma 3 27B (puertas 5-8): control de H1
+    "GD0": _cell77("llm_gemma3_27b_it_bf16_jev77_d0_disc",
+                   "discrete", "d0", "gemma3_27b", 45 * 60),
+    "GP0": _cell77("llm_gemma3_27b_it_bf16_jev77_d0_prob",
+                   "probabilities", "d0", "gemma3_27b", 150 * 60),
+    "GD1": _cell77("llm_gemma3_27b_it_bf16_jev77_d1_disc",
+                   "discrete", "d1", "gemma3_27b", 45 * 60),
+    "GP1": _cell77("llm_gemma3_27b_it_bf16_jev77_d1_prob",
+                   "probabilities", "d1", "gemma3_27b", 150 * 60),
+    # bloque Qwen FP8 (puertas 9-10): control de H2, thinking off
+    "QD0p": _cell77("llm_qwen38_27b_fp8_jev77_d0_disc",
+                    "discrete", "d0", "qwen38fp8", 90 * 60),
+    "QD1p": _cell77("llm_qwen38_27b_fp8_jev77_d1_disc",
+                    "discrete", "d1", "qwen38fp8", 90 * 60),
+    # bloque MedGemma 1.5 4B (puertas 11-14)
+    "M4D0": _cell77("llm_medgemma_1_5_4b_it_bf16_jev77_d0_disc",
+                    "discrete", "d0", "medgemma4b", 45 * 60),
+    "M4P0": _cell77("llm_medgemma_1_5_4b_it_bf16_jev77_d0_prob",
+                    "probabilities", "d0", "medgemma4b", 45 * 60),
+    "M4D1": _cell77("llm_medgemma_1_5_4b_it_bf16_jev77_d1_disc",
+                    "discrete", "d1", "medgemma4b", 45 * 60),
+    "M4P1": _cell77("llm_medgemma_1_5_4b_it_bf16_jev77_d1_prob",
+                    "probabilities", "d1", "medgemma4b", 45 * 60),
+    # bloque Gemma 3 4B (puertas 15-18)
+    "G4D0": _cell77("llm_gemma3_4b_it_bf16_jev77_d0_disc",
+                    "discrete", "d0", "gemma3_4b", 45 * 60),
+    "G4P0": _cell77("llm_gemma3_4b_it_bf16_jev77_d0_prob",
+                    "probabilities", "d0", "gemma3_4b", 45 * 60),
+    "G4D1": _cell77("llm_gemma3_4b_it_bf16_jev77_d1_disc",
+                    "discrete", "d1", "gemma3_4b", 45 * 60),
+    "G4P1": _cell77("llm_gemma3_4b_it_bf16_jev77_d1_prob",
+                    "probabilities", "d1", "gemma3_4b", 45 * 60),
+}
+
+# Bloques por checkpoint en el orden del manifiesto (§8.3); dentro de
+# cada bloque la lista L rota por fase: en la fase i el orden es
+# L[(j+i) mod len(L)] para j=0..len(L)-1 (§8.4).
+BLOCKS_77 = [
+    ("medgemma27b", ["MD0", "MP0", "MD1", "MP1"]),
+    ("gemma3_27b", ["GD0", "GP0", "GD1", "GP1"]),
+    ("qwen38fp8", ["QD0p", "QD1p"]),
+    ("medgemma4b", ["M4D0", "M4P0", "M4D1", "M4P1"]),
+    ("gemma3_4b", ["G4D0", "G4P0", "G4D1", "G4P1"]),
+]
+
+# Topes operativos del encargo JEV-77 (§8.1-8.2): preparación A3 con
+# reloj y cupo propios que CUENTAN en las 12.000 duras pero no en las
+# 40 h de evaluación; distinción durable transición/recarga/reinicio
+# (máx. 4 extraordinarios, reserva de 288 intentos de puertas sobre la
+# reserva total de 612); transición de checkpoint ≤ 60 min.
+PREP_MAX_REQUESTS = 150
+PREP_MAX_WALL_S = 4 * 3600
+RESTART_EXTRA_MAX = 4
+RESTART_GATE_RESERVE = 288
+GATE_RESERVE_TOTAL = 612
+TRANSITION_CAP_S = 3600
+JEV77_CASCADE_REQUESTS = 800
+JEV77_CASCADE_WALL_S = 3 * 3600
+
+PROFILES = {
+    "jev68": {"cells": CELLS, "calendar_base": CALENDAR_BASE,
+              "calendar_extra": {"papers32": ("S202",), "adv3": ("S202",)},
+              "session_cap_s": SESSION_CAP_S, "request_cap": REQUEST_CAP,
+              "paths": {"state": "qwen_session.json",
+                        "pause": "qwen_session.pause",
+                        "manifest": "qwen_manifest.json",
+                        "manifest_archive": "qwen_manifest_{sha}.json",
+                        "refs": "qwen_refs_{key}.json",
+                        "gate_run": "gate_qwen_{key}"},
+              "diag": True, "analysis": "jev68"},
+    "jev76": {"cells": CELLS_76, "calendar_base": CALENDAR_76,
+              "calendar_extra": {},
+              "session_cap_s": 14 * 3600, "request_cap": REQUEST_CAP,
+              "paths": {"state": "qwen_session_jev76.json",
+                        "pause": "qwen_session_jev76.pause",
+                        "manifest": "qwen_manifest_jev76.json",
+                        "manifest_archive": "qwen_manifest_jev76_{sha}.json",
+                        "refs": "qwen_refs_jev76_{key}.json",
+                        "gate_run": "gate_qwen76_{key}"},
+              "diag": False, "analysis": "factorial"},
+    "jev77": {"cells": CELLS_77, "calendar_base": None,
+              "calendar_extra": {}, "blocks": BLOCKS_77,
+              "ckpts": CKPTS_77,
+              # 40 h WALL con pausas desde el primer arranque de
+              # evaluación (§8.2: otro reloj que el acumulado de
+              # jev68/jev76); subsesiones ≤ 12 h continuas; 12.000
+              # peticiones duras locales
+              "session_cap_s": 40 * 3600, "request_cap": 12000,
+              "clock": "wall", "subsession_cap_s": 12 * 3600,
+              "all_tokenizer_refs": True, "blind_sha": True,
+              "paths": {"state": "qwen_session_jev77.json",
+                        "pause": "qwen_session_jev77.pause",
+                        "manifest": "qwen_manifest_jev77.json",
+                        "manifest_archive": "qwen_manifest_jev77_{sha}.json",
+                        "refs": "qwen_refs_jev77_{key}.json",
+                        "gate_run": "gate_jev77_{key}"},
+              "diag": False, "analysis": "medgemma"},
+}
+_PROFILE = "jev68"
+
+
+def _prof():
+    return PROFILES[_PROFILE]
+
+
+def _set_profile(name):
+    """Selecciona el perfil de la sesión: reasigna las celdas, el
+    calendario base y los topes que el resto del módulo lee como
+    constantes (los tests los siguen pudiendo sustituir por mock); las
+    rutas se resuelven por _prof() en cada punto de acceso."""
+    if name not in PROFILES:
+        raise SystemExit(f"perfil {name!r} desconocido "
+                         f"(hay {sorted(PROFILES)})")
+    global _PROFILE, CELLS, CALENDAR_BASE, SESSION_CAP_S, REQUEST_CAP
+    _PROFILE = name
+    p = PROFILES[name]
+    CELLS = p["cells"]
+    CALENDAR_BASE = p["calendar_base"]
+    SESSION_CAP_S = p["session_cap_s"]
+    REQUEST_CAP = p["request_cap"]
+
+
 # ----------------------------------------------------------------- helpers
 
 def _iso():
@@ -262,12 +557,16 @@ def _qs_eff(qs, order):
     return reorder_choice(qs, _dept_orders(order))
 
 
-def gate_key(mode, prompt, thinking, order):
-    return f"{MODE_SLUG[mode]}_{prompt}_{'on' if thinking else 'off'}_{order}"
+def gate_key(mode, prompt, thinking, order, ckpt=None):
+    """Clave de combo: en perfiles multi-checkpoint (jev77) lleva el slug
+    del checkpoint como quinto campo (`…_d0_medgemma27b`)."""
+    k = f"{MODE_SLUG[mode]}_{prompt}_{'on' if thinking else 'off'}_{order}"
+    return f"{k}_{ckpt}" if ckpt else k
 
 
 _GATE_RE = re.compile(
-    r"^(prob|disc)_(typesafe|sin_antinj|antinj_alt)_(on|off)_(d[0-3])$")
+    r"^(prob|disc)_(typesafe|sin_antinj|antinj_alt)_(on|off)_(d[0-3])"
+    r"(?:_([a-z0-9]+(?:_[a-z0-9]+)*))?$")
 
 
 def parse_gate_key(key):
@@ -275,33 +574,58 @@ def parse_gate_key(key):
     if not m:
         raise SystemExit(f"combo {key!r} inválido: esperado "
                          "<prob|disc>_<typesafe|sin_antinj|antinj_alt>_"
-                         "<on|off>_<d0..d3>")
-    modo, prompt, th, order = m.groups()
-    return {"mode": SLUG_MODE[modo], "prompt": prompt,
-            "thinking": th == "on", "order": order}
+                         "<on|off>_<d0..d3>[_<checkpoint>]")
+    modo, prompt, th, order, ckpt = m.groups()
+    combo = {"mode": SLUG_MODE[modo], "prompt": prompt,
+             "thinking": th == "on", "order": order}
+    if ckpt:
+        spec = (_prof().get("ckpts") or {}).get(ckpt)
+        if spec is None:
+            raise SystemExit(f"combo {key!r}: checkpoint {ckpt!r} no es "
+                             f"del perfil {_PROFILE}")
+        if spec["thinking"] is None:
+            if th == "on":
+                raise SystemExit(f"combo {key!r}: {ckpt} no tiene modo "
+                                 "thinking configurable")
+            combo["thinking"] = None     # sin flag (familia Gemma)
+        combo["ckpt"] = ckpt
+        combo["checkpoint"] = spec["checkpoint"]
+        combo["a01_margin"] = spec.get("a01_margin", 200)
+    return combo
 
 
 def cell_combo(cell):
-    return {"mode": cell["mode"], "prompt": cell.get("prompt", "typesafe"),
-            "thinking": cell["thinking"], "order": cell["order"]}
+    c = {"mode": cell["mode"], "prompt": cell.get("prompt", "typesafe"),
+         "thinking": cell["thinking"], "order": cell["order"]}
+    if cell.get("ckpt"):
+        c["ckpt"] = cell["ckpt"]
+    return c
 
 
 def cell_gate_key(cell):
     c = cell_combo(cell)
-    return gate_key(c["mode"], c["prompt"], c["thinking"], c["order"])
+    return gate_key(c["mode"], c["prompt"], c["thinking"], c["order"],
+                    c.get("ckpt"))
 
 
 def _combo_opts(combo, seed=101, base_url=None):
-    """Opciones del adaptador llm de una combinación (bloque común R13 §4)."""
-    opts = {"provider": "openai", "model": HOST["model"],
+    """Opciones del adaptador llm de una combinación (bloque común R13 §4);
+    en jev77 el modelo servido y max_tokens vienen del checkpoint del
+    combo (medgemma_jev77 §4: provisional hasta A4)."""
+    spec = (_prof().get("ckpts") or {}).get(combo.get("ckpt")) or {}
+    opts = {"provider": "openai",
+            "model": spec.get("served", HOST["model"]),
             "base_url": base_url or HOST["base_url"], "api_key": "none",
             "mode": combo["mode"], "structured": "true",
             "inject_schema_in_prompt": "true", "normalize": "true",
             "capture_raw": "true", "retries_malformed": "2",
-            "max_tokens": "16384", "timeout": "300", "case_timeout": "600",
+            "max_tokens": spec.get("max_tokens", "16384"),
+            "timeout": "300", "case_timeout": "600",
             "prompt": combo["prompt"],
             "choice_order": f"department:{combo['order']}",
             "extra_body": _extra_body(combo["thinking"], seed)}
+    if spec.get("checkpoint"):
+        opts["checkpoint"] = spec["checkpoint"]
     return opts
 
 
@@ -310,21 +634,53 @@ def _llm_factory(opts):
 
 
 def combos_needed():
-    """Puertas que exige la sesión: las de las celdas + las de P71.2."""
+    """Puertas que exige la sesión: las de las celdas + las de P71.2
+    (solo en perfiles con diagnósticos; jev76 es solo el bloque de
+    batería del factorial)."""
     out = {cell_gate_key(c) for c in CELLS.values()}
-    out |= {gate_key("probabilities", p, False, "d0")
-            for p in DIAG_VARIANTS.values()}
+    if _prof()["diag"]:
+        out |= {gate_key("probabilities", p, False, "d0")
+                for p in DIAG_VARIANTS.values()}
     return sorted(out)
 
 
 def _needs_tokenizer_refs(combo):
     """Combos sin referencia histórica válida: thinking=on (otra plantilla) o
-    prompt != typesafe (otro system prompt)."""
+    prompt != typesafe (otro system prompt). En jev77 TODOS los combos
+    llevan refs tokenizer propias por checkpoint (§7.1: refs propias por
+    combo, sin reciclar entre familias)."""
+    if _prof().get("all_tokenizer_refs"):
+        return True
     return combo["thinking"] or combo["prompt"] != "typesafe"
 
 
+def _load_hist():
+    """Referencia histórica off de REF_RUN; {} en perfiles donde TODOS los
+    combos llevan refs tokenizer propias (jev77): no hay histórico
+    aplicable y su ausencia no tumba la sesión."""
+    try:
+        return j67.load_token_ref()
+    except SystemExit:
+        if _prof().get("all_tokenizer_refs"):
+            return {}
+        raise
+
+
 def _refs_path(key):
-    return store.ROOT / "logs" / f"qwen_refs_{key}.json"
+    return (store.ROOT / "logs"
+            / _prof()["paths"]["refs"].format(key=key))
+
+
+def _gate_run(key):
+    """Directorio de la puerta de `key` bajo results/ — propio de cada
+    perfil (gate_qwen_* en jev68, gate_qwen76_* en jev76), para que la
+    evidencia de una sesión no se mezcle nunca con la de la otra."""
+    return _prof()["paths"]["gate_run"].format(key=key)
+
+
+def _manifest_archive_path(sha):
+    return (store.ROOT / "logs"
+            / _prof()["paths"]["manifest_archive"].format(sha=sha))
 
 
 def load_refs(key):
@@ -391,28 +747,44 @@ def _thinking_fails(combo, tag, req, att):
     real, no solo la clave en la petición."""
     fails = []
     # el raw guarda los kwargs del SDK (extra_body anidado); el cuerpo real
-    # del wire las aplana a nivel superior: se aceptan las dos formas
-    ctk = req.get("chat_template_kwargs")
-    if ctk is None:
-        ctk = (req.get("extra_body") or {}).get("chat_template_kwargs")
-    decl = (ctk or {}).get("enable_thinking")
-    if decl is not combo["thinking"]:
+    # del wire las aplana a nivel superior: la flag se busca en las dos
+    # formas, anidada y aplanada (R36: cualquier presencia cuenta)
+    decls = []
+    for src in (req, req.get("extra_body") or {}):
+        if not isinstance(src, dict):
+            continue
+        ctk = src.get("chat_template_kwargs") or {}
+        if "enable_thinking" in ctk:
+            decls.append(ctk["enable_thinking"])
+        if "enable_thinking" in src:
+            decls.append(src["enable_thinking"])
+    decl = decls[0] if decls else None
+    want = combo["thinking"]
+    if want is None:
+        # familia sin modo thinking configurable (Gemma en jev77 §3.4):
+        # la petición NO declara enable_thinking EN ABSOLUTO — ni on ni
+        # off — y el razonamiento que emerja solo se registra en la
+        # evidencia, nunca bloquea
+        if decls:
+            fails.append(f"{tag}: enable_thinking declarado {decl!r} en "
+                         "un combo sin modo thinking")
+        return fails
+    if decl is not want:
         fails.append(f"{tag}: enable_thinking declarado {decl!r} != "
-                     f"{combo['thinking']!r}")
+                     f"{want!r}")
     obs = _thinking_observed(att)
-    if obs != combo["thinking"]:
+    if obs != want:
         fails.append(f"{tag}: thinking no efectivo en el raw "
-                     f"(observado {obs}, esperado {combo['thinking']})")
+                     f"(observado {obs}, esperado {want})")
     return fails
 
 
-def _dept_schema_order(req):
-    """Orden de las opciones de department en el esquema incrustado:
+def _dept_order_in(schema):
+    """Orden de las opciones de department en un esquema dado:
     `properties` en probabilities, `enum` en discrete."""
-    emb = j67._embedded_schema(j67._system_message(req))
-    if emb is None:
+    if schema is None:
         return None
-    props, defs = j67._answers_properties(emb)
+    props, defs = j67._answers_properties(schema)
     field = props.get("department") or {}
     target = (defs.get(field["$ref"].split("/")[-1]) if "$ref" in field
               else field) or {}
@@ -420,6 +792,54 @@ def _dept_schema_order(req):
         return list(target["properties"])
     enum = target.get("enum") or field.get("enum")
     return list(enum) if isinstance(enum, list) else []
+
+
+def _dept_schema_order(req):
+    """Orden de las opciones de department en el esquema incrustado:
+    `properties` en probabilities, `enum` en discrete."""
+    return _dept_order_in(
+        j67._embedded_schema(j67._system_message(req)))
+
+
+def _doc_payloads(req):
+    """Contenidos de los payloads <document>…</document> del request
+    (el estado del caso viaja serializado en JSON ahí dentro)."""
+    out = []
+    for m in req.get("messages") or []:
+        c = m.get("content")
+        if not isinstance(c, str) or "<document>" not in c:
+            continue
+        inner = c.split("<document>", 1)[1]
+        inner = (inner.rsplit("</document>", 1)[0]
+                 if "</document>" in inner else inner)
+        out.append(inner.strip("\n"))
+    return out
+
+
+def _non_doc_text(content):
+    """El mensaje sin los payloads <document>…</document>: el estado del
+    caso es contenido legítimo; la exclusión de inyección del ciego se
+    verifica en el RESTO del mensaje (R36)."""
+    parts = content.split("<document>")
+    out = [parts[0]]
+    for part in parts[1:]:
+        out.append(part.split("</document>", 1)[-1])
+    return "".join(out)
+
+
+def _state_in_request(req, state):
+    """El payload <document> del usuario decodifica EXACTAMENTE al estado
+    del caso (serialización JSON del adaptador): un estado sustituido o
+    truncado no pasa la vigilancia aunque los tokens cuadren (R36)."""
+    for inner in _doc_payloads(req):
+        if inner == state:
+            return True
+        try:
+            if json.loads(inner) == state:
+                return True
+        except (ValueError, TypeError):
+            pass
+    return False
 
 
 def _client_variant(mode):
@@ -485,7 +905,10 @@ class _SinkHandler(http.server.BaseHTTPRequestHandler):
 # render distinto entre on y off.
 _RENDER_FORMS = {"nested": lambda th: {"chat_template_kwargs":
                                        {"enable_thinking": th}},
-                 "direct": lambda th: {"enable_thinking": th}}
+                 "direct": lambda th: {"enable_thinking": th},
+                 # combos sin modo thinking (Gemma en jev77): la
+                 # referencia se calcula sin pasar el flag a la plantilla
+                 "plain": lambda th: {}}
 
 
 def _render_text(tokenizer, messages, form, thinking):
@@ -590,7 +1013,11 @@ def build_refs(key, tokenizer, out=None, model_factory=None, printer=print):
                         f"{ph}/{c.id}: sin request capturado en el sink")
                 msgs = httpd.requests[-1]["body"]["messages"]
                 if form is None:
-                    form = _thinking_form(tokenizer, msgs)
+                    # solo los combos con flag thinking necesitan
+                    # verificar qué forma honra la plantilla; en los
+                    # sin flag (Gemma, jev77) el render va "plain"
+                    form = ("plain" if combo["thinking"] is None
+                            else _thinking_form(tokenizer, msgs))
                 ref.setdefault(ph, {})[c.id] = _render_tokens(
                     tokenizer, msgs, combo["thinking"], form)
         template = getattr(tokenizer, "chat_template", None)
@@ -630,11 +1057,13 @@ def _gate_cases():
     return j67._gate_cases()   # [(adv1, A01), (papers32, P01), (ood, receta)]
 
 
-def _case_client_fails(combo, tag, rec, qs, exp_sha):
+def _case_client_fails(combo, tag, rec, qs, exp_sha, state=None):
     """Cliente + thinking sobre el primer intento del caso: sha del system
     prompt contra el precomputado, apéndice decodificado ==
     response_format.schema, presencia de ids/instrucciones/criterios, orden
-    esperado de department y thinking declarado == observado. Es el criterio
+    esperado de department, estado del caso preservado en el payload
+    <document> (R36: sustitución o truncado invalidan aunque el resto
+    cuadre) y thinking declarado == observado. Es el criterio
     compartido por la puerta y por la vigilancia por caso del runner: un
     caso sin raw o con un prompt que deriva invalida el run igual que
     invalida la puerta."""
@@ -661,22 +1090,35 @@ def _case_client_fails(combo, tag, rec, qs, exp_sha):
         got = _dept_schema_order(req)
         if got != want:
             fails.append(f"{tag}: orden department {got} != {want}")
+    # estado del caso completo en el payload <document> (R36)
+    if state is not None and not _state_in_request(req, state):
+        fails.append(f"{tag}: estado del caso no preservado en el "
+                     "payload <document>")
     fails += _thinking_fails(combo, tag, req, att)
     return fails
 
 
 def _gate_case_fails(combo, phase, cid, rec, qs, exp_sha, hist, ref_on,
-                     tokens, offsets):
+                     tokens, offsets, state=None):
     """Criterios de puerta por caso visible (cliente + motor + thinking)."""
     tag = f"{phase}/{cid}"
-    fails = _case_client_fails(combo, tag, rec, qs, exp_sha)
+    if state is None:
+        # sin estado explícito se resuelve contra la batería (la puerta,
+        # la vigilancia y la auditoría siempre lo pasan)
+        state = next((c.state for c in load_phase(phase)[1]
+                      if c.id == cid), None)
+    fails = _case_client_fails(combo, tag, rec, qs, exp_sha, state=state)
     # motor: usage del primer intento
     t = j67._first_prompt_tokens(rec)
     tokens[phase] = t
     if "error" in rec or j67._first_attempt(rec) is None:
         return fails
-    if combo["mode"] == "discrete":
-        # los offsets propios de la puerta se miden aquí, no se comprueban
+    if combo["mode"] == "discrete" and not _needs_tokenizer_refs(combo):
+        # discrete/OFF: los offsets por familia se miden aquí contra la
+        # referencia histórica y viajan con la puerta (no se comprueban).
+        # discrete/ON no pasa por aquí: su prompt es otro render y tiene
+        # referencia tokenizer propia — aplicarle el histórico+offset de
+        # off mediría la puerta contra el prompt equivocado (R30).
         r = (hist.get(phase) or {}).get(cid)
         if t is None:
             fails.append(f"{tag}: sin usage en el primer intento")
@@ -685,6 +1127,9 @@ def _gate_case_fails(combo, phase, cid, rec, qs, exp_sha, hist, ref_on,
         else:
             offsets[family(phase)] = t - r
     else:
+        # prob (off/on) y discrete+ON: la puerta aplica la misma
+        # token_rule que luego vigila la batería — DT contra SU
+        # referencia tokenizer (±2), nunca contra offsets de off (R30)
         st, det = token_rule(combo, phase, cid, t, hist, ref_on, {})
         if st == "sin_usage":
             fails.append(f"{tag}: sin usage en el primer intento")
@@ -693,9 +1138,18 @@ def _gate_case_fails(combo, phase, cid, rec, qs, exp_sha, hist, ref_on,
     return fails
 
 
-def _blind_fails(combo, tag, rec, qs):
-    """Control negativo: el ciego no debe ver preguntas ni apéndice.
-    Devuelve (fallos, prompt_tokens del primer intento | None)."""
+def _blind_fails(combo, tag, rec, qs, exp_sha=None, state=None,
+                 exp_schema=None):
+    """Control negativo: el ciego no debe ver preguntas ni apéndice EN
+    NINGÚN mensaje (R36 — antes solo se miraba system), el estado del
+    caso viaja intacto en el payload <document> y la gramática conserva
+    el esquema esperado del combo (checkpoint×modo×orden — con
+    `exp_schema`, el esquema que generó el propio combo en la pasada
+    visible; sin ella, cobertura completa de preguntas y orden de
+    department). Devuelve (fallos, prompt_tokens del primer intento |
+    None). Con `exp_sha` (jev77 §7.3 sonda 4) el hash del prompt ciego
+    precomputado debe igualar el observado — es un prompt distinto del
+    visible."""
     if "error" in rec:
         return [f"ciego {tag}: error {rec['error'][:120]}"], None
     att = j67._first_attempt(rec)
@@ -705,10 +1159,59 @@ def _blind_fails(combo, tag, rec, qs):
     fails = [f"ciego {tag}: {f}"
              for f in j67.check_client(req, qs, "blind", combo["mode"])]
     sysm = j67._system_message(req)
-    for qid, q in qs.items():
-        if (q.get("instructions") or "") in sysm:
-            fails.append(f"ciego {tag}: el prompt contiene instrucciones "
-                         f"de {qid}")
+    if exp_sha is not None:
+        sha = (hashlib.sha256(sysm.encode()).hexdigest()[:12]
+               if sysm else None)
+        if sha != exp_sha:
+            fails.append(f"ciego {tag}: sha system {sha} != "
+                         f"precomputado {exp_sha}")
+    # inyección excluida en TODOS los mensajes efectivos: ni instrucciones
+    # ni criterios ni el apéndice de esquema pueden viajar fuera de la
+    # gramática (el payload <document> se excluye: es el estado del caso)
+    for m in req.get("messages") or []:
+        content = m.get("content")
+        if not isinstance(content, str):
+            continue
+        text = _non_doc_text(content)
+        if j67.SCHEMA_MARKER in text:
+            fails.append(f"ciego {tag}: apéndice de esquema en mensaje "
+                         f"{m.get('role')}")
+        for qid, q in qs.items():
+            instr = q.get("instructions") or ""
+            if instr and instr in text:
+                fails.append(f"ciego {tag}: instrucciones de {qid} en "
+                             f"mensaje {m.get('role')}")
+            crit = q.get("criteria") or {}
+            ctexts = crit.values() if isinstance(crit, dict) else crit
+            for ct in ctexts:
+                if ct and ct in text:
+                    fails.append(f"ciego {tag}: criterio de {qid} en "
+                                 f"mensaje {m.get('role')}")
+                    break
+    # el estado viaja completo en el payload <document>
+    if state is not None and not _state_in_request(req, state):
+        fails.append(f"ciego {tag}: estado del caso no preservado en el "
+                     "payload <document>")
+    # la gramática conserva el esquema del combo: response_format queda
+    # intacto con las preguntas y el orden del modo×orden del combo
+    rf_schema = ((req.get("response_format") or {})
+                 .get("json_schema") or {}).get("schema")
+    if exp_schema is not None:
+        if rf_schema != exp_schema:
+            fails.append(f"ciego {tag}: schema de response_format != "
+                         "el esperado del combo")
+    else:
+        qs_eff = _qs_eff(qs, combo["order"])
+        fails += [f"ciego {tag}: {f}" for f in
+                  j67.check_question_visibility(
+                      rf_schema if isinstance(rf_schema, dict) else {},
+                      qs_eff, combo["mode"])]
+    if "department" in qs and isinstance(rf_schema, dict):
+        want = NAMED_ORDERS["department"][combo["order"]]
+        got = _dept_order_in(rf_schema)
+        if got != want:
+            fails.append(f"ciego {tag}: orden department en schema "
+                         f"{got} != {want}")
     t = j67._first_prompt_tokens(rec)
     if t is None:
         fails.append(f"ciego {tag}: sin usage en el primer intento")
@@ -756,7 +1259,8 @@ def _canary_observation(rec_v, rec_b, combo, notas=None):
                                               mode):
                         d["problemas"].append(f"cliente: {f}")
                 else:
-                    bf, _ = _blind_fails(combo, "canario", rec, CANARY_QS)
+                    bf, _ = _blind_fails(combo, "canario", rec, CANARY_QS,
+                                         state=CANARY_STATE)
                     d["problemas"] += bf
                 d["problemas"] += _thinking_fails(
                     combo, f"canario {tag}", req, att)
@@ -814,18 +1318,19 @@ def _canary_resumen(obs):
 
 
 def gate(key, session=None, model_factory=None, hist_ref=None, ref_on=None,
-         new_session=False, printer=print):
+         new_session=False, reason=None, printer=print):
     """Puerta de una combinación mode×prompt×thinking×orden (R13 §4).
     Devuelve (ok, detalles). Toma el lock de sesión — es una mutación como
     run/diag — y descuenta sus sondas de los mismos topes (peticiones,
-    10 h). La evidencia de cada ejecución queda archivada de forma inmutable
+    tope de sesión del perfil). La evidencia de cada ejecución queda archivada de forma inmutable
     en results/gate_qwen_<key>[_blind]~<uid>/ ligada a su gate_id único;
     results/gate_qwen_<key>[_blind]/ queda como puntero a la última.
-    Bloqueantes: cliente, motor (±2/±10 y offsets de discrete), control
-    negativo ciego en A01 (visible−ciego ≥ 200), thinking efectivo y
-    raw/usage presentes. El canario conductual se ejecuta y se archiva
-    como OBSERVACIÓN (Enmienda 1, qwen38_jev68 §14): queda en el entry
-    y en la salida, pero no cambia PASS/FAIL."""
+    Bloqueantes: cliente, motor (±2/±10, offsets de discrete/off y
+    referencia tokenizer propia en los combos `on` — discrete+thinking
+    incluido, R30), control negativo ciego en A01 (visible−ciego ≥ 200),
+    thinking efectivo y raw/usage presentes. El canario conductual se
+    ejecuta y se archiva como OBSERVACIÓN (Enmienda 1, qwen38_jev68 §14):
+    queda en el entry y en la salida, pero no cambia PASS/FAIL."""
     combo = parse_gate_key(key)
     if not session:
         raise SystemExit("gate necesita --session (la puerta es de la sesión)")
@@ -836,10 +1341,25 @@ def gate(key, session=None, model_factory=None, hist_ref=None, ref_on=None,
                          "sesión")
     try:
         t0 = time.monotonic()
-        st = session_begin(session, new_session)
+        st = session_begin(session, new_session, reason=reason,
+                           ckpt=combo.get("ckpt"))
+        gate_bucket = None
+        if _prof().get("blocks"):
+            # jev77 §8.1: las puertas son SOLO de los combos del
+            # checkpoint activo — el de la instancia servida ahora
+            if combo.get("ckpt") != st.get("active_ckpt"):
+                raise SystemExit(
+                    f"puerta {key}: el checkpoint {combo.get('ckpt')!r} "
+                    f"no es el activo {st.get('active_ckpt')!r}: declara "
+                    "la transición o la recarga con --new-session "
+                    "primero")
+            inst = (st.get("instances") or [{}])[-1]
+            gate_bucket = ("planned" if inst.get("reason")
+                           in (None, "initial", "transition")
+                           else inst["reason"])
         elapsed_base = st["elapsed_s"]
         factory = model_factory or _llm_factory
-        hist = hist_ref if hist_ref is not None else j67.load_token_ref()
+        hist = hist_ref if hist_ref is not None else _load_hist()
         if _needs_tokenizer_refs(combo) and ref_on is None:
             ref_on = load_refs(key)
         fails, tokens, offsets = [], {}, {}
@@ -847,15 +1367,15 @@ def gate(key, session=None, model_factory=None, hist_ref=None, ref_on=None,
         model = factory(opts_v)
         uid = uuid.uuid4().hex[:8]
         ts = dt.datetime.now().isoformat(timespec="microseconds")
-        gate_id = f"gate_qwen_{key}@{ts}~{uid}"
-        run_v = f"gate_qwen_{key}"
+        gate_id = f"{_gate_run(key)}@{ts}~{uid}"
+        run_v = _gate_run(key)
         cases = _gate_cases()
         reserve = int(opts_v["retries_malformed"]) + 1
         printer(f"[{run_v}] sesión {session} gate_id {gate_id} "
                 f"{model.meta()}")
 
         def _elapsed():
-            return elapsed_base + (time.monotonic() - t0)
+            return _sess_elapsed(st, elapsed_base, t0)
 
         def _sync():
             st["elapsed_s"] = _elapsed()
@@ -874,18 +1394,47 @@ def gate(key, session=None, model_factory=None, hist_ref=None, ref_on=None,
                            "peticiones alcanzado")
                 return False
             if SESSION_CAP_S - _elapsed() <= 0:
-                out.append(f"{what}: tope de sesión de 10 h agotado")
+                out.append(f"{what}: tope de sesión de "
+                           f"{SESSION_CAP_S // 3600} h agotado")
                 return False
+            sub_rem = _sub_remaining(st)
+            if sub_rem is not None and sub_rem <= 0:
+                out.append(f"{what}: tope de subsesión de "
+                           f"{_prof()['subsession_cap_s'] // 3600} h "
+                           "agotado")
+                return False
+            if gate_bucket is not None:
+                # jev77 §8.1: reserva de puertas — 612 en total y 288
+                # como máximo bajo reinicios extraordinarios
+                spend = st.get("gate_spend") or {}
+                if sum(spend.values()) + reserve > GATE_RESERVE_TOTAL:
+                    out.append(f"{what}: reserva total de puertas "
+                               f"{GATE_RESERVE_TOTAL} agotada")
+                    return False
+                if gate_bucket == "restart" \
+                        and (spend.get("restart", 0) + reserve
+                             > RESTART_GATE_RESERVE):
+                    out.append(f"{what}: reserva de puertas de "
+                               "reinicios extraordinarios "
+                               f"({RESTART_GATE_RESERVE}) agotada")
+                    return False
             return True
 
         def _eval(what, mdl, case, qs_, run_, ph_, opts_, variant):
             """eval de puerta con reserva durable (persistida ANTES de
             abrir la petición, con su marca temporal para conciliar una
             interrupción — R18 §3) y deadline operativo en el proveedor:
-            la petición no puede pasar del tope de sesión y la
-            configuración congelada no se muta."""
+            la petición no puede pasar del remanente de sesión NI de
+            subsesión (R36: el mínimo de ambos) y la configuración
+            congelada no se muta."""
             rem = SESSION_CAP_S - _elapsed()
+            sub_rem = _sub_remaining(st)
+            if sub_rem is not None:
+                rem = min(rem, sub_rem)
             st["requests"] += reserve
+            if gate_bucket is not None:
+                gsp = st.setdefault("gate_spend", {})
+                gsp[gate_bucket] = gsp.get(gate_bucket, 0) + reserve
             st["pending"] = {"run": run_, "phase": ph_, "case": case.id,
                              "variant": variant, "reserved": reserve,
                              "wall_ts": _wall(), "max_s": rem,
@@ -901,10 +1450,13 @@ def gate(key, session=None, model_factory=None, hist_ref=None, ref_on=None,
                  "session": session, "gate_id": gate_id},
                 qhash=questions_hash(qs_))
             st["requests"] += _attempts(rec) - reserve
+            if gate_bucket is not None:
+                st["gate_spend"][gate_bucket] += _attempts(rec) - reserve
             st["pending"] = None
             _sync()
             return rec
 
+        vis_schema = None
         for phase, case in cases:
             if not _budget_ok(f"{phase}/{case.id}"):
                 break
@@ -915,24 +1467,39 @@ def gate(key, session=None, model_factory=None, hist_ref=None, ref_on=None,
                         phase, opts_v, "visible")
             fails += _gate_case_fails(combo, phase, case.id, rec, qs,
                                       exp_sha, hist, ref_on, tokens,
-                                      offsets)
+                                      offsets, state=case.state)
+            if vis_schema is None:
+                # la gramática del combo — referencia con la que el ciego
+                # debe coincidir en response_format (R36)
+                att0 = j67._first_attempt(rec) or {}
+                vis_schema = (((att0.get("request") or {})
+                              .get("response_format") or {})
+                             .get("json_schema") or {}).get("schema")
             printer(f"  visible {phase}/{case.id}: prompt_tokens="
                     f"{tokens.get(phase)}")
         # control negativo ciego en A01 (mismo modo/prompt/thinking)
         opts_b = {**opts_v, "inject_schema_in_prompt": "false"}
         model_b = factory(opts_b)
-        run_b = f"gate_qwen_{key}_blind"
+        run_b = _gate_run(key) + "_blind"
         ph0, c0 = cases[0]
         qs0, _ = load_phase(ph0)
         if _budget_ok("control negativo"):
+            # jev77 §7.3 sonda 4: el prompt ciego lleva sha propio
+            # precomputado (distinto del visible), como los visibles
+            exp_sha_b = (model_b.expected_system_prompt_sha256(qs0)
+                         if _prof().get("blind_sha") else None)
             rec_b = _eval(f"ciego {ph0}/{c0.id}", model_b, c0, qs0, run_b,
                           ph0, opts_b, "blind")
-            b_fails, tb = _blind_fails(combo, f"{ph0}/{c0.id}", rec_b, qs0)
+            b_fails, tb = _blind_fails(combo, f"{ph0}/{c0.id}", rec_b, qs0,
+                                       exp_sha=exp_sha_b, state=c0.state,
+                                       exp_schema=vis_schema)
             fails += b_fails
             tv = tokens.get(ph0)
-            if tv is not None and tb is not None and tv - tb < 200:
+            margin = combo.get("a01_margin", 200)
+            if tv is not None and tb is not None and tv - tb < margin:
                 fails.append(f"control negativo: visible-ciego en "
-                             f"{ph0}/{c0.id} = {tv - tb} < 200 tokens")
+                             f"{ph0}/{c0.id} = {tv - tb} < {margin} "
+                             "tokens")
         # canario conductual: dos peticiones, ejecutadas y archivadas como
         # OBSERVACIÓN (Enmienda 1, qwen38_jev68 §14) — el resultado no
         # cambia PASS/FAIL; la observación queda en el entry inmutable y
@@ -1014,8 +1581,8 @@ def gate(key, session=None, model_factory=None, hist_ref=None, ref_on=None,
 def _latest_gate(key):
     """latest_gate de los docs de la puerta visible de `key`, o None."""
     latest = None
-    for ph in store.runs_in(f"gate_qwen_{key}"):
-        doc = store.load(f"gate_qwen_{key}", ph) or {}
+    for ph in store.runs_in(_gate_run(key)):
+        doc = store.load(_gate_run(key), ph) or {}
         g = ((doc.get("meta") or {}).get("diag") or {}).get("latest_gate")
         if g and (latest is None or g.get("ts", "") > latest.get("ts", "")):
             latest = g
@@ -1028,10 +1595,10 @@ def _gate_entry_for(key, gate_id):
     que permite a la auditoría verificar qué puerta autorizó cada caso."""
     if not gate_id:
         return None
-    runs = [f"gate_qwen_{key}"]
+    runs = [_gate_run(key)]
     base = store.ROOT
     if base.exists():
-        runs += sorted(d.name for d in base.glob(f"gate_qwen_{key}~*")
+        runs += sorted(d.name for d in base.glob(_gate_run(key) + "~*")
                        if d.is_dir())
     for run in runs:
         for ph in store.runs_in(run):
@@ -1046,15 +1613,17 @@ def _gate_entry_for(key, gate_id):
 # ------------------------------------------------------------------- sesión
 
 def _state_path():
-    return store.ROOT / "logs" / "qwen_session.json"
+    return store.ROOT / "logs" / _prof()["paths"]["state"]
 
 
 def _lock_path():
+    # compartido entre perfiles a propósito: un solo escritor/supervisor
+    # sobre el mismo servidor, sea cual sea la sesión
     return store.ROOT / "logs" / "qwen_session.lock"
 
 
 def _pause_path():
-    return store.ROOT / "logs" / "qwen_session.pause"
+    return store.ROOT / "logs" / _prof()["paths"]["pause"]
 
 
 def _pause_requested():
@@ -1235,25 +1804,233 @@ def _reconcile_pending(st):
     return st
 
 
-def session_begin(session, new_session=False):
+def _sess_elapsed(st, base, t0, now=time.monotonic):
+    """Reloj del tope de sesión del perfil:
+    - jev68/jev76: tiempo ACUMULADO del supervisor — `base` es la lectura
+      congelada al entrar en la invocación (persistida en elapsed_s) +
+      el delta de esta invocación;
+    - jev77: WALL desde el primer arranque de evaluación (st['wall_t0'])
+      — las pausas entre comandos cuentan dentro de las 40 h
+      (medgemma_jev77 §8.2; R35 lo exige explícito)."""
+    if _prof().get("clock") == "wall":
+        wt0 = st.get("wall_t0")
+        if isinstance(wt0, (int, float)):
+            return _wall() - wt0
+    return base + (now() - t0)
+
+
+def _sub_elapsed(st):
+    """Segundos de la subsesión en curso (jev77 §8.2: 12 h de operación
+    continua de la INSTANCIA servida). `sub_t0` es durable y nace con la
+    carga de la instancia — ni `gate`, ni `run`, ni un `--resume`
+    posteriores la reinician (R36 §2); solo la renueva una recarga
+    declarada (--new-session)."""
+    t0 = st.get("sub_t0")
+    return _wall() - t0 if isinstance(t0, (int, float)) else None
+
+
+def _sub_remaining(st):
+    """Remanente de la subsesión de la instancia (None si el perfil no
+    tiene subsesión o el estado aún no la fijó)."""
+    cap = _prof().get("subsession_cap_s")
+    if not cap:
+        return None
+    e = _sub_elapsed(st)
+    return cap - e if e is not None else None
+
+
+def _cell_exhausted(name, cell, st):
+    """La celda no puede aceptar más trabajo: su tope persistido está
+    agotado o el run quedó invalidado por visibilidad (§10.4)."""
+    if cell.get("budget_s") is not None:
+        bk = cell.get("budget_key") or name
+        if (st.get("cell_s") or {}).get(bk, 0.0) >= cell["budget_s"]:
+            return True
+    return any((((store.load(cell["run"], ph) or {}).get("meta") or {})
+                .get("diag") or {}).get("status") == "invalid_visibility"
+               for ph in cell["phases"])
+
+
+def _slot_todo(cell, phase):
+    """Casos ejecutables pendientes del slot (celda, fase): en su ámbito,
+    sin registro en el doc. Los `stopped_cases` NO son cierre — son
+    casos que un tope dejó sin ejecutar y siguen pendientes."""
+    doc = store.load(cell["run"], phase) or {}
+    have = doc.get("cases") or {}
+    _, cases = load_phase(phase)
+    ids = (cell.get("case_ids") or {}).get(phase)
+    return [c for c in cases
+            if (ids is None or c.id in set(ids)) and c.id not in have]
+
+
+def _slot_retryable(cell, phase, st):
+    """Casos del slot elegibles para el REINTENTO ÚNICO (--retry-errors):
+    registrados con error y aún no reintentados en este encargo."""
+    doc = store.load(cell["run"], phase) or {}
+    recs = doc.get("cases") or {}
+    ret = (st.get("retried") or {}).get(f"{cell['run']}/{phase}") or []
+    _, cases = load_phase(phase)
+    ids = (cell.get("case_ids") or {}).get(phase)
+    return [c for c in cases
+            if (ids is None or c.id in set(ids))
+            and "error" in (recs.get(c.id) or {}) and c.id not in ret]
+
+
+def _block_pending(ckpt, st, retry_errors=False):
+    """¿Queda trabajo ejecutable en el bloque del checkpoint? Los casos
+    sin registro de celdas agotadas (tope persistido) o invalidadas no
+    lo bloquean: quedan pendientes pero no ejecutables (§10.4). Con
+    `retry_errors` los errores elegibles para el reintento único también
+    mantienen el bloque abierto: un reintento nunca abandona el
+    checkpoint que lo contiene (R38 §1)."""
+    names = dict(_prof()["blocks"]).get(ckpt) or []
+    for name in names:
+        cell = CELLS[name]
+        if _cell_exhausted(name, cell, st):
+            continue
+        for ph in cell["phases"]:
+            if _slot_todo(cell, ph):
+                return True
+            if retry_errors and _slot_retryable(cell, ph, st):
+                return True
+    return False
+
+
+def _classify_instance(st, session, reason, ckpt):
+    """Clasifica el cambio de instancia de jev77 (§8.2, R36 §3) y lo
+    persiste: 'transition' planificada (al SIGUIENTE bloque, solo con el
+    activo cerrado — no consume la reserva de reinicios), 'subsession'
+    (recarga al llegar a las 12 h del mismo checkpoint) o 'restart'
+    (reinicio extraordinario del mismo checkpoint, máx. 4 y con reserva
+    propia de puertas). En todos los casos la recarga es real y renueva
+    `sub_t0`; los contadores del encargo nunca retroceden."""
+    order = [ck for ck, _ in _prof()["blocks"]]
+    active = st.get("active_ckpt") or order[0]
+    if reason is None:
+        # clasificación automática por señal durable: un checkpoint
+        # distinto del activo o el bloque cerrado implican transición;
+        # una subsesión agotada, recarga de subsesión; si no, reinicio
+        if (ckpt is not None and ckpt != active) \
+                or (ckpt is None and not _block_pending(active, st)):
+            reason = "transition"
+        elif _sub_remaining(st) is not None and _sub_remaining(st) <= 0:
+            reason = "subsession"
+        else:
+            reason = "restart"
+    if reason == "subsession" \
+            and not (_sub_remaining(st) is not None
+                     and _sub_remaining(st) <= 0):
+        # una recarga anticipada NO es una recarga de subsesión: ésta
+        # solo renueva cuando las 12 h están acreditadas (sub_t0
+        # durable agotado); en cualquier otro caso cuenta como reinicio
+        # extraordinario (R38 §2 — no elude el máximo de 4 ni la
+        # reserva de 288 de puertas)
+        reason = "restart"
+    if reason == "transition":
+        try:
+            nxt = order[order.index(active) + 1]
+        except (ValueError, IndexError):
+            raise SystemExit(
+                f"transición planificada imposible: {active!r} es el "
+                "último bloque")
+        if _block_pending(active, st):
+            raise SystemExit(
+                f"transición rechazada: el bloque activo {active!r} "
+                "tiene casos pendientes — una transición planificada "
+                "solo se declara con el bloque cerrado")
+        if ckpt is not None and ckpt != nxt:
+            raise SystemExit(
+                f"la transición planificada es {active} → {nxt}, no "
+                f"{ckpt!r}")
+        ckpt = nxt
+        done = st.setdefault("blocks_done", [])
+        if active not in done:
+            done.append(active)
+        st["active_ckpt"] = ckpt
+    elif reason == "restart":
+        if ckpt is not None and ckpt != active:
+            raise SystemExit(
+                f"reinicio extraordinario rechazado: sirve {ckpt!r} y el "
+                f"checkpoint activo es {active!r} — un cambio de modelo "
+                "es una transición planificada")
+        ckpt = active
+        st["restart_extra"] = (st.get("restart_extra") or 0) + 1
+        if st["restart_extra"] > RESTART_EXTRA_MAX:
+            raise SystemExit(
+                f"más de {RESTART_EXTRA_MAX} reinicios extraordinarios "
+                "no están presupuestados (§8.2): el encargo no puede "
+                "continuar")
+    elif reason == "subsession":
+        if ckpt is not None and ckpt != active:
+            raise SystemExit(
+                f"recarga de subsesión rechazada: sirve {ckpt!r} y el "
+                f"checkpoint activo es {active!r}")
+        ckpt = active
+    else:
+        raise SystemExit(f"clasificación de instancia {reason!r} "
+                         "inválida (transition|restart|subsession)")
+    st["sub_t0"] = _wall()
+    st.setdefault("instances", []).append(
+        {"session": session, "reason": reason, "ckpt": ckpt,
+         "wall_ts": st["sub_t0"], "ts": _iso()})
+    return st
+
+
+def session_begin(session, new_session=False, reason=None, ckpt=None):
     """Registra o valida la sesión y devuelve el estado persistente.
     --new-session marca un reinicio del servidor: conserva los contadores
     globales (peticiones, tiempos por celda, elapsed) pero exige puertas
     nuevas, porque latest_gate queda ligado al id de sesión anterior.
     Es una mutación: solo la invocan los puntos de entrada que poseen el
-    lock (gate/run/diag); si el fichero de lock existe y no lo posee este
-    proceso, se rechaza."""
+    lock (gate/run/diag/begin); si el fichero de lock existe y no lo
+    posee este proceso, se rechaza.
+    jev77 añade (§8.2, R36): el primer arranque exige la preparación A3
+    registrada (prep), fija wall_t0 (inicio A6 del encargo — ANTES de la
+    primera carga del servidor) y sub_t0 (subsesión durable de la
+    instancia), y cada --new-session se clasifica duramente como
+    transición planificada, recarga de subsesión o reinicio
+    extraordinario (máx. 4)."""
     if _HELD_LOCK is None and _lock_path().exists():
         raise SystemExit(f"{_lock_path()} existe: la sesión la tiene otro "
                          "proceso; la mutación exige el lock exclusivo")
     st = _load_state()
-    if st is None:
-        st = {"session": session, "started": _iso(), "elapsed_s": 0.0,
-              "requests": 0, "cell_s": {}, "retried": {},
-              "sessions": [session]}
+    if st is None or st.get("session") is None:
+        if _prof().get("blocks") and not (st or {}).get("prep"):
+            raise SystemExit(
+                "preparación A3 no registrada: ejecuta antes "
+                "`qwen_session prep --requests N --wall-s S` (§9)")
+        base = st or {}
+        st = {"session": session, "started": _iso(),
+              "elapsed_s": base.get("elapsed_s", 0.0),
+              "requests": base.get("requests", 0),
+              "cell_s": base.get("cell_s") or {},
+              "retried": base.get("retried") or {},
+              "sessions": (base.get("sessions") or []) + [session]}
+        for k in ("prep", "gate_spend", "restart_extra", "blocks_done",
+                  "instances", "reconciled_pending"):
+            if k in base:
+                st[k] = base[k]
+        if _prof().get("clock") == "wall":
+            # jev77: inicio A6 del encargo — el reloj wall nace con el
+            # primer arranque de evaluación (antes de cargar el
+            # servidor, R36 §2) y no se resetea ni con --new-session
+            # (las pausas y reinicios cuentan dentro de las 40 h); la
+            # subsesión durable de la primera instancia nace aquí
+            st["wall_t0"] = _wall()
+            st["sub_t0"] = st["wall_t0"]
+            st["active_ckpt"] = ckpt or _prof()["blocks"][0][0]
+            st.setdefault("instances", []).append(
+                {"session": session, "reason": "initial",
+                 "ckpt": st["active_ckpt"], "wall_ts": st["wall_t0"],
+                 "ts": _iso()})
         _save_state(st)
         return st
     if st.get("session") == session:
+        if _prof().get("clock") == "wall" and st.get("sub_t0") is None:
+            # estados previos a la subsesión durable: la instancia lleva
+            # cargada desde wall_t0 — conservador
+            st["sub_t0"] = st.get("wall_t0") or _wall()
+            _save_state(st)
         # una petición interrumpida carga primero su tiempo contra los
         # topes (R18 §3): reanudar nunca regala el margen ya consumido
         return _reconcile_pending(st)
@@ -1262,6 +2039,8 @@ def session_begin(session, new_session=False):
             f"sesión registrada {st.get('session')!r} != {session!r}: tras "
             "un reinicio del servidor pasa --new-session y repite las puertas")
     _reconcile_pending(st)
+    if _prof().get("blocks"):
+        st = _classify_instance(st, session, reason, ckpt)
     st.setdefault("sessions", []).append(session)
     st["session"] = session
     st["started"] = _iso()
@@ -1311,14 +2090,25 @@ def wait_health(urls, deadline, now=time.monotonic, sleep=time.sleep,
 # ------------------------------------------------------------------- runner
 
 def _calendar():
-    """Slots (celda, fase) congelados del bloque de batería (R13 §6)."""
+    """Slots (celda, fase) congelados del bloque de batería (R13 §6 en
+    jev68 — rotación de 7 celdas + S202; la rotación del factorial en
+    jev76, sin celda extra; bloques por checkpoint en jev77)."""
     slots = []
+    blocks = _prof().get("blocks")
+    if blocks:
+        # jev77 §8.3-8.4: un checkpoint a la vez; dentro de cada bloque
+        # la lista L rota por fase i como L[(j+i) mod len(L)]
+        for _ck, names in blocks:
+            n = len(names)
+            for i, ph in enumerate(PHASES_ALL):
+                slots += [(names[(j + i) % n], ph) for j in range(n)]
+        return slots
     n = len(CALENDAR_BASE)
+    extra = _prof()["calendar_extra"]
     for i, ph in enumerate(PHASES_ALL):
         order = CALENDAR_BASE[i % n:] + CALENDAR_BASE[:i % n]
         slots += [(c, ph) for c in order]
-        if ph in CELLS["S202"]["phases"]:
-            slots.append(("S202", ph))
+        slots += [(c, ph) for c in extra.get(ph, ())]
     return slots
 
 
@@ -1481,7 +2271,7 @@ def _exec_slot(ctx, cell_name, phase, retry_errors, now, sleep, printer):
                 f"(reserva ya contabilizada): {st['pending']}", flush=True)
 
     def _elapsed():
-        return ctx["elapsed_base"] + (now() - ctx["t0"])
+        return _sess_elapsed(st, ctx["elapsed_base"], ctx["t0"], now)
 
     def _spent():
         return cell_base + (now() - slot_t0)
@@ -1519,21 +2309,33 @@ def _exec_slot(ctx, cell_name, phase, retry_errors, now, sleep, printer):
             continue
         remaining_s = SESSION_CAP_S - _elapsed()
         if remaining_s <= 0:
-            ctx["session_stop"] = "tope de sesión de 10 h"
+            ctx["session_stop"] = (f"tope de sesión de "
+                                   f"{SESSION_CAP_S // 3600} h")
             stopped.append(c.id)
             continue
         if st["requests"] + reserve > REQUEST_CAP:
             ctx["session_stop"] = (f"tope duro de {REQUEST_CAP} peticiones")
             stopped.append(c.id)
             continue
+        sub_rem = _sub_remaining(st)
+        if sub_rem is not None and sub_rem <= 0:
+            ctx["session_stop"] = (
+                f"tope de subsesión de "
+                f"{_prof()['subsession_cap_s'] // 3600} h "
+                "(operación continua; descarga y reanuda)")
+            stopped.append(c.id)
+            continue
         # el tope efectivo del request es OPERATIVO (deadline externo del
         # proveedor, en su propio reloj), nunca la configuración congelada:
         # timeout/case_timeout de meta() quedan intactos y la reanudación
-        # sigue siendo compatible (R17 §4); si el presupuesto se agota a
+        # sigue siendo compatible (R17 §4); el deadline es el mínimo de los
+        # TRES remanentes vivos: sesión global (40 h), celda y subsesión
+        # durable de la instancia (R36 §2) — si el presupuesto se agota a
         # media petición, la petición se para — no se cambian las opts
         rem = min(remaining_s,
                   cell["budget_s"] - spent
-                  if cell["budget_s"] is not None else remaining_s)
+                  if cell["budget_s"] is not None else remaining_s,
+                  sub_rem if sub_rem is not None else remaining_s)
         # reserva durable ANTES de abrir la petición (R17 §3): si el
         # proceso muere con la petición en curso quedan asentados el gasto
         # reservado, la operación pendiente —con su marca temporal durable
@@ -1581,23 +2383,29 @@ def _exec_slot(ctx, cell_name, phase, retry_errors, now, sleep, printer):
         if "error" in rec and "timeout" in rec["error"].lower():
             printer(f"{run} {phase}: timeout; probando /health…",
                     flush=True)
-            # el deadline de las sondas queda acotado por AMBOS
-            # presupuestos (celda y sesión), recalculados tras el caso
+            # el deadline de las sondas queda acotado por los TRES
+            # presupuestos (celda, sesión global y subsesión durable),
+            # recalculados tras el caso (R36)
             cell_rem = (cell["budget_s"] - _spent()
                         if cell["budget_s"] is not None else HEALTH_WAIT_S)
             sess_rem = SESSION_CAP_S - _elapsed()
-            deadline = now() + max(0.0, min(HEALTH_WAIT_S, cell_rem,
-                                            sess_rem))
+            sub_rem = _sub_remaining(st)
+            deadline = now() + max(0.0, min(
+                HEALTH_WAIT_S, cell_rem, sess_rem,
+                sub_rem if sub_rem is not None else HEALTH_WAIT_S))
 
             def _probe(u, timeout):
                 # las sondas de /health también son peticiones: cupo
                 # verificado y gasto persistido antes de abrir cada una,
-                # con el remanente de AMBOS presupuestos (R18 §2) — el
-                # socket recibe ese remanente como timeout
+                # con el remanente de los TRES presupuestos (R18 §2, R36)
+                # — el socket recibe ese remanente como timeout
                 if st["requests"] >= REQUEST_CAP:
                     raise _BudgetExhausted("peticiones")
                 if SESSION_CAP_S - _elapsed() <= 0:
                     raise _BudgetExhausted("sesión")
+                if _sub_remaining(st) is not None \
+                        and _sub_remaining(st) <= 0:
+                    raise _BudgetExhausted("subsesión")
                 if cell["budget_s"] is not None \
                         and cell["budget_s"] - _spent() <= 0:
                     raise _BudgetExhausted("celda")
@@ -1622,9 +2430,16 @@ def _exec_slot(ctx, cell_name, phase, retry_errors, now, sleep, printer):
                         or st["requests"] >= REQUEST_CAP:
                     ctx["session_stop"] = (
                         f"tope duro de {REQUEST_CAP} peticiones")
+                elif exhausted == "subsesión" \
+                        or (_sub_remaining(st) is not None
+                            and _sub_remaining(st) <= 0):
+                    ctx["session_stop"] = (
+                        f"tope de subsesión de "
+                        f"{_prof()['subsession_cap_s'] // 3600} h")
                 elif exhausted == "sesión" \
                         or SESSION_CAP_S - _elapsed() <= 0:
-                    ctx["session_stop"] = "tope de sesión de 10 h"
+                    ctx["session_stop"] = (f"tope de sesión de "
+                                           f"{SESSION_CAP_S // 3600} h")
                 else:
                     ctx["session_stop"] = (f"health no responde tras "
                                            f"{HEALTH_WAIT_S} s: {states}")
@@ -1639,9 +2454,12 @@ def _exec_slot(ctx, cell_name, phase, retry_errors, now, sleep, printer):
         elif retry_errors and isinstance(prev, dict) and "error" in prev:
             phase_errors -= 1
             run_errors -= 1
-        # identidad por caso: cada record lleva su sesión y la puerta que lo
-        # autorizó; el meta común nunca relabela casos de otra sesión
+        # identidad por caso: cada record lleva su sesión, su checkpoint
+        # (jev77: la instancia que lo sirvió) y la puerta que lo autorizó;
+        # el meta común nunca relabela casos de otra sesión
         rec["session"] = st["session"]
+        if cell.get("ckpt"):
+            rec["ckpt"] = cell["ckpt"]
         if ctx.get("manifest"):
             # el sha del manifiesto que autoriza ESTE caso: en una
             # transición los casos anteriores conservan el suyo
@@ -1649,11 +2467,12 @@ def _exec_slot(ctx, cell_name, phase, retry_errors, now, sleep, printer):
         if ctx["gate_ids"].get(key):
             rec["gate_id"] = ctx["gate_ids"][key]
         # vigilancia por caso (R13 §4): la misma evidencia que exige la
-        # puerta — raw, cliente (sha/apéndice/orden) y thinking — más la
-        # regla de tokens del primer intento; sin ella el run se invalida
+        # puerta — raw, cliente (sha/apéndice/orden), estado preservado
+        # (R36) y thinking — más la regla de tokens del primer intento;
+        # sin ella el run se invalida
         if "error" not in rec:
             vf = _case_client_fails(combo, f"{phase}/{c.id}", rec, qs,
-                                    exp_sha)
+                                    exp_sha, state=c.state)
             if vf:
                 ctx["cell_stop"][cell_name] = (
                     f"{phase}/{c.id}: visibilidad no acreditada ({vf[0]})")
@@ -1739,12 +2558,93 @@ def _cell_gate_ok(ctx, cell):
     if cell["mode"] == "discrete":
         off = dict(latest.get("offsets") or {})
         if not off:
-            for ph in store.runs_in(f"gate_qwen_{key}"):
-                doc = store.load(f"gate_qwen_{key}", ph) or {}
+            for ph in store.runs_in(_gate_run(key)):
+                doc = store.load(_gate_run(key), ph) or {}
                 off.update(((doc.get("meta") or {}).get("diag") or {})
                            .get("offsets_familia") or {})
         ctx["offsets"][key] = off
     return True
+
+
+def prep(requests=0, wall_s=0.0, note=None, printer=print):
+    """Registro de la preparación A3 (jev77 §8.2/§9, R36 §3): smoke tests,
+    health y pruebas de puerta previas al arranque — con reloj PROPIO de
+    4 h y cupo PROPIO de 150 peticiones locales que CUENTAN en las 12.000
+    duras pero NO en las 40 h de evaluación. Se puede invocar varias
+    veces mientras dura A3; el primer session_begin la exige registrada
+    (la carga de checkpoints y su primera petición válida también)."""
+    if not _prof().get("blocks"):
+        printer(f"ERROR: el perfil {_PROFILE} no tiene preparación A3")
+        return 1
+    if requests < 0 or wall_s < 0:
+        printer("ERROR: --requests/--wall-s no pueden ser negativos")
+        return 1
+    try:
+        fd = _acquire_lock()
+    except FileExistsError:
+        printer(f"ERROR: {_lock_path()} existe: otro proceso tiene la "
+                "sesión")
+        return 1
+    try:
+        st = _load_state() or {}
+        if st.get("session"):
+            printer("ERROR: la evaluación ya empezó (A6 registrado): "
+                    "A3 está cerrada")
+            return 1
+        p = dict(st.get("prep")
+                 or {"requests": 0, "wall_s": 0.0, "events": []})
+        p.setdefault("events", [])
+        if p["requests"] + requests > PREP_MAX_REQUESTS:
+            printer(f"ERROR: la preparación superaría "
+                    f"{PREP_MAX_REQUESTS} peticiones "
+                    f"({p['requests']}+{requests})")
+            return 1
+        if p["wall_s"] + wall_s > PREP_MAX_WALL_S:
+            printer(f"ERROR: la preparación superaría "
+                    f"{PREP_MAX_WALL_S // 3600} h "
+                    f"({p['wall_s']}+{wall_s})")
+            return 1
+        p["requests"] += requests
+        p["wall_s"] += wall_s
+        p["events"].append({"requests": requests, "wall_s": wall_s,
+                            "note": note, "ts": _iso()})
+        st["prep"] = p
+        # las peticiones de A3 cuentan en las 12.000 duras (§8.1)
+        st["requests"] = (st.get("requests") or 0) + requests
+        _save_state(st)
+        printer(f"A3 registrada: {p['requests']}/{PREP_MAX_REQUESTS} "
+                f"peticiones, {p['wall_s'] / 3600:.2f}/"
+                f"{PREP_MAX_WALL_S // 3600} h")
+        return 0
+    finally:
+        _release_lock(fd)
+
+
+def begin(session=None, printer=print):
+    """Registro del inicio A6 (jev77 §9): crea el estado de la sesión
+    ANTES de cargar el primer servidor — fija wall_t0 (reloj de 40 h del
+    encargo) y sub_t0 (subsesión durable de 12 h de la instancia). Exige
+    la preparación A3 registrada (prep)."""
+    if not session:
+        printer("ERROR: --session <id> es obligatorio")
+        return 1
+    try:
+        fd = _acquire_lock()
+    except FileExistsError:
+        printer(f"ERROR: {_lock_path()} existe: otro proceso tiene la "
+                "sesión")
+        return 1
+    try:
+        st = session_begin(session)
+        printer(f"A6 registrado: sesión {session}, "
+                f"wall_t0={st.get('wall_t0')}, "
+                f"checkpoint activo {st.get('active_ckpt')}")
+        return 0
+    except SystemExit as e:
+        printer(f"ERROR: {e}")
+        return 1
+    finally:
+        _release_lock(fd)
 
 
 def _build_ctx(session, cells, model_factory, st=None):
@@ -1757,7 +2657,7 @@ def _build_ctx(session, cells, model_factory, st=None):
                 raise SystemExit(
                     f"celda {name}: choice_order nombra {qid!r}, ausente en "
                     f"todas sus fases {c['phases']}")
-    hist = j67.load_token_ref()
+    hist = _load_hist()
     refs_on = {}
     for c in cells.values():
         combo = cell_combo(c)
@@ -1802,8 +2702,13 @@ def _finish_runs(cells, ctx, printer):
 
 def run(session=None, resume=False, retry_errors=False, new_session=False,
         dry_run=False, amend_manifest=None, model_factory=None,
-        now=time.monotonic, sleep=time.sleep, printer=print):
-    """Supervisor del bloque de batería (F0-F3, T0-T1, D0, S202)."""
+        reason=None, now=time.monotonic, sleep=time.sleep, printer=print):
+    """Supervisor del bloque de batería (F0-F3, T0-T1, D0, S202).
+    jev77 corre por BLOQUES (§8.1-8.4): solo el checkpoint activo tiene
+    slots, solo él exige puertas y solo él construye clientes; la
+    transición planificada se sella con el bloque cerrado (parada limpia
+    con instrucciones) y la reanudación retoma el bloque que marque el
+    progreso durable, nunca una posición por calendario."""
     if dry_run:
         plan(printer)
         return 0
@@ -1816,7 +2721,7 @@ def run(session=None, resume=False, retry_errors=False, new_session=False,
         printer(f"ERROR: {_lock_path()} existe: otro proceso tiene la sesión")
         return 1
     try:
-        st = session_begin(session, new_session)
+        st = session_begin(session, new_session, reason=reason)
         # el ejecutor consume el manifiesto que congeló el dry-run (R17 §6):
         # si lo que hay que ejecutar difiere de lo impreso, se rechaza ANTES
         # de abrir peticiones
@@ -1842,31 +2747,86 @@ def run(session=None, resume=False, retry_errors=False, new_session=False,
             except SystemExit as e:
                 printer(f"ERROR: {e}")
                 return 1
+        blocks = _prof().get("blocks")
+        if blocks:
+            # jev77: el bloque ejecutable viene del progreso durable —
+            # nunca se retrocede, nunca se exige una puerta de un
+            # checkpoint que no está servido y el checkpoint activo NO
+            # avanza solo: un run que encuentra su bloque cerrado
+            # anuncia la transición pendiente y espera la instancia
+            # declarada (--new-session / begin), que es la única vía
+            # que mueve active_ckpt con registro durable (R38 §1)
+            order_ck = [ck for ck, _ in blocks]
+            cur_ck = st.get("active_ckpt")
+            if cur_ck not in order_ck:
+                cur_ck = order_ck[0]
+            done_l = st.setdefault("blocks_done", [])
+            nxt_pending = next(
+                (ck for ck in order_ck if ck not in done_l
+                 and _block_pending(ck, st, retry_errors)), None)
+            for ck in order_ck:
+                if ck == nxt_pending:
+                    break
+                if ck not in done_l \
+                        and not _block_pending(ck, st, retry_errors):
+                    done_l.append(ck)
+            _save_state(st)
+            if nxt_pending is None:
+                printer("encargo JEV-77 completo: los 5 bloques "
+                        "ejecutados")
+                return 0
+            if nxt_pending != cur_ck:
+                printer(f"TRANSICIÓN PENDIENTE {cur_ck} → {nxt_pending}: "
+                        f"el bloque {cur_ck} está cerrado — descarga el "
+                        "checkpoint, declara la nueva instancia con "
+                        "`qwen_session begin`/`gate --new-session`, "
+                        "ejecuta sus puertas y reanuda con --resume "
+                        f"(transición ≤ {TRANSITION_CAP_S // 60} min)")
+                return 2
+            active = cur_ck
+            run_names = dict(blocks)[active]
+            cells_run = {n: CELLS[n] for n in run_names}
+        else:
+            active = None
+            cells_run = CELLS
         factory = model_factory or _llm_factory
-        ctx = _build_ctx(session, CELLS, factory, st)
+        ctx = _build_ctx(session, cells_run, factory, st)
         ctx["t0"] = now()
         ctx["elapsed_base"] = st["elapsed_s"]
         ctx["manifest"] = man["manifest_sha256"]
         ctx["amendments"] = amendments
-        _validate_existing(ctx, CELLS, list(CELLS), printer)
+        _validate_existing(ctx, cells_run, list(cells_run), printer)
         if amendments:
             _merge_amendments(st, amendments)
             _save_state(st)
         for cell_name, phase in _calendar():
             if ctx["session_stop"]:
                 break
-            cell = CELLS[cell_name]
+            if blocks and cell_name not in cells_run:
+                continue   # solo el bloque activo (R36 §1)
+            cell = cells_run[cell_name]
             if cell_name in ctx["cell_stop"]:
                 continue
+            if blocks:
+                # slots sin trabajo se saltan ANTES de exigir la
+                # puerta: una puerta solo se exige para abrir casos
+                # nuevos — en reintento, solo los errores elegibles
+                if retry_errors:
+                    if not _slot_retryable(cell, phase, st):
+                        continue
+                elif not _slot_todo(cell, phase):
+                    continue
             if not _cell_gate_ok(ctx, cell):
                 ctx["session_stop"] = (
                     f"sin puerta vigente de esta sesión para "
-                    f"{cell_gate_key(cell)}: ejecuta `qwen_session gate`")
+                    f"{cell_gate_key(cell)} (checkpoint "
+                    f"{cell.get('ckpt')}): ejecuta `qwen_session gate`")
                 break
             _exec_slot(ctx, cell_name, phase, retry_errors, now, sleep,
                        printer)
-        _finish_runs(CELLS, ctx, printer)
-        st["elapsed_s"] = ctx["elapsed_base"] + (now() - ctx["t0"])
+        _finish_runs(cells_run, ctx, printer)
+        st["elapsed_s"] = _sess_elapsed(st, ctx["elapsed_base"],
+                                      ctx["t0"], now)
         st["pending"] = None
         _save_state(st)
         if ctx["session_stop"]:
@@ -1874,6 +2834,30 @@ def run(session=None, resume=False, retry_errors=False, new_session=False,
             return 2
         for name, why in ctx["cell_stop"].items():
             printer(f"celda {name} detenida: {why}")
+        if blocks:
+            # bloque cerrado → transición planificada sellada; la
+            # instancia nueva se declara con --new-session/begin — nunca
+            # se avanza el checkpoint sin registro durable (R38 §1)
+            if _block_pending(active, st, retry_errors):
+                return 2
+            done = st.setdefault("blocks_done", [])
+            if active not in done:
+                done.append(active)
+                _save_state(st)
+            order_ck = [ck for ck, _ in blocks]
+            nxt = (order_ck[order_ck.index(active) + 1]
+                   if active in order_ck
+                   and order_ck.index(active) + 1 < len(order_ck)
+                   else None)
+            if nxt:
+                printer(f"TRANSICIÓN {active} → {nxt}: descarga "
+                        f"{active}, carga {nxt}, ejecuta `qwen_session "
+                        f"gate` de sus combos con --new-session y "
+                        "reanuda con --resume (transición ≤ "
+                        f"{TRANSITION_CAP_S // 60} min)")
+                return 2
+            printer("encargo JEV-77 completo: los 5 bloques ejecutados")
+            return 0
         return 0 if not ctx["cell_stop"] else 2
     finally:
         _release_lock(fd)
@@ -1883,6 +2867,10 @@ def diag(session=None, resume=False, retry_errors=False, new_session=False,
          dry_run=False, amend_manifest=None, model_factory=None,
          now=time.monotonic, sleep=time.sleep, printer=print):
     """Diagnósticos P71.2: 9 runs (V1/V3/V5 x r1-r3) sobre los 12 casos."""
+    if not _prof()["diag"]:
+        printer(f"ERROR: el perfil {_PROFILE} no tiene diagnósticos "
+                "P71.2 (pertenecen a JEV-68)")
+        return 1
     if dry_run:
         plan(printer, diag_only=True)
         return 0
@@ -1951,7 +2939,8 @@ def diag(session=None, resume=False, retry_errors=False, new_session=False,
                 if ctx["session_stop"] or name in ctx["cell_stop"]:
                     break
         _finish_runs(cells, ctx, printer)
-        st["elapsed_s"] = ctx["elapsed_base"] + (now() - ctx["t0"])
+        st["elapsed_s"] = _sess_elapsed(st, ctx["elapsed_base"],
+                                      ctx["t0"], now)
         st["pending"] = None
         _save_state(st)
         if ctx["session_stop"]:
@@ -1981,7 +2970,7 @@ def _plan_manifest():
     for key in combos_needed():
         combo = parse_gate_key(key)
         need = _needs_tokenizer_refs(combo)
-        entry = {**combo, "gate": f"gate_qwen_{key}",
+        entry = {**combo, "gate": _gate_run(key),
                  "token_ref": REF_RUN if not need else _refs_path(key).name}
         if need:
             rp = _refs_path(key)
@@ -2004,15 +2993,18 @@ def _plan_manifest():
                       "budget_s": cell["budget_s"],
                       "questions_hash": questions_hash(qs_eff),
                       "opts": _cell_opts(cell)})
-    dcells, dorder = _diag_cells()
-    diags = [{"i": i, "cell": name, "run": dcells[name]["run"],
-              "phases": dcells[name]["phases"],
-              "case_ids": dcells[name]["case_ids"],
-              "gate": cell_gate_key(dcells[name]),
-              "budget_s": dcells[name]["budget_s"],
-              "budget_key": dcells[name]["budget_key"],
-              "opts": _cell_opts(dcells[name])}
-             for i, name in enumerate(dorder, 1)]
+    if _prof()["diag"]:
+        dcells, dorder = _diag_cells()
+        diags = [{"i": i, "cell": name, "run": dcells[name]["run"],
+                  "phases": dcells[name]["phases"],
+                  "case_ids": dcells[name]["case_ids"],
+                  "gate": cell_gate_key(dcells[name]),
+                  "budget_s": dcells[name]["budget_s"],
+                  "budget_key": dcells[name]["budget_key"],
+                  "opts": _cell_opts(dcells[name])}
+                 for i, name in enumerate(dorder, 1)]
+    else:
+        diags = []
     man = {"host": dict(HOST), "ref_run": REF_RUN,
            "historical_ref": {"run": REF_RUN,
                               "present": hist is not None,
@@ -2021,16 +3013,46 @@ def _plan_manifest():
                     "max_err_phase": MAX_ERR_PHASE,
                     "max_err_run": MAX_ERR_RUN,
                     "no_usage_max": NO_USAGE_MAX},
-           "calendar_base": list(CALENDAR_BASE), "combos": combos,
+           "calendar_base": (list(CALENDAR_BASE) if CALENDAR_BASE
+                             else None), "combos": combos,
            "cells": {n: {"run": c["run"], "issue": c["issue"],
                          "opts": _cell_opts(c), "budget_s": c["budget_s"],
                          "phases": c["phases"]}
                      for n, c in CELLS.items()},
            "slots": slots, "diag": diags,
-           "p712_cases": [list(pc) for pc in P712_CASES],
+           "p712_cases": ([list(pc) for pc in P712_CASES]
+                          if _prof()["diag"] else []),
            "canary": {"qid": CANARY_QID, "label": CANARY_LABEL,
                       "min": CANARY_MIN, "diff": CANARY_DIFF,
                       "rol": "observacion_enmienda1"}}
+    if _prof().get("blocks"):
+        # jev77: el calendario se organiza por bloques de checkpoint
+        # (§8.3), no por una rotación plana de celdas
+        man["blocks"] = {ck: list(names) for ck, names in
+                         _prof()["blocks"]}
+        # jev77: las POLÍTICAS del encargo quedan congeladas también
+        # (R36 §6): un cambio en el reloj wall, la subsesión, la
+        # preparación A3, la clasificación de instancias, la reserva de
+        # puertas o la cascada cambia el sha del manifiesto y exige
+        # recongelar — nunca se altera en silencio
+        man["policies"] = {
+            "clock": _prof().get("clock"),
+            "subsession_cap_s": _prof().get("subsession_cap_s"),
+            "prep": {"max_requests": PREP_MAX_REQUESTS,
+                     "max_wall_s": PREP_MAX_WALL_S},
+            "instances": {"restart_extra_max": RESTART_EXTRA_MAX,
+                          "restart_gate_reserve": RESTART_GATE_RESERVE,
+                          "gate_reserve_total": GATE_RESERVE_TOTAL,
+                          "transition_cap_s": TRANSITION_CAP_S},
+            "cascade": {"requests": JEV77_CASCADE_REQUESTS,
+                        "wall_s": JEV77_CASCADE_WALL_S,
+                        "raw": JEV77_CASCADE_RAW,
+                        "audit": JEV77_CASCADE_AUDIT,
+                        "reviewer": dict(JEV77_CASCADE_REVIEWER)}}
+    if _prof().get("ckpts"):
+        man["checkpoints"] = _prof()["ckpts"]
+    if _PROFILE != "jev68":
+        man["profile"] = _PROFILE
     man["manifest_sha256"] = hashlib.sha256(
         json.dumps(man, sort_keys=True, ensure_ascii=False)
         .encode()).hexdigest()[:16]
@@ -2038,7 +3060,7 @@ def _plan_manifest():
 
 
 def _manifest_path():
-    return store.ROOT / "logs" / "qwen_manifest.json"
+    return store.ROOT / "logs" / _prof()["paths"]["manifest"]
 
 
 def _verify_manifest():
@@ -2105,6 +3127,26 @@ def _amend_budget_t0t1(old):
         return None
 
 
+def _amend_jev77_ws_args(old):
+    """Enmienda 1 (medgemma_jev77 §Enmienda-1, incidente de la puerta
+    ciega 7-oct): añade `--constrained-json-disable-any-whitespace` a los
+    args de servidor de los 5 checkpoints — el render gramatical JSON de
+    la sonda ciega degeneró en relleno hasta el timeout del cliente.
+    Cambia solo `checkpoints.*.args`; devuelve None si la entrada no es
+    el manifiesto anterior esperado."""
+    flag = "--constrained-json-disable-any-whitespace"
+    try:
+        new = json.loads(json.dumps(old))
+        for spec in new["checkpoints"].values():
+            args = spec["args"]
+            if not isinstance(args, list) or flag in args:
+                return None
+            args.append(flag)
+        return new
+    except (KeyError, TypeError):
+        return None
+
+
 # Cadena autorizada: old_sha -> {new_sha256, motivo, fecha, apply}.
 MANIFEST_AMENDMENTS = {
     "428456d0e43b92eb": {
@@ -2113,7 +3155,17 @@ MANIFEST_AMENDMENTS = {
                    "150→210 min, decidido solo por tiempos (6-oct-2026)"),
         "fecha": "2026-10-06",
         "apply": _amend_budget_t0t1,
-    }
+    },
+    "008c1cdd499b6f92": {
+        "new_sha256": "8b201bfb8b6bd5a7",
+        "motivo": ("Enmienda 1 (medgemma_jev77 §Enmienda-1): "
+                   "--constrained-json-disable-any-whitespace en los 5 "
+                   "checkpoints — incidente de la puerta ciega de "
+                   "MedGemma27 (degeneración de la gramática JSON hasta "
+                   "el timeout, 7-oct-2026)"),
+        "fecha": "2026-10-07",
+        "apply": _amend_jev77_ws_args,
+    },
 }
 
 
@@ -2155,7 +3207,7 @@ def _resolve_amendment(path, man):
             "--amend-manifest: el diff entre el manifiesto anterior y el "
             "vigente excede los campos de la enmienda "
             f"({spec['motivo']})")
-    dst = store.ROOT / "logs" / f"qwen_manifest_{old_sha}.json"
+    dst = _manifest_archive_path(old_sha)
     if dst.exists():
         if dst.read_bytes() != raw:
             raise SystemExit(f"{dst}: ya existe un manifiesto anterior "
@@ -2265,7 +3317,11 @@ def plan(printer=print, diag_only=False):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(man, ensure_ascii=False, indent=1,
                                sort_keys=True) + "\n")
-    printer("# plan congelado de la sesión Qwen3.8-27B FP8 (R13 §4-§6)")
+    pflag = f" --profile {_PROFILE}" if _PROFILE != "jev68" else ""
+    printer("# plan congelado de la sesión Qwen3.8-27B FP8 (R13 §4-§6)"
+            + ("" if _PROFILE == "jev68"
+               else f" — perfil {_PROFILE}, factorial discrete×thinking "
+                    "(docs/infra_runs/qwen38_jev76.md)"))
     printer(f"# manifest_sha256={man['manifest_sha256']}  "
             f"host={HOST['base_url']}  model={HOST['model']}  "
             f"ref_run={REF_RUN}")
@@ -2292,9 +3348,10 @@ def plan(printer=print, diag_only=False):
             estado = (f"presente sha={c['refs_sha256']}"
                       if c["refs_present"] else "AUSENTE: ejecutar refs")
             printer(f"python3 -m jevbench.qwen_session refs {key} "
-                    "--tokenizer <checkpoint-qwen3.8-27b-fp8>   "
+                    f"--tokenizer <checkpoint-qwen3.8-27b-fp8>{pflag}   "
                     f"# {c['token_ref']} {estado}")
-        printer(f"python3 -m jevbench.qwen_session gate {key} --session <S>")
+        printer(f"python3 -m jevbench.qwen_session gate {key} "
+                f"--session <S>{pflag}")
     if not diag_only:
         printer("# 2) celdas: opciones efectivas completas (lo que recibe "
                 "el adaptador, sin valores por omisión implícitos):")
@@ -2302,28 +3359,39 @@ def plan(printer=print, diag_only=False):
             printer(f"#   {name:4s} {c['run']} issue={c['issue']} "
                     f"tope={c['budget_s'] // 60}min fases={c['phases']}")
             printer(f"#     {json.dumps(c['opts'], sort_keys=True)}")
-        printer("# 3) bloque de batería (calendario intercalado por fase; "
-                f"base={man['calendar_base']}):")
-        printer("python3 -m jevbench.qwen_session run --session <S>")
+        if man.get("blocks"):
+            printer("# 3) bloque de batería (bloques por checkpoint en "
+                    "orden, rotación de celdas por fase §8.4):")
+            for ck, names in man["blocks"].items():
+                printer(f"#   bloque {ck}: {names}")
+        else:
+            printer("# 3) bloque de batería (calendario intercalado por "
+                    f"fase; base={man['calendar_base']}):")
+        printer(f"python3 -m jevbench.qwen_session run --session <S>{pflag}")
         for s in man["slots"]:
             printer(f"  slot {s['i']:03d} {s['cell']:4s} {s['run']:45s} "
                     f"{s['phase']:14s} n={s['n']} puerta={s['gate']} "
                     f"tope={s['budget_s'] // 60}min "
                     f"qhash={s['questions_hash']}")
             printer(f"         casos={s['case_ids']}")
-    printer("# 4) diagnósticos P71.2 (calendario propio, tope compartido "
-            f"{DIAG_BUDGET_S // 60} min; orden de fases e ids exactos por "
-            "run):")
-    printer("python3 -m jevbench.qwen_session diag --session <S>")
-    for d in man["diag"]:
-        printer(f"  diag {d['i']} {d['run']:46s} prompt="
-                f"{d['opts']['prompt']} seed="
-                f"{json.loads(d['opts']['extra_body'])['seed']} "
-                f"puerta={d['gate']} tope={d['budget_s'] // 60}min")
-        printer(f"         fases={d['phases']}")
-        printer(f"         casos={d['case_ids']}")
-        printer(f"         opts={json.dumps(d['opts'], sort_keys=True)}")
-    printer(f"# P71.2 manifiesto: {[tuple(pc) for pc in man['p712_cases']]}")
+    if man["diag"]:
+        printer("# 4) diagnósticos P71.2 (calendario propio, tope "
+                f"compartido {DIAG_BUDGET_S // 60} min; orden de fases e "
+                "ids exactos por run):")
+        printer(f"python3 -m jevbench.qwen_session diag "
+                f"--session <S>{pflag}")
+        for d in man["diag"]:
+            printer(f"  diag {d['i']} {d['run']:46s} prompt="
+                    f"{d['opts']['prompt']} seed="
+                    f"{json.loads(d['opts']['extra_body'])['seed']} "
+                    f"puerta={d['gate']} tope={d['budget_s'] // 60}min")
+            printer(f"         fases={d['phases']}")
+            printer(f"         casos={d['case_ids']}")
+            printer(f"         opts={json.dumps(d['opts'], sort_keys=True)}")
+        printer(f"# P71.2 manifiesto: "
+                f"{[tuple(pc) for pc in man['p712_cases']]}")
+    else:
+        printer("# 4) sin diagnósticos P71.2 en este perfil")
     printer(f"# canario (observación, Enmienda 1 — no bloqueante): "
             f"{json.dumps(man['canary'], sort_keys=True)}")
     printer(f"# topes: sesión {SESSION_CAP_S // 3600} h; {REQUEST_CAP} "
@@ -2407,6 +3475,34 @@ def _pct(reps, level):
     return reps[int(len(reps) * a)], reps[int(len(reps) * (1 - a)) - 1]
 
 
+def _setup_adj(setup):
+    """El ajustado por celda de un _paired_setup: adj(w, draw=None) da el
+    ajustado del run w observado o sobre el remuestreo `draw` (None si la
+    réplica deja alguna fase sin casos). Compartido por paired_delta,
+    range_boot y el bootstrap conjunto de la interacción."""
+    phases, per, units = setup
+    n_ph = len(phases)
+
+    def adj(w, draw=None):
+        if draw is None:
+            vals = [(100 * sum(per[ph][w].values())
+                     / len(per[ph][w]) - b) / (100 - b)
+                    for ph, b in phases]
+            return 100 * sum(vals) / len(vals)
+        s = [0.0] * n_ph
+        n = [0] * n_ph
+        for u in draw:
+            for pi, cid in u:
+                s[pi] += per[phases[pi][0]][w][cid]
+                n[pi] += 1
+        if 0 in n:
+            return None
+        return 100 * sum((100 * s[i] / n[i] - phases[i][1])
+                         / (100 - phases[i][1]) for i in range(n_ph)) / n_ph
+
+    return phases, adj
+
+
 def paired_delta(run_a, run_b, iters=BOOT_ITERS, seed=BOOT_SEED, level=0.975):
     """Δ ajustado pareado (B−A) con bootstrap de clusters (traducciones y
     papers por PMID ligados), percentil del `level` dado, semilla fija.
@@ -2414,25 +3510,8 @@ def paired_delta(run_a, run_b, iters=BOOT_ITERS, seed=BOOT_SEED, level=0.975):
     setup = _paired_setup([run_a, run_b])
     if setup is None:
         return None
-    phases, per, units = setup
-    n_ph = len(phases)
-
-    def adj(which, draw=None):
-        if draw is None:
-            vals = [(100 * sum(per[ph][which].values())
-                     / len(per[ph][which]) - b) / (100 - b)
-                    for ph, b in phases]
-            return 100 * sum(vals) / len(vals)
-        s = [0.0] * n_ph
-        n = [0] * n_ph
-        for u in draw:
-            for pi, cid in u:
-                s[pi] += per[phases[pi][0]][which][cid]
-                n[pi] += 1
-        if 0 in n:
-            return None
-        return 100 * sum((100 * s[i] / n[i] - phases[i][1])
-                         / (100 - phases[i][1]) for i in range(n_ph)) / n_ph
+    phases, adj = _setup_adj(setup)
+    _, _, units = setup
 
     delta = adj(1) - adj(0)
     rng = random.Random(seed)
@@ -2456,25 +3535,9 @@ def range_boot(runs, iters=BOOT_ITERS, seed=BOOT_SEED, level=0.95):
     setup = _paired_setup(list(runs))
     if setup is None:
         return None
-    phases, per, units = setup
-    k, n_ph = len(runs), len(phases)
-
-    def adj(w, draw=None):
-        if draw is None:
-            vals = [(100 * sum(per[ph][w].values())
-                     / len(per[ph][w]) - b) / (100 - b)
-                    for ph, b in phases]
-            return 100 * sum(vals) / len(vals)
-        s = [0.0] * n_ph
-        n = [0] * n_ph
-        for u in draw:
-            for pi, cid in u:
-                s[pi] += per[phases[pi][0]][w][cid]
-                n[pi] += 1
-        if 0 in n:
-            return None
-        return 100 * sum((100 * s[i] / n[i] - phases[i][1])
-                         / (100 - phases[i][1]) for i in range(n_ph)) / n_ph
+    phases, adj = _setup_adj(setup)
+    _, _, units = setup
+    k = len(runs)
 
     obs = [adj(w) for w in range(k)]
     rng = random.Random(seed)
@@ -2494,6 +3557,123 @@ def range_boot(runs, iters=BOOT_ITERS, seed=BOOT_SEED, level=0.95):
             "mean": sum(obs) / k, "mean_lo": mlo, "mean_hi": mhi,
             "adj": obs, "reps": len(r_range),
             "phases": [ph for ph, _ in phases]}
+
+
+def joint_stat_boot(runs, stat, iters=BOOT_ITERS, seed=BOOT_SEED,
+                    level=0.95):
+    """Bootstrap CONJUNTO de una estadística sobre `runs`: en cada réplica
+    se remuestrean los mismos clusters (ES/EN/PMID) para TODAS las celdas
+    y `stat([ajustados])` se calcula sobre ellos. Es la forma correcta del
+    IC de la interacción I=(DT−T)−(D−F) de JEV-76 — nunca la resta de
+    extremos de ICs calculados por separado (R30 §JEV-76 punto 4)."""
+    setup = _paired_setup(list(runs))
+    if setup is None:
+        return None
+    phases, adj = _setup_adj(setup)
+    _, _, units = setup
+    k = len(runs)
+
+    obs = [adj(w) for w in range(k)]
+    rng = random.Random(seed)
+    reps = []
+    for _ in range(iters):
+        draw = rng.choices(units, k=len(units))
+        vals = [adj(w, draw) for w in range(k)]
+        if any(v is None for v in vals):
+            continue
+        reps.append(stat(vals))
+    if not reps:
+        return None
+    lo, hi = _pct(reps, level)
+    return {"stat": stat(obs), "lo": lo, "hi": hi, "adj": obs,
+            "reps": len(reps), "phases": [ph for ph, _ in phases]}
+
+
+def _case_scores_qid(run, phase, qid):
+    """{cid: puntos de UNA pregunta} — subgrupo descriptivo de jev77
+    (p. ej. department en las fases con TRIAGE_QS)."""
+    doc = store.load(run, phase) or {}
+    qs, cases = load_phase(phase)
+    if qid not in qs:
+        return {}
+    recs = doc.get("cases") or {}
+    out = {}
+    for c in cases:
+        rec = recs.get(c.id)
+        if not isinstance(rec, dict) or "error" in rec \
+                or "answers" not in rec or qid not in rec["answers"]:
+            continue
+        out[c.id] = metrics.point(qs[qid],
+                                  metrics.normalize(rec["answers"][qid],
+                                                    qs[qid]),
+                                  c.gt[qid])
+    return out
+
+
+def _subset_setup(runs, phases, qid=None):
+    """Como _paired_setup pero sobre fases dadas (y, si qid, solo esa
+    pregunta): sin filtro de baseline<100 — es descriptivo, no ajustado."""
+    phases_ok, per = [], {}
+    for ph in phases:
+        sc = ([_case_scores_qid(r, ph, qid) for r in runs]
+              if qid else [_case_scores(r, ph) for r in runs])
+        _, cases = load_phase(ph)
+        if any(len(s) < len(cases) for s in sc):
+            continue
+        per[ph] = sc
+        phases_ok.append(ph)
+    if not phases_ok:
+        return None
+    pmap = {ph: i for i, ph in enumerate(phases_ok)}
+    units = []
+    for members in _clusters(phases_ok).values():
+        u = [(pmap[ph], cid) for ph, cid in members
+             if ph in pmap and cid in per[ph][0]]
+        if u:
+            units.append(u)
+    return phases_ok, per, units
+
+
+def subset_delta(run_a, run_b, phases, qid=None, iters=BOOT_ITERS,
+                 seed=BOOT_SEED, level=0.95):
+    """Δ pareado de puntos medios (B−A) sobre un subconjunto de fases o
+    una sola pregunta (jev77 §6.3: papers32 sola, department en las 9
+    fases con TRIAGE_QS, adv1–adv5). Descriptivo: sin ajuste de baseline;
+    peso igual por fase y bootstrap pareado por clusters, misma
+    remuestra en ambos runs."""
+    setup = _subset_setup([run_a, run_b], phases, qid)
+    if setup is None:
+        return None
+    phs, per, units = setup
+    n_ph = len(phs)
+
+    def mean(w, draw=None):
+        if draw is None:
+            return 100 * sum(sum(per[ph][w].values()) / len(per[ph][w])
+                             for ph in phs) / n_ph
+        s = [0.0] * n_ph
+        n = [0] * n_ph
+        for u in draw:
+            for pi, cid in u:
+                s[pi] += per[phs[pi]][w][cid]
+                n[pi] += 1
+        if 0 in n:
+            return None
+        return 100 * sum(s[i] / n[i] for i in range(n_ph)) / n_ph
+
+    delta = mean(1) - mean(0)
+    rng = random.Random(seed)
+    reps = []
+    for _ in range(iters):
+        draw = rng.choices(units, k=len(units))
+        va, vb = mean(0, draw), mean(1, draw)
+        if va is not None and vb is not None:
+            reps.append(vb - va)
+    if not reps:
+        return None
+    lo, hi = _pct(reps, level)
+    return {"delta": delta, "lo": lo, "hi": hi, "reps": len(reps),
+            "phases": phs, "qid": qid}
 
 
 def primacy_subset():
@@ -2990,9 +4170,11 @@ def _audit_cell(name, cell):
     try:
         hist = j67.load_token_ref()
     except SystemExit as e:
-        rep["evaluable"] = False
-        rep["note"] = f"sin referencia histórica de tokens ({e})"
-        return rep
+        if not _prof().get("all_tokenizer_refs"):
+            rep["evaluable"] = False
+            rep["note"] = f"sin referencia histórica de tokens ({e})"
+            return rep
+        hist = {}   # jev77: todos los combos llevan refs propias
     ref_on = load_refs(key) if _needs_tokenizer_refs(combo) else None
     needs_refs = _needs_tokenizer_refs(combo)
     offsets_doc, gate_cache = {}, {}
@@ -3064,7 +4246,7 @@ def _audit_cell(name, cell):
                     "manifest_sha256", origin_sha) not in allowed_sha:
                 rep["manifest_bad"].append(tag)
             rep["client_violations"] += _case_client_fails(
-                combo, tag, rec, qs, exp_sha)
+                combo, tag, rec, qs, exp_sha, state=c.state)
             if j67._first_attempt(rec) is None:
                 rep["no_raw"].append(tag)
                 continue
@@ -3108,7 +4290,14 @@ def _no_eval(note):
 
 
 def analyze(out_json=None, iters=BOOT_ITERS, seed=BOOT_SEED, printer=print):
-    """Análisis pre-registrado R13 §5 sobre los runs presentes en results/."""
+    """Análisis pre-registrado sobre los runs presentes en results/:
+    R13 §5 en el perfil jev68; el factorial H1/H2/I en jev76."""
+    if _prof()["analysis"] == "factorial":
+        return analyze_factorial(out_json=out_json, iters=iters,
+                                 seed=seed, printer=printer)
+    if _prof()["analysis"] == "medgemma":
+        return analyze_medgemma(out_json=out_json, iters=iters,
+                                seed=seed, printer=printer)
     rep = {"runs": {}, "classification": {}, "holm53": {}}
     have = {k: c for k, c in CELLS.items() if store.runs_in(c["run"])}
     for name, cell in have.items():
@@ -3365,6 +4554,606 @@ def analyze(out_json=None, iters=BOOT_ITERS, seed=BOOT_SEED, printer=print):
     return rep
 
 
+# ---------------------------------------------------- análisis JEV-76
+#
+# Factorial discrete × thinking fresco en una sesión (R30 §JEV-76):
+# cuatro contrastes primarios H1=DT−D≥5 y H2=DT−T≥5 por orden (d0 y d1),
+# IC98.75 por contraste (Bonferroni sobre 4 ⇒ cobertura familiar ≥95 % —
+# corrección simple y auditable; una corrección simultánea daría margen
+# pero obligaría a congelar un método más complejo por la misma familia).
+# Clasificación por contraste: CONFIRMADA si L≥5, REFUTADA si U<5,
+# INCONCLUSA en otro caso y NO EVALUABLE si alguna celda no es evaluable.
+# La interacción I=(DT−T)−(D−F) se publica con bootstrap conjunto de las
+# cuatro celdas como DESCRIPTIVA (nunca resta de extremos de ICs y sin
+# concluir aditividad porque cruce cero); los runs de JEV-68/71 se listan
+# solo como referencia descriptiva, nunca como control de los contrastes.
+JEV68_DESCR = {
+    "d0": {"F": "llm_qwen38_27b_fp8_jev68_off_d0_prob",
+           "T": "llm_qwen38_27b_fp8_jev68_on_d0_prob",
+           "D": "llm_qwen38_27b_fp8_jev71_off_d0_disc"},
+    "d1": {"F": "llm_qwen38_27b_fp8_jev68_off_d1_prob",
+           "T": "llm_qwen38_27b_fp8_jev68_on_d1_prob"},
+}
+FACTORIAL_IC = 0.9875
+INTERACTION_IC = 0.95
+
+
+def analyze_factorial(out_json=None, iters=BOOT_ITERS, seed=BOOT_SEED,
+                      printer=print):
+    """Análisis pre-registrado del factorial JEV-76 sobre los runs del
+    perfil presentes en results/ (H1/H2/I, Holm53 aparte, descriptivos)."""
+    rep = {"profile": _PROFILE, "runs": {}, "classification": {},
+           "holm53": {}}
+    have = {k: c for k, c in CELLS.items() if store.runs_in(c["run"])}
+    for name, cell in have.items():
+        aud = _audit_cell(name, cell)
+        aud["adjusted"], _ = score.adjusted(cell["run"])
+        rep["runs"][name] = aud
+        printer(f"{name} {aud['run']}: ajustado "
+                f"{aud['adjusted'] and round(aud['adjusted'], 2)}, "
+                f"n_ok {aud['n_ok']}/{aud['n']}, "
+                f"evaluable={aud['evaluable']} {aud['note'] or ''}")
+    ev = lambda n: rep["runs"].get(n, {}).get("evaluable")
+    cls = rep["classification"]
+
+    def _contrast(a, b):
+        """Δ ajustado pareado (B−A) con IC98.75 — los 4 contrastes
+        primarios del factorial comparten familia ≥95 % por Bonferroni."""
+        if not (ev(a) and ev(b)):
+            return None, _no_eval(f"faltan runs evaluables {a}/{b}")
+        dd = paired_delta(CELLS[a]["run"], CELLS[b]["run"],
+                          iters=iters, seed=seed, level=FACTORIAL_IC)
+        if dd is None:
+            return None, _no_eval("sin fases pareadas completas")
+        return dd, None
+
+    # H1: DT−D ≥ 5 en cada orden; H2: DT−T ≥ 5 en cada orden
+    for h, tag, a, b in (("H1", "d0", "D0p", "DT0"),
+                         ("H1", "d1", "D1", "DT1"),
+                         ("H2", "d0", "T0p", "DT0"),
+                         ("H2", "d1", "T1p", "DT1")):
+        key = f"{h} {tag}: DT−{'D' if h == 'H1' else 'T'} >=+5"
+        dd, err = _contrast(a, b)
+        rep[f"{h.lower()}_{tag}"] = dd
+        cls[key] = (err if err is not None
+                    else _cls(dd["lo"] >= 5, dd["hi"] < 5) + (
+                        f" (Δ={dd['delta']:+.1f} "
+                        f"[{dd['lo']:+.1f},{dd['hi']:+.1f}] IC98.75)"))
+    # Interacción I=(DT−T)−(D−F) por orden: bootstrap conjunto de las
+    # cuatro celdas con los mismos clusters — DESCRIPTIVA, sin afirmar
+    # aditividad por cruzar cero ni por margen de equivalencia no fijado
+    for tag, quad in (("d0", ("F0p", "T0p", "D0p", "DT0")),
+                      ("d1", ("F1p", "T1p", "D1", "DT1"))):
+        if all(ev(n) for n in quad):
+            rep[f"interaccion_{tag}"] = joint_stat_boot(
+                [CELLS[n]["run"] for n in quad],
+                lambda a: (a[3] - a[1]) - (a[2] - a[0]),
+                iters=iters, seed=seed, level=INTERACTION_IC)
+        else:
+            rep[f"interaccion_{tag}"] = None
+    # ---- Holm 53 celdas, aparte (los cuatro pares de los primarios)
+    for a, b in (("D0p", "DT0"), ("D1", "DT1"),
+                 ("T0p", "DT0"), ("T1p", "DT1")):
+        if store.runs_in(CELLS[a]["run"]) and store.runs_in(
+                CELLS[b]["run"]):
+            rep["holm53"][f"{a}_vs_{b}"] = holm_cells(CELLS[a]["run"],
+                                                      CELLS[b]["run"])
+    # ---- descriptivos (misma mecánica que el análisis de jev68)
+    desc, scan, lat = {}, {}, {}
+    for name, cell in have.items():
+        scan[name] = _raw_scan(cell["run"], cell["phases"], cell["mode"],
+                               cell.get("case_ids"))
+        lat[name] = _usage_stats(cell["run"], cell["phases"],
+                                 cell.get("case_ids"))
+    desc["vectores_crudos"] = scan
+    desc["latencia_tokens"] = lat
+    onoff = {}
+    for tag, off, on in (("prob_d0", "F0p", "T0p"),
+                         ("prob_d1", "F1p", "T1p"),
+                         ("disc_d0", "D0p", "DT0"),
+                         ("disc_d1", "D1", "DT1")):
+        a, b = lat.get(off), lat.get(on)
+        if a and b:
+            onoff[tag] = {
+                "off": off, "on": on,
+                "ms_media_off": a["ms_media"], "ms_media_on": b["ms_media"],
+                "ms_mediana_off": a["ms_mediana"],
+                "ms_mediana_on": b["ms_mediana"],
+                "ms_ratio": (b["ms_media"] / a["ms_media"]
+                             if a["ms_media"] else None),
+                "prompt_off": a["prompt_tokens"],
+                "prompt_on": b["prompt_tokens"],
+                "completion_off": a["completion_tokens"],
+                "completion_on": b["completion_tokens"],
+                "completion_delta": (b["completion_tokens"]
+                                     - a["completion_tokens"]),
+                "razonamiento_on": b["razonamiento_tokens"]}
+    if onoff:
+        desc["on_off"] = onoff
+    jev68_ref = {}
+    for tag, runs in JEV68_DESCR.items():
+        for k, run in runs.items():
+            if store.runs_in(run):
+                adj68, _ = score.adjusted(run)
+                jev68_ref[f"{tag}/{k}"] = {"run": run, "adjusted": adj68}
+    if jev68_ref:
+        desc["jev68_descriptivo"] = jev68_ref
+    agg = next((rep[k] for k in ("h1_d0", "h2_d0", "interaccion_d0")
+                if isinstance(rep.get(k), dict) and rep[k].get("phases")),
+               None)
+    desc["baselines"] = _baseline_table(agg["phases"] if agg else None)
+    rep["descriptivos"] = desc
+    printer("\n## Clasificación pre-registrada (factorial JEV-76, "
+            "IC98.75 por contraste; I descriptiva con IC95 conjunto)")
+    for k, v in cls.items():
+        printer(f"- {k}: {v}")
+    for tag in ("d0", "d1"):
+        ib = rep.get(f"interaccion_{tag}")
+        if ib:
+            printer(f"- I {tag} (descriptiva): "
+                    f"{ib['stat']:+.1f} [{ib['lo']:+.1f},{ib['hi']:+.1f}] "
+                    "IC95 conjunto")
+        else:
+            printer(f"- I {tag} (descriptiva): sin celdas evaluables")
+    if rep["holm53"]:
+        printer("\n## Holm 53 celdas (aparte, descriptivo)")
+        for pair, rows in rep["holm53"].items():
+            sig = [r for r in rows if r["p_holm"] < 0.05]
+            printer(f"- {pair}: {len(sig)} celdas significativas tras "
+                    f"Holm de {len(rows)}")
+            for r in sig:
+                printer(f"    {r['cell']}: b={r['b']} c={r['c']} "
+                        f"p={r['p']:.4g} Holm={r['p_holm']:.4g}")
+    printer("\n## Latencia y tokens por celda (coste API = 0: ejecución "
+            "local sin facturación)")
+    printer("| celda | n | ms media | ms mediana | tokens prompt | "
+            "tokens completion | tokens razonamiento |")
+    printer("|---|---:|---:|---:|---:|---:|---:|")
+    for name, s in lat.items():
+        printer(f"| {name} | {s['n']} | {score.fmt(s['ms_media'], 0)} | "
+                f"{score.fmt(s['ms_mediana'], 0)} | {s['prompt_tokens']} | "
+                f"{s['completion_tokens']} | {s['razonamiento_tokens']} |")
+    for tag, o in onoff.items():
+        printer(f"- on/off {tag} ({o['on']} vs {o['off']}): ms media "
+                f"{score.fmt(o['ms_media_off'], 0)} → "
+                f"{score.fmt(o['ms_media_on'], 0)}"
+                + (f" (×{o['ms_ratio']:.2f})" if o["ms_ratio"] else "")
+                + f", mediana {score.fmt(o['ms_mediana_off'], 0)} → "
+                f"{score.fmt(o['ms_mediana_on'], 0)}; "
+                f"completion {o['completion_off']} → "
+                f"{o['completion_on']} (Δ {o['completion_delta']:+d}; "
+                f"razonamiento on = {o['razonamiento_on']}), prompt "
+                f"{o['prompt_off']} → {o['prompt_on']}")
+    if jev68_ref:
+        printer("\n## Referencia descriptiva JEV-68/71 (nunca control)")
+        for k, v in jev68_ref.items():
+            printer(f"- {k} {v['run']}: ajustado "
+                    f"{v['adjusted'] and round(v['adjusted'], 2)}")
+    printer("\n## Baselines de mayoría por fase (GT v4; ood excluida del "
+            "agregado por baseline saturada)")
+    printer("| fase | n | mayoría % | respuestas mayoritarias |")
+    printer("|---|---:|---:|---|")
+    for ph, b in desc["baselines"].items():
+        ans = ", ".join(f"{q}={v['respuesta']}"
+                        for q, v in b["mayoria"].items())
+        printer(f"| {ph} | {b['n']} | {score.fmt(b['pct'])} | {ans} |")
+    if out_json:
+        with open(out_json, "w") as f:
+            json.dump(rep, f, ensure_ascii=False, indent=1, default=str)
+    return rep
+
+
+# ---------------------------------------------------- análisis JEV-77
+#
+# MedGemma-27B frente a Gemma 3-27B-IT y Qwen FP8 (medgemma_jev77 §6):
+# exactamente DOS contrastes confirmatorios, ambos en d0, con IC97,5 por
+# contraste (Bonferroni sobre 2 ⇒ cobertura familiar nominal ≥ 95 %;
+# compartir M-D0 no invalida Bonferroni). H1 = superioridad M−G ≥ +5;
+# H2 = no inferioridad M−Q con margen −5. d1/4B/cascada y los subgrupos
+# (papers32, department en las 9 fases, adv1–adv5) son descriptivos con
+# IC95 nominal, sin cobertura conjunta con los primarios. Holm53 en diez
+# familias separadas, también descriptivo.
+JEV77_IC = 0.975
+JEV77_PRIMARIES = (("H1", "GD0", "MD0", 5.0, "M-D0−G-D0 ≥+5"),
+                   ("H2", "QD0p", "MD0", -5.0,
+                    "M-D0−Q-D0′ ≥−5 (no inferioridad)"))
+JEV77_DESCR = [  # (tag, a, b): Δ ajustado B−A, IC95 descriptivo
+    ("prob_d0", "GP0", "MP0"),
+    ("disc_d1_M_G", "GD1", "MD1"),
+    ("disc_d1_M_Q", "QD1p", "MD1"),
+    ("prob_d1", "GP1", "MP1"),
+    ("b4_d0_disc", "G4D0", "M4D0"),
+    ("b4_d0_prob", "G4P0", "M4P0"),
+    ("b4_d1_disc", "G4D1", "M4D1"),
+    ("b4_d1_prob", "G4P1", "M4P1"),
+]
+JEV77_HOLM = [("MD0", "GD0"), ("MP0", "GP0"), ("MD0", "QD0p"),
+              ("MD1", "GD1"), ("MP1", "GP1"), ("MD1", "QD1p"),
+              ("M4D0", "G4D0"), ("M4P0", "G4P0"),
+              ("M4D1", "G4D1"), ("M4P1", "G4P1")]
+JEV77_DEPT_PHASES = ["triage_es", "triage_en", "triage_ext_es",
+                     "triage_ext_en", "adv1", "adv2", "adv3", "adv4",
+                     "adv5"]
+JEV77_ADV_PHASES = ["adv1", "adv2", "adv3", "adv4", "adv5"]
+JEV77_CASCADE_AUDIT = "medgemma_27b_jev77_jevrev_audit"
+JEV77_CASCADE_RAW = "medgemma_27b_jev77_jevrev_raw"
+# el modelo efectivo del proveedor elegido se toma de la MISMA fuente
+# que el adaptador Jev — OpenRouter sirve el alias ~typesafe/jev-latest
+# (R40 §1); cambiar de proveedor en A4 exige enmienda del manifiesto
+JEV77_CASCADE_REVIEWER = {"adapter": "jev", "provider": "openrouter",
+                        "model": _JEV_PROVIDERS["openrouter"][2]}
+
+
+def _audit_cascade77():
+    """Cobertura y procedencia de la cascada híbrida jev77 (§5.3, R36
+    §7): el contraste solo es evaluable con las 11 fases del audit
+    COMPLETAS (cada caso con answers, sin errores), sin parada
+    persistida en el registro durable del cupo y con la procedencia
+    congelada — d1 == M-D0, revisor/host/manifest registrados en el raw
+    y una única versión resuelta del revisor en todas las fases/casos.
+    Cualquier falta se publica como NO EVALUABLE con su nota, nunca
+    como un contraste sobre cobertura parcial."""
+    rep = {"phases_ok": [], "missing": [], "errors": [], "bad_meta": [],
+           "stopped": None, "versions": [], "evaluable": False,
+           "note": None}
+    audit, raw = JEV77_CASCADE_AUDIT, JEV77_CASCADE_RAW
+    d1_run = CELLS_77["MD0"]["run"]
+    bfile = store.ROOT / "logs" / "jev77_cascade.json"
+    budget_version, budget_session, budget_rev = None, None, None
+    if not bfile.exists():
+        rep["bad_meta"].append("sin registro durable del cupo de cascada")
+    else:
+        try:
+            bst = json.loads(bfile.read_text())
+        except (OSError, ValueError):
+            rep["bad_meta"].append("registro de cupo de cascada ilegible")
+        else:
+            if bst.get("stopped"):
+                rep["stopped"] = bst["stopped"]
+            rep["budget_requests"] = bst.get("requests")
+            # el gasto declarado se valida contra el cupo congelado —
+            # contador entero, no negativo y dentro de política (R39 §3)
+            if not isinstance(rep["budget_requests"], int) \
+                    or not (0 <= rep["budget_requests"]
+                            <= JEV77_CASCADE_REQUESTS):
+                rep["bad_meta"].append(
+                    f"registro de cupo de cascada fuera de política: "
+                    f"{rep['budget_requests']!r} (tope "
+                    f"{JEV77_CASCADE_REQUESTS})")
+            if not isinstance(bst.get("started_wall"), (int, float)):
+                rep["bad_meta"].append(
+                    "registro de cascada sin reloj de arranque")
+            # la versión congelada en el presupuesto forma parte de la
+            # comparación de versiones; proveedor/modelo y sesión son
+            # la procedencia acreditada (R39 §3)
+            budget_rev = bst.get("reviewer") or {}
+            budget_version = budget_rev.get("resolved")
+            budget_session = bst.get("session")
+            if not budget_session:
+                rep["bad_meta"].append(
+                    "presupuesto de cascada sin sesión acreditada")
+            # la identidad A4 del revisor es OBLIGATORIA y debe ser la
+            # del contrato congelado (R40 §2): sin ella no hay
+            # procedencia que auditar
+            for k in ("adapter", "provider", "model", "resolved"):
+                if not budget_rev.get(k):
+                    rep["bad_meta"].append(
+                        f"presupuesto de cascada sin revisor.{k} "
+                        "congelado")
+            for k, v in JEV77_CASCADE_REVIEWER.items():
+                if budget_rev.get(k) and budget_rev[k] != v:
+                    rep["bad_meta"].append(
+                        f"revisor del presupuesto {k}={budget_rev[k]!r} "
+                        f"!= contrato {v!r}")
+    man_sha, man = None, None
+    man_file = store.ROOT / "logs" / "qwen_manifest_jev77.json"
+    try:
+        man = json.loads(man_file.read_text())
+    except (OSError, ValueError):
+        rep["bad_meta"].append("manifiesto jev77 ausente o ilegible")
+    else:
+        man_sha = man.get("manifest_sha256")
+        # hash obligatorio e íntegro: el declarado debe reproducirse
+        # del contenido (R39 §3)
+        if not man_sha or man_sha != _manifest_content_sha(man):
+            rep["bad_meta"].append(
+                "manifiesto jev77 sin sha válido o con sha que no "
+                "cuadra con su contenido")
+            man_sha = None
+        mcaps = (man.get("policies") or {}).get("cascade") or {}
+        # las políticas congeladas deben ser exactamente las efectivas
+        if mcaps.get("requests") != JEV77_CASCADE_REQUESTS \
+                or mcaps.get("wall_s") != JEV77_CASCADE_WALL_S \
+                or mcaps.get("raw") != raw or mcaps.get("audit") != audit \
+                or mcaps.get("reviewer") != JEV77_CASCADE_REVIEWER:
+            rep["bad_meta"].append(
+                "políticas de cascada del manifiesto divergen de las "
+                "vigentes")
+    from . import cascade as _casc
+    versions = set()
+    for ph in PHASES_ALL:
+        qs, cases = load_phase(ph)
+        adoc = store.load(audit, ph)
+        rdoc = store.load(raw, ph)
+        if adoc is None or rdoc is None:
+            rep["missing"].append(ph)
+            continue
+        am, rm = adoc.get("meta") or {}, rdoc.get("meta") or {}
+        if rm.get("d1") != d1_run:
+            rep["bad_meta"].append(
+                f"{ph}: raw d1 {rm.get('d1')!r} != {d1_run!r}")
+        if am.get("d1") != d1_run or am.get("raw") != raw:
+            rep["bad_meta"].append(
+                f"{ph}: audit d1={am.get('d1')!r} raw={am.get('raw')!r}")
+        # procedencia completa exigida en raw Y en fusión (R38 §7)
+        for k in ("reviewer", "host", "manifest_sha256",
+                  "questions_hash", "provider", "model", "session"):
+            if not rm.get(k):
+                rep["bad_meta"].append(f"{ph}: raw sin {k}")
+        for k in ("host", "manifest_sha256", "session"):
+            if not am.get(k):
+                rep["bad_meta"].append(f"{ph}: fusión sin {k}")
+        # y COMPATIBLE, no solo presente (R39 §3): hash del encargo en
+        # raw y fusión, preguntas de revisión recalculadas, identidad y
+        # sesión acreditadas por el presupuesto
+        if man_sha is not None:
+            if rm.get("manifest_sha256") != man_sha:
+                rep["bad_meta"].append(
+                    f"{ph}: manifiesto del raw "
+                    f"{rm.get('manifest_sha256')!r} != el vigente "
+                    f"{man_sha!r}")
+            if am.get("manifest_sha256") != man_sha:
+                rep["bad_meta"].append(
+                    f"{ph}: manifiesto de la fusión "
+                    f"{am.get('manifest_sha256')!r} != el vigente "
+                    f"{man_sha!r}")
+        if rm.get("questions_hash") is not None and \
+                rm["questions_hash"] != questions_hash(
+                    _casc.review_questions(qs, ph)):
+            rep["bad_meta"].append(
+                f"{ph}: questions_hash del raw incompatible con las "
+                "preguntas de revisión vigentes")
+        for k in ("provider", "model"):
+            if budget_rev.get(k) is not None \
+                    and rm.get(k) is not None and rm[k] != budget_rev[k]:
+                rep["bad_meta"].append(
+                    f"{ph}: {k} del raw {rm[k]!r} != el revisor "
+                    f"acreditado {budget_rev[k]!r}")
+        # el adaptador registrado en el raw debe ser el congelado en el
+        # presupuesto (R40 §2)
+        if budget_rev.get("adapter") is not None \
+                and rm.get("reviewer") is not None \
+                and rm["reviewer"] != budget_rev["adapter"]:
+            rep["bad_meta"].append(
+                f"{ph}: adaptador del raw {rm['reviewer']!r} != el "
+                f"acreditado {budget_rev['adapter']!r}")
+        if budget_session:
+            if rm.get("session") != budget_session:
+                rep["bad_meta"].append(
+                    f"{ph}: sesión del raw {rm.get('session')!r} != "
+                    f"la acreditada {budget_session!r}")
+            if am.get("session") != budget_session:
+                rep["bad_meta"].append(
+                    f"{ph}: sesión de la fusión "
+                    f"{am.get('session')!r} != la acreditada "
+                    f"{budget_session!r}")
+        v = rm.get("reviewer_resolved") or rm.get("resolved")
+        if not v:
+            rep["bad_meta"].append(
+                f"{ph}: sin versión resuelta del revisor")
+        else:
+            versions.add(v)
+        bad = [c.id for c in cases
+               if "answers" not in ((adoc.get("cases") or {})
+                                    .get(c.id) or {})]
+        rep["errors"] += [f"{ph}/{i}" for i in bad]
+        rbad = [c.id for c in cases
+                if "answers" not in ((rdoc.get("cases") or {})
+                                     .get(c.id) or {})]
+        rep["errors"] += [f"{ph}/{i} (raw)" for i in rbad]
+        for c in cases:
+            # versión obligatoria POR CASO y coherente con la resuelta
+            # de la fase (R38 §7): ausente o distinta = NO EVALUABLE
+            rv = (((rdoc.get("cases") or {}).get(c.id) or {})
+                  .get("reviewer_version"))
+            if not rv:
+                rep["bad_meta"].append(
+                    f"{ph}/{c.id}: raw sin reviewer_version")
+            else:
+                versions.add(rv)
+                if v and rv != v:
+                    rep["bad_meta"].append(
+                        f"{ph}/{c.id}: reviewer_version {rv} != "
+                        f"resuelta de fase {v}")
+        if not bad and not rbad:
+            rep["phases_ok"].append(ph)
+    if budget_version:
+        versions.add(budget_version)
+    if len(versions) > 1:
+        rep["bad_meta"].append(
+            f"versiones del revisor mezcladas {sorted(versions)}")
+    rep["versions"] = sorted(versions)
+    if rep["missing"]:
+        rep["note"] = (f"cobertura parcial: faltan "
+                       f"{len(rep['missing'])}/{len(PHASES_ALL)} fases")
+    elif rep["stopped"]:
+        rep["note"] = (f"parada persistida: "
+                       f"{rep['stopped'].get('reason')}")
+    elif rep["errors"]:
+        rep["note"] = f"{len(rep['errors'])} casos sin fusión"
+    elif rep["bad_meta"]:
+        rep["note"] = f"procedencia incompleta ({rep['bad_meta'][0]})"
+    rep["evaluable"] = rep["note"] is None and bool(rep["phases_ok"])
+    return rep
+
+
+def analyze_medgemma(out_json=None, iters=BOOT_ITERS, seed=BOOT_SEED,
+                     printer=print):
+    """Análisis pre-registrado de JEV-77 (medgemma_jev77 §6): H1/H2 en
+    d0 con IC97,5, descriptivos IC95, subgrupos, Holm53 ×10 familias y
+    la cascada híbrida aparte."""
+    rep = {"profile": _PROFILE, "runs": {}, "classification": {},
+           "holm53": {}}
+    have = {k: c for k, c in CELLS.items() if store.runs_in(c["run"])}
+    for name, cell in have.items():
+        aud = _audit_cell(name, cell)
+        aud["adjusted"], _ = score.adjusted(cell["run"])
+        rep["runs"][name] = aud
+        printer(f"{name} {aud['run']}: ajustado "
+                f"{aud['adjusted'] and round(aud['adjusted'], 2)}, "
+                f"n_ok {aud['n_ok']}/{aud['n']}, "
+                f"evaluable={aud['evaluable']} {aud['note'] or ''}")
+    ev = lambda n: rep["runs"].get(n, {}).get("evaluable")
+    cls = rep["classification"]
+    # primarios confirmatorios (§6.2): NO EVALUABLE ante cobertura,
+    # visibilidad inválida o tope — nunca "refutada" por defecto
+    for h, a, b, thr, etiqueta in JEV77_PRIMARIES:
+        key = f"{h}: {etiqueta}"
+        if not (ev(a) and ev(b)):
+            rep[h.lower()] = None
+            cls[key] = _no_eval(f"faltan runs evaluables {a}/{b}")
+            continue
+        dd = paired_delta(CELLS[a]["run"], CELLS[b]["run"], iters=iters,
+                          seed=seed, level=JEV77_IC)
+        rep[h.lower()] = dd
+        if dd is None:
+            cls[key] = _no_eval("sin fases pareadas completas")
+        else:
+            cls[key] = (_cls(dd["lo"] >= thr, dd["hi"] < thr)
+                        + f" (Δ={dd['delta']:+.1f} "
+                          f"[{dd['lo']:+.1f},{dd['hi']:+.1f}] IC97.5)")
+    desc = {}
+    deltas = {}
+    for tag, a, b in JEV77_DESCR:
+        deltas[tag] = (paired_delta(CELLS[a]["run"], CELLS[b]["run"],
+                                    iters=iters, seed=seed, level=0.95)
+                       if ev(a) and ev(b) else None)
+    desc["deltas"] = deltas
+    # subgrupos descriptivos (§6.3): delta de puntos medios, IC95, sin
+    # ajuste de baseline — para los dos pares primarios d0
+    subs = {}
+    for htag, a, b in (("M_G", "GD0", "MD0"), ("M_Q", "QD0p", "MD0")):
+        if not (ev(a) and ev(b)):
+            subs[htag] = None
+            continue
+        ra, rb = CELLS[a]["run"], CELLS[b]["run"]
+        subs[htag] = {
+            "papers32": subset_delta(ra, rb, ["papers32"], iters=iters,
+                                     seed=seed),
+            "department": subset_delta(ra, rb, JEV77_DEPT_PHASES,
+                                       qid="department", iters=iters,
+                                       seed=seed),
+            "adv1_5": subset_delta(ra, rb, JEV77_ADV_PHASES, iters=iters,
+                                   seed=seed),
+            "adv_por_fase": {ph: subset_delta(ra, rb, [ph], iters=iters,
+                                              seed=seed)
+                             for ph in JEV77_ADV_PHASES}}
+    desc["subgrupos"] = subs
+    # cascada híbrida M-D0 → Jev audit (§5.3): descriptiva; el contador
+    # de red la ejecuta jevbench.jev77_cascade con cupo propio
+    casc = {}
+    for run in (JEV77_CASCADE_AUDIT, JEV77_CASCADE_RAW):
+        if store.runs_in(run):
+            adj, _ = score.adjusted(run)
+            casc[run] = {"adjusted": adj}
+    if store.runs_in(JEV77_CASCADE_AUDIT):
+        # la parcialidad se publica como tal (R36 §7): el contraste
+        # exige auditoría de cobertura+procedencia de las 11 fases —
+        # un audit parcial no produce delta pareado
+        casc["auditoria"] = _audit_cascade77()
+        if casc["auditoria"]["evaluable"] and ev("MD0"):
+            casc["vs_M_D0"] = paired_delta(CELLS["MD0"]["run"],
+                                           JEV77_CASCADE_AUDIT,
+                                           iters=iters, seed=seed,
+                                           level=0.95)
+        else:
+            casc["vs_M_D0"] = None
+            casc["note"] = (f"cascada NO EVALUABLE: "
+                            f"{casc['auditoria']['note']}"
+                            if casc["auditoria"]["note"]
+                            else "cascada NO EVALUABLE: M-D0 no evaluable"
+                            if not ev("MD0") else None)
+    if casc:
+        desc["cascada"] = casc
+    # Holm53: diez familias separadas (§6.4), descriptivas
+    for a, b in JEV77_HOLM:
+        if store.runs_in(CELLS[a]["run"]) and store.runs_in(
+                CELLS[b]["run"]):
+            rep["holm53"][f"{a}_vs_{b}"] = holm_cells(CELLS[a]["run"],
+                                                      CELLS[b]["run"])
+    scan, lat = {}, {}
+    for name, cell in have.items():
+        scan[name] = _raw_scan(cell["run"], cell["phases"], cell["mode"],
+                               cell.get("case_ids"))
+        lat[name] = _usage_stats(cell["run"], cell["phases"],
+                                 cell.get("case_ids"))
+    desc["vectores_crudos"] = scan
+    desc["latencia_tokens"] = lat
+    agg = next((x for x in (rep.get("h1"), rep.get("h2"))
+                if isinstance(x, dict) and x.get("phases")), None)
+    desc["baselines"] = _baseline_table(agg["phases"] if agg else None)
+    rep["descriptivos"] = desc
+    printer("\n## Clasificación pre-registrada (JEV-77, IC97.5 por "
+            "contraste — familia ≥95 % por Bonferroni sobre 2)")
+    for k, v in cls.items():
+        printer(f"- {k}: {v}")
+    if rep["holm53"]:
+        printer("\n## Holm 53 celdas (diez familias, descriptivo)")
+        for pair, rows in rep["holm53"].items():
+            sig = [r for r in rows if r["p_holm"] < 0.05]
+            printer(f"- {pair}: {len(sig)} celdas significativas tras "
+                    f"Holm de {len(rows)}")
+    printer("\n## Latencia y tokens por celda (coste API = 0 en batería; "
+            "la cascada API se contabiliza aparte)")
+    printer("| celda | n | ms media | ms mediana | tokens prompt | "
+            "tokens completion | tokens razonamiento |")
+    printer("|---|---:|---:|---:|---:|---:|---:|")
+    for name, s in lat.items():
+        printer(f"| {name} | {s['n']} | {score.fmt(s['ms_media'], 0)} | "
+                f"{score.fmt(s['ms_mediana'], 0)} | {s['prompt_tokens']} | "
+                f"{s['completion_tokens']} | {s['razonamiento_tokens']} |")
+    for tag, dd in deltas.items():
+        if dd:
+            printer(f"- {tag} (descriptivo IC95): "
+                    f"{dd['delta']:+.1f} [{dd['lo']:+.1f},{dd['hi']:+.1f}]")
+    for htag, sub in subs.items():
+        if not sub:
+            continue
+        for k, v in sub.items():
+            if k == "adv_por_fase":
+                for ph, d in v.items():
+                    if d:
+                        printer(f"- {htag}/{ph} (descriptivo): "
+                                f"{d['delta']:+.1f} "
+                                f"[{d['lo']:+.1f},{d['hi']:+.1f}] IC95")
+            elif v:
+                printer(f"- {htag}/{k} (descriptivo): {v['delta']:+.1f} "
+                        f"[{v['lo']:+.1f},{v['hi']:+.1f}] IC95")
+    if casc:
+        printer("\n## Cascada híbrida (descriptiva)")
+        for run, c in casc.items():
+            if "adjusted" in c:
+                printer(f"- {run}: ajustado "
+                        f"{c['adjusted'] and round(c['adjusted'], 2)}")
+        if "vs_M_D0" in casc:
+            d = casc["vs_M_D0"]
+            if d:
+                printer(f"- cascada−M-D0: {d['delta']:+.1f} "
+                        f"[{d['lo']:+.1f},{d['hi']:+.1f}] IC95")
+    printer("\n## Baselines de mayoría por fase (GT v4; ood excluida del "
+            "agregado por baseline saturada)")
+    printer("| fase | n | mayoría % | respuestas mayoritarias |")
+    printer("|---|---:|---:|---|")
+    for ph, b in desc["baselines"].items():
+        ans = ", ".join(f"{q}={v['respuesta']}"
+                        for q, v in b["mayoria"].items())
+        printer(f"| {ph} | {b['n']} | {score.fmt(b['pct'])} | {ans} |")
+    if out_json:
+        with open(out_json, "w") as f:
+            json.dump(rep, f, ensure_ascii=False, indent=1, default=str)
+    return rep
+
+
 # ---------------------------------------------------------------------- CLI
 
 def main():
@@ -3375,6 +5164,18 @@ def main():
     r.add_argument("--tokenizer", required=True,
                    help="ruta del checkpoint (AutoTokenizer)")
     r.add_argument("--out", default=None)
+    pr = sub.add_parser("prep", help="registro de preparación A3 (jev77): "
+                                     "smoke/health previos — cupo propio "
+                                     "de 150 peticiones en las 12.000 "
+                                     "duraderas, sin abrir las 40 h")
+    pr.add_argument("--requests", type=int, required=True)
+    pr.add_argument("--wall-s", type=float, required=True)
+    pr.add_argument("--note", default=None)
+    bg = sub.add_parser("begin", help="registro del inicio A6 (jev77): "
+                                      "crea la sesión antes de cargar el "
+                                      "servidor — fija wall_t0 y la "
+                                      "subsesión durable")
+    bg.add_argument("--session", required=True)
     g = sub.add_parser(
         "gate", help="puerta de visibilidad de una combinación "
                      "(canario: observación, Enmienda 1)")
@@ -3382,14 +5183,22 @@ def main():
     g.add_argument("--session", required=True)
     g.add_argument("--new-session", action="store_true",
                    help="tras un reinicio del servidor: nueva sesión y puertas")
+    g.add_argument("--instance", default=None,
+                   choices=["transition", "restart", "subsession"],
+                   help="jev77: clasificación declarada de la nueva "
+                        "instancia (auto si se omite)")
     rn = sub.add_parser(
         "run", help="bloque de batería (calendario intercalado; pausa "
-                    "cooperativa: crear results/logs/qwen_session.pause "
+                    "cooperativa: crear el fichero .pause del perfil "
                     "termina el run limpio tras el caso en curso)")
     rn.add_argument("--session", required=False)
     rn.add_argument("--resume", action="store_true")
     rn.add_argument("--retry-errors", action="store_true")
     rn.add_argument("--new-session", action="store_true")
+    rn.add_argument("--instance", default=None,
+                    choices=["transition", "restart", "subsession"],
+                    help="jev77: clasificación declarada de la nueva "
+                         "instancia (auto si se omite)")
     rn.add_argument("--dry-run", action="store_true")
     rn.add_argument("--amend-manifest", default=None, metavar="JSON",
                     help="manifiesto ANTERIOR archivado: autoriza al "
@@ -3409,23 +5218,39 @@ def main():
     dg.add_argument("--amend-manifest", default=None, metavar="JSON",
                     help="igual que en run: manifiesto anterior "
                          "archivado para la transición autorizada")
-    an = sub.add_parser("analyze", help="análisis pre-registrado")
+    an = sub.add_parser("analyze", help="análisis pre-registrado "
+                                      "(factorial con --profile jev76)")
     an.add_argument("--json", default=None)
     an.add_argument("--iters", type=int, default=BOOT_ITERS)
+    for sp in (r, pr, bg, g, rn, dg, an):
+        sp.add_argument("--profile", default=None,
+                        choices=sorted(PROFILES),
+                        help="perfil de sesión (defecto jev68; jev76 usa "
+                             "celdas, estado, manifiesto, puertas y "
+                             "referencias propios del factorial)")
     args = ap.parse_args()
+    if args.profile:
+        _set_profile(args.profile)
     if args.cmd == "refs":
         build_refs(args.combo, _load_tokenizer(args.tokenizer),
                    out=Path(args.out) if args.out else None)
         return 0
+    if args.cmd == "prep":
+        return prep(requests=args.requests, wall_s=args.wall_s,
+                    note=args.note)
+    if args.cmd == "begin":
+        return begin(session=args.session)
     if args.cmd == "gate":
         ok, _ = gate(args.combo, session=args.session,
-                     new_session=args.new_session)
+                     new_session=args.new_session,
+                     reason=args.instance)
         return 0 if ok else 1
     if args.cmd == "run":
         return run(session=args.session, resume=args.resume,
                    retry_errors=args.retry_errors,
                    new_session=args.new_session, dry_run=args.dry_run,
-                   amend_manifest=args.amend_manifest)
+                   amend_manifest=args.amend_manifest,
+                   reason=args.instance)
     if args.cmd == "diag":
         return diag(session=args.session, resume=args.resume,
                     retry_errors=args.retry_errors,

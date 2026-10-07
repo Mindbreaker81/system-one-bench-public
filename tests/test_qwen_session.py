@@ -5,6 +5,7 @@ falso y datos sintéticos.
 
   .venv-llm/bin/python -m unittest tests.test_qwen_session -v
 """
+import copy
 import hashlib
 import importlib.util
 import json
@@ -471,7 +472,8 @@ class _StubModel:
         answers = (self.payload(state, questions) if callable(self.payload)
                    else self.payload)
         req = _mk_request(self._qs_eff(questions), mode=self.mode,
-                          inject=self.inject, thinking=self.thinking)
+                          inject=self.inject, thinking=self.thinking,
+                          state=state)
         resp = {"choices": [{"finish_reason": "stop",
                              "message": {"content": json.dumps(
                                  {"answers": answers})}}],
@@ -484,9 +486,11 @@ class _StubModel:
 
 
 def _mk_request(qs, order=None, inject=True, thinking=False, seed=101,
-                mode="probabilities"):
+                mode="probabilities", state=None):
     """Request sintético del adaptador: system prompt con apéndice de
-    esquema (decodificable), response_format y chat_template_kwargs."""
+    esquema (decodificable), response_format, chat_template_kwargs y el
+    payload <document> del usuario con el estado serializado (con
+    `state`; sin ella, el contenido fijo "doc")."""
     schema = {"type": "object",
               "properties": {"answers": {"type": "object",
                                          "properties": {}}},
@@ -530,11 +534,19 @@ def _mk_request(qs, order=None, inject=True, thinking=False, seed=101,
     if inject:
         sysm += ("\n\n" + qs_mod.j67.SCHEMA_MARKER + json.dumps(schema)
                  + "\n\n" + qs_mod.j67.SCHEMA_TAIL)
-    return {"messages": [{"role": "system", "content": sysm},
-                         {"role": "user", "content": "doc"}],
-            "response_format": {"json_schema": {"schema": schema}},
-            "chat_template_kwargs": {"enable_thinking": thinking},
-            "temperature": 0, "seed": seed}
+    user = ("doc" if state is None
+            else "<document>\n"
+            + json.dumps(state, ensure_ascii=False)
+            + "\n</document>")
+    req = {"messages": [{"role": "system", "content": sysm},
+                        {"role": "user", "content": user}],
+           "response_format": {"json_schema": {"schema": schema}},
+           "temperature": 0, "seed": seed}
+    # thinking=None = combos sin flag (familia Gemma en jev77): la
+    # petición no declara enable_thinking en absoluto
+    if thinking is not None:
+        req["chat_template_kwargs"] = {"enable_thinking": thinking}
+    return req
 
 
 def _mk_rec(request, answers=None, usage=10, reasoning=None):
@@ -674,8 +686,10 @@ class TestGateChecks(TmpStore):
         """Enmienda 1: el canario se informa como observación — separación
         y coincidencia medidas, evidencia por lado anotada — sin producir
         fallos de puerta."""
-        req_v = _mk_request(qs_mod.CANARY_QS)
-        req_b = _mk_request(qs_mod.CANARY_QS, inject=False)
+        req_v = _mk_request(qs_mod.CANARY_QS,
+                            state=qs_mod.CANARY_STATE)
+        req_b = _mk_request(qs_mod.CANARY_QS, inject=False,
+                            state=qs_mod.CANARY_STATE)
         av = {qs_mod.CANARY_QID: {"ruta_admin": 0.1,
                                   qs_mod.CANARY_LABEL: 0.85,
                                   "ruta_clinica": 0.05}}
@@ -712,9 +726,11 @@ class TestGateChecks(TmpStore):
         """En discrete la observación registra la elección de cada lado y
         la coincidencia del ciego."""
         self.combo["mode"] = "discrete"
-        req_v = _mk_request(qs_mod.CANARY_QS, mode="discrete")
+        req_v = _mk_request(qs_mod.CANARY_QS, mode="discrete",
+                            state=qs_mod.CANARY_STATE)
         req_b = _mk_request(qs_mod.CANARY_QS, inject=False,
-                            mode="discrete")
+                            mode="discrete",
+                            state=qs_mod.CANARY_STATE)
         av = {qs_mod.CANARY_QID: qs_mod.CANARY_LABEL}
         ab = {qs_mod.CANARY_QID: "ruta_admin"}
         obs = qs_mod._canary_observation(_mk_rec(req_v, av),
@@ -733,8 +749,10 @@ class TestGateChecks(TmpStore):
         """La falta de evidencia (raw/usage del primer intento, apéndice
         presente en el ciego, respuesta no parseable, petición no
         ejecutada) se anota en la observación — no tumban la puerta."""
-        req_v = _mk_request(qs_mod.CANARY_QS)
-        req_b = _mk_request(qs_mod.CANARY_QS, inject=False)
+        req_v = _mk_request(qs_mod.CANARY_QS,
+                            state=qs_mod.CANARY_STATE)
+        req_b = _mk_request(qs_mod.CANARY_QS, inject=False,
+                            state=qs_mod.CANARY_STATE)
         av = {qs_mod.CANARY_QID: {"ruta_admin": 0.0,
                                   qs_mod.CANARY_LABEL: 1.0,
                                   "ruta_clinica": 0.0}}
@@ -1579,23 +1597,31 @@ def _write_gate_archive(key, gate_id, ok=True, session="s1", refs_doc=None,
         entry["offsets"] = dict(offsets)
     doc = {"meta": {"diag": {"gate_history": [entry],
                              "latest_gate": entry}}, "cases": {}}
-    # como la puerta real: archivo inmutable ~uid + puntero latest
-    store.save(f"gate_qwen_{key}~{gate_id.rsplit('~', 1)[-1]}", "adv1", doc)
-    store.save(f"gate_qwen_{key}", "adv1", doc)
+    # como la puerta real: archivo inmutable ~uid + puntero latest (el
+    # directorio es el del perfil vigente — gate_qwen_* en jev68)
+    store.save(f"{qs_mod._gate_run(key)}~{gate_id.rsplit('~', 1)[-1]}",
+               "adv1", doc)
+    store.save(qs_mod._gate_run(key), "adv1", doc)
 
 
 def _write_run(run, phase, hit=True, raw=False, session="s1", gate_id=None,
-               usage=10, mode="probabilities"):
+               usage=10, mode="probabilities", order=None, thinking=False,
+               reasoning=None):
     """Escribe un run sintético. raw=True añade la evidencia que exige la
     vigilancia: request con esquema decodificable, usage y sha del system
     prompt en meta (más rec.session/rec.gate_id si se pasa gate_id)."""
     qs, cases = load_phase(phase)
-    req = _mk_request(qs, mode=mode) if raw else None
+    req = (_mk_request(qs, order=order, thinking=thinking, mode=mode)
+           if raw else None)
     recs = {}
     for c in cases:
         a = _answers_hit(qs, c.gt) if hit else _answers_miss(qs, c.gt)
         if raw:
-            rec = _mk_rec(req, a, usage=usage)
+            # el estado del caso viaja en el payload <document>, como en
+            # la request real del adaptador (la vigilancia lo exige)
+            req_c = _mk_request(qs, order=order, thinking=thinking,
+                                mode=mode, state=c.state)
+            rec = _mk_rec(req_c, a, usage=usage, reasoning=reasoning)
             rec["session"] = session
             if gate_id:
                 rec["gate_id"] = gate_id
@@ -3388,5 +3414,1826 @@ class TestPausaCooperativa(TmpStore):
         self.assertIsNone(store.load("t_run", "triage_es"))
 
 
+# ------------------------------------------------- JEV-76 (factorial)
+
+class TestJEV76Profile(TmpStore):
+    """Perfil jev76 del supervisor (factorial discrete × thinking, 8
+    celdas frescas): celdas, calendario, manifiesto, rutas y puertas
+    propios — la sesión de jev68 queda intacta por defecto."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev76")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+
+    def test_rutas_propias_del_perfil(self):
+        self.assertEqual(qs_mod._state_path().name,
+                         "qwen_session_jev76.json")
+        self.assertEqual(qs_mod._pause_path().name,
+                         "qwen_session_jev76.pause")
+        self.assertEqual(qs_mod._manifest_path().name,
+                         "qwen_manifest_jev76.json")
+        self.assertEqual(
+            qs_mod._refs_path("disc_typesafe_on_d0").name,
+            "qwen_refs_jev76_disc_typesafe_on_d0.json")
+        self.assertEqual(qs_mod._gate_run("disc_typesafe_on_d0"),
+                         "gate_qwen76_disc_typesafe_on_d0")
+        # el lock es compartido entre perfiles a propósito: un solo
+        # escritor sobre el mismo servidor
+        self.assertEqual(qs_mod._lock_path().name, "qwen_session.lock")
+
+    def test_estado_aislado_del_de_jev68(self):
+        qs_mod.session_begin("s76")
+        self.assertTrue(qs_mod._state_path().exists())
+        self.assertFalse(
+            (self.tmp / "logs" / "qwen_session.json").exists())
+        qs_mod._set_profile("jev68")
+        self.assertIsNone(qs_mod._load_state())   # jev68 no lo ve
+
+    def test_perfil_desconocido_rechazado(self):
+        with self.assertRaises(SystemExit):
+            qs_mod._set_profile("jev99")
+
+    def test_cells_tabla_jev76(self):
+        self.assertEqual(len(qs_mod.CELLS), 8)
+        self.assertEqual(qs_mod.CELLS["DT0"]["run"],
+                         "llm_qwen38_27b_fp8_jev76_on_d0_disc")
+        self.assertEqual(qs_mod.CELLS["DT1"]["run"],
+                         "llm_qwen38_27b_fp8_jev76_on_d1_disc")
+        self.assertEqual(qs_mod.CELLS["D1"]["run"],
+                         "llm_qwen38_27b_fp8_jev76_off_d1_disc")
+        self.assertTrue(qs_mod.CELLS["DT0"]["thinking"])
+        self.assertTrue(qs_mod.CELLS["DT1"]["thinking"])
+        self.assertFalse(qs_mod.CELLS["D0p"]["thinking"])
+        # topes: off 90 min, on 210 min (como JEV-68 tras la Enmienda 2)
+        for n in ("F0p", "F1p", "D0p", "D1"):
+            self.assertEqual(qs_mod.CELLS[n]["budget_s"], 90 * 60, n)
+        for n in ("T0p", "T1p", "DT0", "DT1"):
+            self.assertEqual(qs_mod.CELLS[n]["budget_s"], 210 * 60, n)
+        self.assertEqual(qs_mod.SESSION_CAP_S, 14 * 3600)
+        self.assertEqual(qs_mod.REQUEST_CAP, 5000)
+
+    def test_combos_jev76_ocho_sin_diagnosticos(self):
+        combos = qs_mod.combos_needed()
+        self.assertEqual(len(combos), 8)
+        self.assertIn("disc_typesafe_on_d0", combos)
+        self.assertIn("disc_typesafe_on_d1", combos)
+        self.assertIn("disc_typesafe_off_d1", combos)
+        self.assertNotIn("prob_sin_antinj_off_d0", combos)
+        self.assertNotIn("prob_antinj_alt_off_d0", combos)
+        self.assertEqual(qs_mod.cell_gate_key(qs_mod.CELLS["DT1"]),
+                         "disc_typesafe_on_d1")
+
+    def test_calendar_jev76_88_slots(self):
+        slots = qs_mod._calendar()
+        self.assertEqual(len(slots), 88)     # 11 fases × 8 celdas
+        self.assertNotIn("S202", {c for c, _ in slots})
+        base = qs_mod.CALENDAR_BASE
+        self.assertEqual(len(base), 8)
+        for i, ph in enumerate(qs_mod.PHASES_ALL):
+            want = base[i % len(base):] + base[:i % len(base)]
+            chunk = [c for c, p in slots if p == ph]
+            self.assertEqual(chunk, want, ph)
+
+    def test_manifiesto_jev76(self):
+        man = qs_mod._plan_manifest()
+        self.assertEqual(man["profile"], "jev76")
+        self.assertEqual(len(man["slots"]), 88)
+        self.assertEqual(len(man["cells"]), 8)
+        self.assertEqual(man["diag"], [])
+        self.assertEqual(man["p712_cases"], [])
+        self.assertEqual(man["caps"]["session_s"], 14 * 3600)
+        self.assertEqual(len(man["combos"]), 8)
+        for k, c in man["combos"].items():
+            if "_on_" in k:
+                self.assertTrue(
+                    c["token_ref"].startswith("qwen_refs_jev76_"), k)
+            else:
+                self.assertEqual(c["token_ref"], qs_mod.REF_RUN, k)
+
+    def test_diag_rechazado_en_jev76(self):
+        out = []
+        self.assertEqual(qs_mod.diag(dry_run=True, printer=out.append), 1)
+        self.assertTrue(any("P71.2" in linea for linea in out))
+
+    def test_dry_run_plan_jev76(self):
+        """El dry-run sin GPU emite las 8 puertas, los refs de los combos
+        on, las 8 celdas con tope y los 88 slots — nada de JEV-68."""
+        out = []
+        qs_mod.plan(out.append)
+        text = "\n".join(out)
+        self.assertIn("perfil jev76", text)
+        for key in qs_mod.combos_needed():
+            self.assertIn(f"gate {key}", text)
+        self.assertIn("--profile jev76", text)
+        self.assertIn("qwen_refs_jev76_disc_typesafe_on_d0", text)
+        self.assertIn("sin diagnósticos P71.2", text)
+        self.assertIn("14 h", text)
+        self.assertIn("llm_qwen38_27b_fp8_jev76_on_d0_disc", text)
+        # el manifiesto exportado es el del perfil, no el de jev68
+        self.assertTrue((self.tmp / "logs"
+                         / "qwen_manifest_jev76.json").exists())
+        self.assertFalse((self.tmp / "logs" / "qwen_manifest.json").exists())
+
+    def test_jev68_intacto_tras_restaurar(self):
+        """Salir del perfil deja celdas, calendario y rutas de jev68 tal
+        cual — el mismo módulo sirve las dos sesiones sin mezclarlas."""
+        qs_mod._set_profile("jev68")
+        self.assertEqual(len(qs_mod.CELLS), 8)     # 7 baterías + S202
+        self.assertIn("S202", qs_mod.CELLS)
+        self.assertEqual(len(qs_mod._calendar()), 79)
+        self.assertEqual(len(qs_mod.combos_needed()), 9)
+        self.assertEqual(qs_mod._state_path().name, "qwen_session.json")
+        self.assertEqual(qs_mod._manifest_path().name,
+                         "qwen_manifest.json")
+        self.assertEqual(qs_mod._gate_run("prob_typesafe_off_d0"),
+                         "gate_qwen_prob_typesafe_off_d0")
+
+
+class TestJEV76Gate(TmpStore):
+    """La puerta de discrete+thinking aplica token_rule contra SU
+    referencia tokenizer (±2), nunca offsets de off — corrección R30 de
+    la asimetría de _gate_case_fails. D1/off mide sus propios offsets."""
+
+    def setUp(self):
+        super().setUp()
+        self.qs = TRIAGE_QS
+        self.combo_dt = {"mode": "discrete", "prompt": "typesafe",
+                         "thinking": True, "order": "d0"}
+        self.hist = {"triage_es": {"T01": 999}}
+
+    def _fails_dt(self, rec, ref_on=None, offsets=None):
+        req = rec["raw"][0]["request"]
+        return qs_mod._gate_case_fails(
+            self.combo_dt, "triage_es", "T01", rec, self.qs,
+            _sha_of(req), self.hist, ref_on, {}, offsets if offsets is not None else {})
+
+    def test_disc_on_usa_referencia_tokenizer(self):
+        req = _mk_request(self.qs, mode="discrete", thinking=True)
+        rec = _mk_rec(req, usage=300, reasoning="razonando")
+        ref_on = {"triage_es": {"T01": 300}}
+        offsets = {}
+        fails = qs_mod._gate_case_fails(
+            self.combo_dt, "triage_es", "T01", rec, self.qs,
+            _sha_of(req), self.hist, ref_on, {}, offsets)
+        self.assertEqual(fails, [])
+        # DT no mide offsets ni los usa: su regla es la ref tokenizer
+        self.assertEqual(offsets, {})
+        # fuera de ±2 contra SU referencia -> violación, aunque el
+        # histórico off (999) distaría mucho más
+        rec2 = _mk_rec(req, usage=303, reasoning="razonando")
+        fails2 = self._fails_dt(rec2, ref_on=ref_on)
+        self.assertTrue(any("fuera de referencia" in f for f in fails2))
+        rec3 = _mk_rec(req, usage=302, reasoning="razonando")
+        self.assertEqual(self._fails_dt(rec3, ref_on=ref_on), [])
+
+    def test_disc_on_sin_refs_falla(self):
+        req = _mk_request(self.qs, mode="discrete", thinking=True)
+        rec = _mk_rec(req, usage=300, reasoning="razonando")
+        fails = self._fails_dt(rec)   # ref_on=None: referencias ausentes
+        self.assertTrue(any("sin ref de tokens" in f for f in fails))
+
+    def test_disc_on_exige_thinking_observado(self):
+        """Declarar enable_thinking no basta en DT: el raw debe contener
+        razonamiento observado (ni una salida vacía se etiqueta éxito)."""
+        req = _mk_request(self.qs, mode="discrete", thinking=True)
+        rec = _mk_rec(req, usage=300)     # sin reasoning_content
+        fails = self._fails_dt(rec, ref_on={"triage_es": {"T01": 300}})
+        self.assertTrue(any("thinking no efectivo" in f for f in fails))
+
+    def test_disc_off_d1_offsets_propios(self):
+        """D1 (discrete/off d1) lleva su puerta y sus offsets propios —
+        no hereda los de D0: se miden contra el histórico aquí."""
+        combo = {"mode": "discrete", "prompt": "typesafe",
+                 "thinking": False, "order": "d1"}
+        order = {"department": NAMED_ORDERS["department"]["d1"]}
+        req = _mk_request(self.qs, order=order, mode="discrete")
+        rec = _mk_rec(req, usage=250)
+        offsets = {}
+        fails = qs_mod._gate_case_fails(
+            combo, "triage_es", "T01", rec, self.qs, _sha_of(req),
+            {"triage_es": {"T01": 300}}, None, {}, offsets)
+        self.assertEqual(fails, [])
+        self.assertEqual(offsets[qs_mod.family("triage_es")], -50)
+
+
+class TestJEV76Analysis(TmpStore):
+    """Análisis factorial (H1/H2/I) del perfil jev76: 4 contrastes con
+    IC98.75, interacción con bootstrap conjunto, NO EVALUABLE sin
+    evidencia — todo offline con runs sintéticos de una fase."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev76")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+
+    def _cells_1ph(self):
+        return {n: {**c, "phases": ["triage_es"]}
+                for n, c in qs_mod.CELLS_76.items()}
+
+    def _write_cell(self, cell, hit, usage=10):
+        """Run con la evidencia completa que exige la auditoría: puerta
+        archivada del perfil (refs tokenizer en `on`; histórico+offsets
+        en `off`), raw con request/thinking y usage dentro de regla."""
+        key = qs_mod.cell_gate_key(cell)
+        combo = qs_mod.cell_combo(cell)
+        order = {"department": NAMED_ORDERS["department"][cell["order"]]}
+        gid = f"{qs_mod._gate_run(key)}@t~u"
+        if qs_mod._needs_tokenizer_refs(combo):
+            toks = {"triage_es": {c.id: usage
+                                  for c in load_phase("triage_es")[1]}}
+            rdoc = {"meta": {"combo": key}, "tokens": toks}
+            qs_mod._refs_path(key).write_text(json.dumps(rdoc))
+            _write_gate_archive(key, gid, refs_doc=rdoc)
+        else:
+            off = ({"triageadv": 0} if combo["mode"] == "discrete"
+                   else None)
+            _write_gate_archive(key, gid, hist=_default_hist(),
+                                offsets=off)
+        _write_run(cell["run"], "triage_es", hit=hit, raw=True,
+                   gate_id=gid, usage=usage, mode=combo["mode"],
+                   order=order, thinking=combo["thinking"],
+                   reasoning="pienso" if combo["thinking"] else None)
+
+    def test_joint_stat_boot_interaccion(self):
+        """I=(DT−T)−(D−F) con los mismos clusters remuestreados en las
+        cuatro celdas — nunca la resta de extremos de ICs por separado."""
+        cells = self._cells_1ph()
+        hits = {"F0p": False, "T0p": True, "D0p": False, "DT0": True,
+                "F1p": False, "T1p": True, "D1": False, "DT1": True}
+        with mock.patch.object(qs_mod, "CELLS", cells), \
+             mock.patch.object(qs_mod.j67, "load_token_ref",
+                               _default_hist):
+            for n, c in cells.items():
+                self._write_cell(c, hits[n])
+            ib = qs_mod.joint_stat_boot(
+                [cells[n]["run"] for n in ("F0p", "T0p", "D0p", "DT0")],
+                lambda a: (a[3] - a[1]) - (a[2] - a[0]),
+                iters=200, seed=1)
+        self.assertIsNotNone(ib)
+        # F/T y D/DT con el mismo contraste por pares -> I = 0 exacto
+        self.assertAlmostEqual(ib["stat"], 0.0, places=6)
+        self.assertLessEqual(ib["lo"], 0)
+        self.assertGreaterEqual(ib["hi"], 0)
+        # determinista por semilla
+        with mock.patch.object(qs_mod, "CELLS", cells), \
+             mock.patch.object(qs_mod.j67, "load_token_ref",
+                               _default_hist):
+            ib2 = qs_mod.joint_stat_boot(
+                [cells[n]["run"] for n in ("F0p", "T0p", "D0p", "DT0")],
+                lambda a: (a[3] - a[1]) - (a[2] - a[0]),
+                iters=200, seed=1)
+        self.assertEqual(ib["lo"], ib2["lo"])
+
+    def test_analyze_factorial_clasifica(self):
+        """Las cuatro celdas evaluables -> 4 contrastes con IC98.75:
+        H1 confirmada en ambos órdenes (DT>>D) y H2 refutada (DT≈T);
+        I por orden calculada como descriptiva."""
+        cells = self._cells_1ph()
+        hits = {"F0p": False, "T0p": True, "D0p": False, "DT0": True,
+                "F1p": False, "T1p": True, "D1": False, "DT1": True}
+        with mock.patch.object(qs_mod, "CELLS", cells), \
+             mock.patch.object(qs_mod.j67, "load_token_ref",
+                               _default_hist):
+            for n, c in cells.items():
+                self._write_cell(c, hits[n])
+            rep = qs_mod.analyze(iters=100, seed=1,
+                                 printer=lambda *a, **k: None)
+        cls = rep["classification"]
+        self.assertEqual(len(cls), 4)
+        for k in ("H1 d0: DT−D >=+5", "H1 d1: DT−D >=+5"):
+            self.assertTrue(cls[k].startswith("CONFIRMADA"), cls[k])
+        for k in ("H2 d0: DT−T >=+5", "H2 d1: DT−T >=+5"):
+            self.assertTrue(cls[k].startswith("REFUTADA"), cls[k])
+        self.assertTrue(rep["runs"]["DT0"]["evaluable"],
+                        rep["runs"]["DT0"])
+        self.assertIsNotNone(rep["interaccion_d0"])
+        self.assertAlmostEqual(rep["interaccion_d0"]["stat"], 0.0,
+                               places=6)
+        # Holm53 de los cuatro pares de los primarios
+        self.assertEqual(sorted(rep["holm53"]),
+                         ["D0p_vs_DT0", "D1_vs_DT1",
+                          "T0p_vs_DT0", "T1p_vs_DT1"])
+
+    def test_analyze_factorial_no_evaluable_sin_evidencia(self):
+        """Sin runs completos autorizados no hay clasificación de
+        cortesía: cada contraste queda NO EVALUABLE, nunca confirmado."""
+        cells = self._cells_1ph()
+        # solo las dos celdas de H1 d0, SIN puerta ni raw (no evaluables)
+        with mock.patch.object(qs_mod, "CELLS", cells), \
+             mock.patch.object(qs_mod.j67, "load_token_ref",
+                               _default_hist):
+            for n in ("D0p", "DT0"):
+                _write_run(cells[n]["run"], "triage_es", hit=True)
+            rep = qs_mod.analyze(iters=50, seed=1,
+                                 printer=lambda *a, **k: None)
+        for k in ("H1 d0: DT−D >=+5", "H1 d1: DT−D >=+5",
+                  "H2 d0: DT−T >=+5", "H2 d1: DT−T >=+5"):
+            self.assertTrue(rep["classification"][k].startswith(
+                "NO EVALUABLE"), rep["classification"][k])
+        self.assertIsNone(rep["interaccion_d0"])
+        self.assertIsNone(rep["interaccion_d1"])
+
+    def test_puerta_dt_dirige_al_perfil(self):
+        """La evidencia de la puerta DT se archiva en gate_qwen76_*:
+        _gate_entry_for la resuelve dentro del perfil, no en jev68."""
+        key = "disc_typesafe_on_d0"
+        gid = f"{qs_mod._gate_run(key)}@t~u9"
+        rdoc = {"meta": {"combo": key},
+                "tokens": {"triage_es": {"T01": 10}}}
+        _write_gate_archive(key, gid, refs_doc=rdoc)
+        e = qs_mod._gate_entry_for(key, gid)
+        self.assertIsNotNone(e)
+        toks, why = qs_mod._entry_refs(key, e)
+        self.assertIsNotNone(toks, why)
+        self.assertTrue(
+            store.runs_in(f"gate_qwen76_{key}~u9"))
+        self.assertFalse(
+            store.runs_in(f"gate_qwen_{key}~u9"))
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+# --------------------------------------------------------------- JEV-77
+
+class TestJEV77Profile(TmpStore):
+    """Perfil jev77 (MedGemma/Gemma/Qwen en .80, medgemma_jev77): 18
+    celdas en 5 checkpoints, calendario por bloques con rotación por
+    fase, reloj WALL de 40 h con pausas, subsesión de 12 h, 12.000
+    peticiones duras y refs tokenizer en TODOS los combos."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+
+    def test_rutas_propias_del_perfil(self):
+        self.assertEqual(qs_mod._state_path().name,
+                         "qwen_session_jev77.json")
+        self.assertEqual(qs_mod._pause_path().name,
+                         "qwen_session_jev77.pause")
+        self.assertEqual(qs_mod._manifest_path().name,
+                         "qwen_manifest_jev77.json")
+        key = "disc_typesafe_off_d0_medgemma27b"
+        self.assertEqual(qs_mod._refs_path(key).name,
+                         f"qwen_refs_jev77_{key}.json")
+        self.assertEqual(qs_mod._gate_run(key), f"gate_jev77_{key}")
+        self.assertEqual(qs_mod._lock_path().name, "qwen_session.lock")
+
+    def test_cells_18_con_checkpoint(self):
+        self.assertEqual(len(qs_mod.CELLS), 18)
+        self.assertEqual(
+            qs_mod.CELLS["MD0"]["run"],
+            "llm_medgemma_27b_it_bf16_jev77_d0_disc")
+        self.assertEqual(
+            qs_mod.CELLS["QD0p"]["run"],
+            "llm_qwen38_27b_fp8_jev77_d0_disc")
+        self.assertEqual(
+            qs_mod.CELLS["G4D1"]["run"],
+            "llm_gemma3_4b_it_bf16_jev77_d1_disc")
+        # thinking: None en familia Gemma (sin flag), False en Qwen
+        for n in ("MD0", "MP0", "MD1", "MP1", "GD0", "GP0", "GD1", "GP1",
+                  "M4D0", "M4P0", "M4D1", "M4P1",
+                  "G4D0", "G4P0", "G4D1", "G4P1"):
+            self.assertIsNone(qs_mod.CELLS[n]["thinking"], n)
+        self.assertFalse(qs_mod.CELLS["QD0p"]["thinking"])
+        self.assertFalse(qs_mod.CELLS["QD1p"]["thinking"])
+        # topes congelados en A4: 27B prob 150 / 27B disc 45 / Qwen 90 /
+        # 4B 45 min (total 22 h) — regla común ≥30 % sobre 194×peor
+        # latencia A3 + cobertura de prompts largos de papers32 (6,7k)
+        for n in ("MP0", "MP1", "GP0", "GP1"):
+            self.assertEqual(qs_mod.CELLS[n]["budget_s"], 150 * 60, n)
+        for n in ("QD0p", "QD1p"):
+            self.assertEqual(qs_mod.CELLS[n]["budget_s"], 90 * 60, n)
+        for n in ("MD0", "MD1", "GD0", "GD1",
+                  "M4D0", "M4P0", "M4D1", "M4P1",
+                  "G4D0", "G4P0", "G4D1", "G4P1"):
+            self.assertEqual(qs_mod.CELLS[n]["budget_s"], 45 * 60, n)
+        self.assertEqual(
+            sum(c["budget_s"] for c in qs_mod.CELLS.values()), 1320 * 60)
+        # checkpoints con su identidad congelada del pre-registro
+        self.assertEqual(qs_mod.CKPTS_77["medgemma27b"]["checkpoint"],
+                         "google/medgemma-27b-it")
+        self.assertEqual(qs_mod.CKPTS_77["gemma3_27b"]["sha"],
+                         "005ad3404e59d6023443cb575daa05336842228a")
+        self.assertEqual(qs_mod.SESSION_CAP_S, 40 * 3600)
+        self.assertEqual(qs_mod.REQUEST_CAP, 12000)
+
+    def test_claves_de_combo_con_checkpoint(self):
+        combos = qs_mod.combos_needed()
+        self.assertEqual(len(combos), 18)
+        self.assertIn("disc_typesafe_off_d0_medgemma27b", combos)
+        self.assertIn("prob_typesafe_off_d1_gemma3_4b", combos)
+        combo = qs_mod.parse_gate_key("disc_typesafe_off_d0_medgemma27b")
+        self.assertIsNone(combo["thinking"])
+        self.assertEqual(combo["checkpoint"], "google/medgemma-27b-it")
+        combo_q = qs_mod.parse_gate_key("disc_typesafe_off_d1_qwen38fp8")
+        self.assertFalse(combo_q["thinking"])
+        self.assertEqual(combo_q["checkpoint"], "Qwen/Qwen3.8-27B-FP8")
+        # 'on' es ilegal en una familia sin flag thinking (Gemma)
+        with self.assertRaises(SystemExit):
+            qs_mod.parse_gate_key("disc_typesafe_on_d0_medgemma27b")
+        # checkpoint desconocido
+        with self.assertRaises(SystemExit):
+            qs_mod.parse_gate_key("disc_typesafe_off_d0_llama9b")
+        # los combos de jev77 todos llevan refs tokenizer propias
+        for k in combos:
+            self.assertTrue(qs_mod._needs_tokenizer_refs(
+                qs_mod.parse_gate_key(k)), k)
+
+    def test_extra_body_sin_flag_en_familia_gemma(self):
+        # Gemma: la petición no declara enable_thinking en absoluto
+        self.assertEqual(json.loads(qs_mod._extra_body(None, 101)),
+                         {"temperature": 0, "seed": 101})
+        # Qwen: declarado off, como en jev68
+        self.assertEqual(
+            json.loads(qs_mod._extra_body(False, 101))
+            ["chat_template_kwargs"], {"enable_thinking": False})
+        opts_g = qs_mod._combo_opts(
+            qs_mod.parse_gate_key("prob_typesafe_off_d0_gemma3_27b"))
+        self.assertEqual(opts_g["model"], "gemma-3-27b-it")
+        self.assertEqual(opts_g["max_tokens"], "8192")
+        opts_q = qs_mod._combo_opts(
+            qs_mod.parse_gate_key("disc_typesafe_off_d0_qwen38fp8"))
+        self.assertEqual(opts_q["model"], "qwen3.8-27b-sglang")
+        self.assertEqual(opts_q["max_tokens"], "16384")
+
+    def test_calendar_por_bloques_198_slots(self):
+        slots = qs_mod._calendar()
+        self.assertEqual(len(slots), 198)   # 18 celdas x 11 fases
+        # orden de bloques = orden del manifiesto (§8.3)
+        pos = 0
+        for ck, names in qs_mod.BLOCKS_77:
+            for i, ph in enumerate(qs_mod.PHASES_ALL):
+                chunk = slots[pos:pos + len(names)]
+                want = [names[(j + i) % len(names)]
+                        for j in range(len(names))]
+                self.assertEqual([c for c, _ in chunk], want,
+                                 f"{ck}/{ph}")
+                self.assertTrue(all(p == ph for _, p in chunk))
+                pos += len(names)
+        # la fase 0 del bloque MedGemma respeta el orden pre-registrado
+        self.assertEqual([c for c, _ in slots[:4]],
+                         ["MD0", "MP0", "MD1", "MP1"])
+
+    def test_manifiesto_jev77(self):
+        man = qs_mod._plan_manifest()
+        self.assertEqual(man["profile"], "jev77")
+        self.assertEqual(len(man["slots"]), 198)
+        self.assertEqual(len(man["cells"]), 18)
+        self.assertEqual(len(man["combos"]), 18)
+        self.assertEqual(man["diag"], [])
+        self.assertEqual(man["p712_cases"], [])
+        self.assertEqual(man["caps"]["session_s"], 40 * 3600)
+        self.assertEqual(man["caps"]["requests"], 12000)
+        self.assertEqual(list(man["blocks"]),
+                         [ck for ck, _ in qs_mod.BLOCKS_77])
+        self.assertEqual(man["checkpoints"], qs_mod.CKPTS_77)
+        for k, c in man["combos"].items():
+            self.assertTrue(
+                c["token_ref"].startswith("qwen_refs_jev77_"), k)
+            self.assertTrue(c["gate"].startswith("gate_jev77_"), k)
+        self.assertEqual(man["cells"]["MD0"]["opts"]["checkpoint"],
+                         "google/medgemma-27b-it")
+
+    def test_reloj_wall_40h_con_pausas(self):
+        """jev77 corre con reloj WALL: nace en el primer session_begin
+        (inicio A6, tras la preparación A3 registrada), sobrevive a
+        --new-session y las pausas cuentan (§8.2)."""
+        qs_mod.prep(requests=0, wall_s=0, printer=lambda *a: None)
+        st = qs_mod.session_begin("s77")
+        self.assertIsInstance(st.get("wall_t0"), float)
+        wt0 = st["wall_t0"]
+        # el reloj del tope lee wall - wall_t0, no el acumulado
+        e = qs_mod._sess_elapsed(st, st["elapsed_s"], t0=0.0,
+                                 now=lambda: 0.0)
+        self.assertAlmostEqual(e, qs_mod._wall() - wt0, places=1)
+        # --new-session conserva el reloj (los reinicios cuentan)
+        st2 = qs_mod.session_begin("s77b", new_session=True)
+        self.assertEqual(st2["wall_t0"], wt0)
+        # en jev68/jev76 el reloj es el acumulado del supervisor
+        qs_mod._set_profile("jev68")
+        e68 = qs_mod._sess_elapsed({"elapsed_s": 0.0}, 5.0, t0=0.0,
+                                   now=lambda: 7.0)
+        self.assertEqual(e68, 5.0 + 7.0)
+
+    def test_load_hist_tolerante_sin_historico(self):
+        """jev77 no usa la referencia histórica de JEV-68: si el run
+        REF_RUN no existe no tumba la sesión (todos sus combos llevan
+        refs propias). En jev68 sigue siendo obligatoria."""
+        with mock.patch.object(qs_mod.j67, "load_token_ref",
+                               side_effect=SystemExit("sin ref")):
+            self.assertEqual(qs_mod._load_hist(), {})
+            qs_mod._set_profile("jev68")
+            with self.assertRaises(SystemExit):
+                qs_mod._load_hist()
+
+    def test_subsesion_12h_en_exec_slot(self):
+        """El tope de subsesión continua (12 h, §8.2) detiene el slot
+        aunque quede presupuesto wall de sesión. La subsesión es
+        DURABLE: se simula una instancia cargada hace 13 h (sub_t0 en
+        el pasado), no una invocación larga (R36 §2)."""
+        qs_mod.prep(requests=0, wall_s=0, printer=lambda *a: None)
+        st = qs_mod.session_begin("s77")
+        st["sub_t0"] = qs_mod._wall() - 13 * 3600
+        qs_mod._save_state(st)
+        cell = {**qs_mod.CELLS["MD0"], "phases": ["triage_es"]}
+        ctx = _ctx({"MD0": cell}, st=st)
+        ctx["t0"] = 0.0
+        qs_mod._exec_slot(ctx, "MD0", "triage_es", False,
+                          mock.Mock(return_value=0.0),
+                          lambda s: None, lambda *a, **k: None)
+        self.assertIn("subsesión", ctx["session_stop"])
+        # en jev68 no hay subsesión: un salto parecido solo agota los
+        # 10 h de sesión acumulada, con su mensaje habitual
+        qs_mod._set_profile("jev68")
+        st68 = {"session": "s1", "started": "x", "elapsed_s": 0.0,
+                "requests": 0, "cell_s": {}, "retried": {},
+                "sessions": ["s1"]}
+        cell68 = _fake_cell(budget_s=20 * 3600)
+        ctx68 = _ctx({"T": cell68}, st=st68)
+        qs_mod._exec_slot(ctx68, "T", "triage_es", False,
+                          mock.Mock(return_value=11 * 3600),
+                          lambda s: None, lambda *a, **k: None)
+        self.assertIn("tope de sesión", ctx68["session_stop"])
+        self.assertNotIn("subsesión", ctx68["session_stop"])
+
+    def test_diag_rechazado_en_jev77(self):
+        out = []
+        self.assertEqual(qs_mod.diag(dry_run=True, printer=out.append), 1)
+        self.assertTrue(any("P71.2" in linea for linea in out))
+
+    def test_dry_run_plan_jev77(self):
+        """El dry-run emite las 18 puertas con checkpoint, los bloques,
+        las refs propias y los topes de 40 h / 12.000 — sin tocar nada."""
+        out = []
+        qs_mod.plan(out.append)
+        text = "\n".join(out)
+        self.assertIn("perfil jev77", text)
+        for key in qs_mod.combos_needed():
+            self.assertIn(f"gate {key}", text)
+        self.assertIn("--profile jev77", text)
+        self.assertIn("bloque medgemma27b", text)
+        self.assertIn("qwen_refs_jev77_disc_typesafe_off_d0_medgemma27b",
+                      text)
+        self.assertIn("sin diagnósticos P71.2", text)
+        self.assertIn("40 h", text)
+        self.assertIn("12000 peticiones", text)
+        self.assertTrue((self.tmp / "logs"
+                         / "qwen_manifest_jev77.json").exists())
+        self.assertFalse(
+            (self.tmp / "logs" / "qwen_manifest.json").exists())
+
+    def test_jev68_y_jev76_intactos_tras_restaurar(self):
+        qs_mod._set_profile("jev68")
+        self.assertEqual(len(qs_mod.CELLS), 8)
+        self.assertEqual(len(qs_mod._calendar()), 79)
+        self.assertEqual(len(qs_mod.combos_needed()), 9)
+        self.assertEqual(qs_mod._state_path().name, "qwen_session.json")
+        qs_mod._set_profile("jev76")
+        self.assertEqual(len(qs_mod.CELLS), 8)
+        self.assertEqual(len(qs_mod._calendar()), 88)
+        self.assertEqual(qs_mod._manifest_path().name,
+                         "qwen_manifest_jev76.json")
+
+
+class TestJEV77Gate(TmpStore):
+    """Puertas jev77 (§7): visible/blind por combo, thinking=None en
+    Gemma (nunca se declara la flag; el razonamiento emergente se
+    registra, no bloquea), Qwen off declarado y observado, sha ciego
+    propio y margen visible−ciego por familia."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+        self.qs = TRIAGE_QS
+        self.combo_g = qs_mod.parse_gate_key(
+            "prob_typesafe_off_d0_gemma3_27b")     # thinking None
+        self.combo_q = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_qwen38fp8")      # thinking False
+
+    def test_thinking_none_no_declara_ni_exige_observado(self):
+        req = _mk_request(self.qs, thinking=None)
+        rec = _mk_rec(req, usage=10)
+        fails = qs_mod._gate_case_fails(
+            self.combo_g, "triage_es", "T01", rec, self.qs,
+            _sha_of(req), {}, {"triage_es": {"T01": 10}}, {}, {})
+        self.assertEqual(fails, [])
+        # el razonamiento emergente NO bloquea en la familia Gemma
+        rec2 = _mk_rec(req, usage=10, reasoning="razonando")
+        fails2 = qs_mod._gate_case_fails(
+            self.combo_g, "triage_es", "T01", rec2, self.qs,
+            _sha_of(req), {}, {"triage_es": {"T01": 10}}, {}, {})
+        self.assertEqual(fails2, [])
+        # pero declarar la flag en un combo sin modo thinking sí es
+        # violación
+        req3 = _mk_request(self.qs, thinking=True)
+        rec3 = _mk_rec(req3, usage=10, reasoning="razonando")
+        fails3 = qs_mod._gate_case_fails(
+            self.combo_g, "triage_es", "T01", rec3, self.qs,
+            _sha_of(req3), {}, {"triage_es": {"T01": 10}}, {}, {})
+        self.assertTrue(any("sin modo thinking" in f for f in fails3))
+
+    def test_qwen_off_declarado_y_observado(self):
+        """En Qwen el off tiene que estar declarado Y observado: si el
+        raw muestra razonamiento aunque se declaró off, falla."""
+        order = {"department": NAMED_ORDERS["department"]["d0"]}
+        req = _mk_request(self.qs, order=order, thinking=False,
+                          mode="discrete")
+        rec = _mk_rec(req, usage=10)
+        fails = qs_mod._gate_case_fails(
+            self.combo_q, "triage_es", "T01", rec, self.qs,
+            _sha_of(req), {}, {"triage_es": {"T01": 10}}, {}, {})
+        self.assertEqual(fails, [])
+        rec2 = _mk_rec(req, usage=10, reasoning="pienso")
+        fails2 = qs_mod._gate_case_fails(
+            self.combo_q, "triage_es", "T01", rec2, self.qs,
+            _sha_of(req), {}, {"triage_es": {"T01": 10}}, {}, {})
+        self.assertTrue(any("thinking no efectivo" in f
+                            for f in fails2))
+
+    def test_discrete_off_usa_refs_propias_en_jev77(self):
+        """Discrete+off de jev77 va contra SU referencia tokenizer (±2),
+        nunca contra offsets del histórico — a diferencia de jev68/76."""
+        self.assertTrue(qs_mod._needs_tokenizer_refs(self.combo_q))
+        order = {"department": NAMED_ORDERS["department"]["d0"]}
+        req = _mk_request(self.qs, order=order, thinking=False,
+                          mode="discrete")
+        rec = _mk_rec(req, usage=300)
+        ref = {"triage_es": {"T01": 300}}
+        offsets = {}
+        fails = qs_mod._gate_case_fails(
+            self.combo_q, "triage_es", "T01", rec, self.qs,
+            _sha_of(req), {"triage_es": {"T01": 999}}, ref, {}, offsets)
+        self.assertEqual(fails, [])
+        self.assertEqual(offsets, {})      # no se miden offsets
+        rec2 = _mk_rec(req, usage=303)
+        fails2 = qs_mod._gate_case_fails(
+            self.combo_q, "triage_es", "T01", rec2, self.qs,
+            _sha_of(req), {"triage_es": {"T01": 999}}, ref, {}, {})
+        self.assertTrue(any("fuera de referencia" in f for f in fails2))
+
+    def test_blind_sha_propio(self):
+        """§7.3 sonda 4: el prompt ciego lleva sha precomputado propio —
+        distinto del visible — y debe igualar el observado."""
+        req_b = _mk_request(self.qs, inject=False, thinking=None)
+        rec_b = _mk_rec(req_b, usage=5)
+        sha_b = _sha_of(req_b)
+        fails, t = qs_mod._blind_fails(self.combo_g, "triage_es/A01",
+                                       rec_b, self.qs, exp_sha=sha_b)
+        self.assertEqual(fails, [])
+        self.assertEqual(t, 5)
+        fails2, _ = qs_mod._blind_fails(self.combo_g, "triage_es/A01",
+                                        rec_b, self.qs,
+                                        exp_sha="deadbeefcafe")
+        self.assertTrue(any("sha system" in f for f in fails2))
+        # el sha ciego difiere del visible (son prompts distintos)
+        req_v = _mk_request(self.qs, inject=True, thinking=None)
+        self.assertNotEqual(_sha_of(req_v), sha_b)
+
+    def test_gate_completo_combo_gemma(self):
+        """Puerta completa de un combo Gemma: 3 visibles + ciego +
+        canario, evidencia en gate_jev77_* y wall_t0 en el estado.
+        El primer arranque exige la preparación A3 registrada (R36)."""
+        qs_mod.prep(requests=10, wall_s=60, printer=lambda *a: None)
+        key = "prob_typesafe_off_d0_gemma3_27b"
+        toks = {}
+        for ph, c in qs_mod._gate_cases():
+            toks.setdefault(ph, {})[c.id] = 640
+        rdoc = {"meta": {"combo": key}, "tokens": toks}
+        qs_mod._refs_path(key).write_text(json.dumps(rdoc))
+
+        def factory(opts):
+            inj = opts["inject_schema_in_prompt"] == "true"
+
+            def payload(state, questions):
+                if qs_mod.CANARY_QID in questions:
+                    p = 0.9 if inj else 0.0
+                    return {qs_mod.CANARY_QID: {
+                        "ruta_admin": 1 - p, qs_mod.CANARY_LABEL: p,
+                        "ruta_clinica": 0.0}}
+                return ANSWERS
+
+            return _StubModel(payload=payload, usage=640 if inj else 10,
+                              inject=inj, thinking=None)
+
+        ok, det = qs_mod.gate(key, session="s77", model_factory=factory,
+                              printer=lambda *a: None)
+        self.assertTrue(ok, det["fails"])
+        self.assertIn("gate_jev77_", det["gate_id"])
+        self.assertEqual(qs_mod._load_state()["session"], "s77")
+        self.assertIsInstance(qs_mod._load_state()["wall_t0"], float)
+        self.assertTrue(det["canary"]["ejecutado"])
+
+    def test_enmienda1_jev77_ws_args(self):
+        """Enmienda 1 (incidente de la puerta ciega 7-oct): el flag de
+        gramática JSON compacta entra en los 5 checkpoints y SOLO en
+        ellos — apply(viejo) reproduce el vigente, la entrada real está
+        en la tabla autorizada y el archivo anterior se archiva."""
+        flag = "--constrained-json-disable-any-whitespace"
+        man_new = qs_mod._plan_manifest()
+        # reconstruye el manifiesto anterior (sin el flag, sha propio)
+        old = copy.deepcopy(man_new)
+        for spec in old["checkpoints"].values():
+            spec["args"] = [a for a in spec["args"] if a != flag]
+        old["manifest_sha256"] = qs_mod._manifest_content_sha(old)
+        self.assertEqual(len(old["checkpoints"]), 5)
+        out = qs_mod._amend_jev77_ws_args(old)
+        strip = lambda d: {k: v for k, v in d.items()
+                           if k != "manifest_sha256"}
+        self.assertEqual(strip(out), strip(man_new))
+        self.assertTrue(all(flag in v["args"]
+                            for v in out["checkpoints"].values()))
+        # entrada que no es la esperada -> None (ya enmendada o rota)
+        self.assertIsNone(qs_mod._amend_jev77_ws_args(man_new))
+        self.assertIsNone(qs_mod._amend_jev77_ws_args({}))
+        # resolución completa con la tabla parcheada a este par:
+        # verifica, archiva el anterior y devuelve el eslabón
+        f = self.tmp / "logs" / "old77.json"
+        f.write_text(json.dumps(old))
+        table = {old["manifest_sha256"]: {
+            "new_sha256": man_new["manifest_sha256"], "motivo": "e1",
+            "fecha": "2026-10-07",
+            "apply": qs_mod._amend_jev77_ws_args}}
+        with mock.patch.object(qs_mod, "MANIFEST_AMENDMENTS", table):
+            am = qs_mod._resolve_amendment(str(f), man_new)
+        self.assertEqual(am["old_sha256"], old["manifest_sha256"])
+        self.assertEqual(am["new_sha256"], man_new["manifest_sha256"])
+        arch = (self.tmp / "logs" /
+                f"qwen_manifest_jev77_{old['manifest_sha256']}.json")
+        self.assertTrue(arch.exists())
+        # la tabla REAL enlaza el sha del encargo previo al flag
+        real = qs_mod.MANIFEST_AMENDMENTS["008c1cdd499b6f92"]
+        self.assertIs(real["apply"], qs_mod._amend_jev77_ws_args)
+        self.assertIn("constrained-json", real["motivo"])
+
+    def test_margen_ciego_por_familia(self):
+        """El margen visible−ciego es el A01_MARGIN del combo congelado
+        en A4: medido por tokenización (render visible−ciego de
+        adv1/A01) menos 64 tokens de holgura — familia Gemma 304, Qwen
+        292 (medgemma_jev77.md §A3/A4)."""
+        self.assertEqual(self.combo_g["a01_margin"], 304)
+        self.assertEqual(self.combo_q["a01_margin"], 292)
+
+
+class TestJEV77Analysis(TmpStore):
+    """Análisis jev77 (§6): H1/H2 confirmatorios en d0 con IC97.5,
+    descriptivos IC95, subgrupos (department/papers/adv), Holm53 en diez
+    familias y cascada aparte — offline con runs sintéticos."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+
+    def _cells_1ph(self):
+        return {n: {**c, "phases": ["triage_es"]}
+                for n, c in qs_mod.CELLS_77.items()}
+
+    def _write_cell(self, cell, hit, usage=10):
+        """Run con la evidencia completa que exige jev77: refs tokenizer
+        propias por combo (todas), puerta archivada del perfil, raw con
+        request (sin flag thinking en Gemma) y usage dentro de regla."""
+        key = qs_mod.cell_gate_key(cell)
+        combo = qs_mod.cell_combo(cell)
+        order = {"department": NAMED_ORDERS["department"][cell["order"]]}
+        gid = f"{qs_mod._gate_run(key)}@t~u"
+        toks = {"triage_es": {c.id: usage
+                              for c in load_phase("triage_es")[1]}}
+        rdoc = {"meta": {"combo": key}, "tokens": toks}
+        qs_mod._refs_path(key).write_text(json.dumps(rdoc))
+        _write_gate_archive(key, gid, refs_doc=rdoc)
+        _write_run(cell["run"], "triage_es", hit=hit, raw=True,
+                   gate_id=gid, usage=usage, mode=combo["mode"],
+                   order=order, thinking=combo["thinking"])
+
+    def test_analyze_medgemma_clasifica(self):
+        """M gana a G en discreto d0 (H1 ≥+5) y empata con Q (H2 ≥−5 de
+        no inferioridad): ambas CONFIRMADAS con IC97,5."""
+        cells = self._cells_1ph()
+        with mock.patch.object(qs_mod, "CELLS", cells), \
+             mock.patch.object(qs_mod.j67, "load_token_ref",
+                               _default_hist):
+            for n, c in cells.items():
+                self._write_cell(c, hit=(n != "GD0"))
+            rep = qs_mod.analyze(iters=100, seed=1,
+                                 printer=lambda *a, **k: None)
+        cls = rep["classification"]
+        self.assertTrue(rep["runs"]["MD0"]["evaluable"],
+                        rep["runs"]["MD0"])
+        self.assertTrue(cls["H1: M-D0−G-D0 ≥+5"].startswith(
+            "CONFIRMADA"), cls)
+        self.assertTrue(
+            cls["H2: M-D0−Q-D0′ ≥−5 (no inferioridad)"].startswith(
+                "CONFIRMADA"), cls)
+        self.assertEqual(rep["profile"], "jev77")
+        # Holm53: las diez familias pre-registradas, ninguna confirmatoria
+        self.assertEqual(len(rep["holm53"]), 10)
+        self.assertIn("MD0_vs_GD0", rep["holm53"])
+        self.assertIn("M4P1_vs_G4P1", rep["holm53"])
+        # descriptivos: deltas IC95 + subgrupos (department computable
+        # con una fase; papers32/adv no presentes -> None)
+        deltas = rep["descriptivos"]["deltas"]
+        self.assertEqual(len(deltas), 8)
+        self.assertIsNotNone(deltas["prob_d0"])
+        subs = rep["descriptivos"]["subgrupos"]
+        self.assertIsNotNone(subs["M_G"]["department"])
+        self.assertIsNone(subs["M_G"]["papers32"])
+        self.assertNotIn("cascada", rep["descriptivos"])
+
+    def test_analyze_medgemma_h2_refutada(self):
+        """H2 = no inferioridad M−Q ≥ −5: si Q-D0′ gana holgado a M-D0
+        el IC entero cae bajo −5 y la hipótesis queda REFUTADA."""
+        cells = self._cells_1ph()
+        with mock.patch.object(qs_mod, "CELLS", cells), \
+             mock.patch.object(qs_mod.j67, "load_token_ref",
+                               _default_hist):
+            for n, c in cells.items():
+                # M-D0 falla todo; Q-D0′ y el resto aciertan
+                self._write_cell(c, hit=(n != "MD0"))
+            rep = qs_mod.analyze(iters=100, seed=1,
+                                 printer=lambda *a, **k: None)
+        cls = rep["classification"]
+        self.assertTrue(
+            cls["H2: M-D0−Q-D0′ ≥−5 (no inferioridad)"].startswith(
+                "REFUTADA"), cls)
+        self.assertTrue(cls["H1: M-D0−G-D0 ≥+5"].startswith(
+            "REFUTADA"), cls)     # M−G = −100
+
+    def test_audit_cell_detecta_estado_alterado(self):
+        """Sonda R38 §4: la auditoría de evaluabilidad pasa el estado
+        del caso al check de cliente — un raw con el payload <document>
+        sustituido queda NO EVALUABLE igual que en puerta/run."""
+        cells = self._cells_1ph()
+        cell = cells["MD0"]
+        self._write_cell(cell, hit=True)
+        with mock.patch.object(qs_mod, "CELLS", cells), \
+             mock.patch.object(qs_mod.j67, "load_token_ref",
+                               _default_hist):
+            before = qs_mod._audit_cell("MD0", cell)
+            doc = store.load(cell["run"], "triage_es")
+            first = next(iter(doc["cases"].values()))
+            first["raw"][0]["request"]["messages"][1]["content"] = (
+                "ESTADO SUSTITUIDO")
+            store.save(cell["run"], "triage_es", doc)
+            after = qs_mod._audit_cell("MD0", cell)
+        self.assertTrue(before["evaluable"], before)
+        self.assertFalse(after["evaluable"], after)
+        self.assertTrue(any("estado" in v
+                            for v in after["client_violations"]),
+                        after["client_violations"])
+
+    def test_analyze_medgemma_no_evaluable(self):
+        """Sin puertas ni raw no hay clasificación de cortesía."""
+        cells = self._cells_1ph()
+        with mock.patch.object(qs_mod, "CELLS", cells), \
+             mock.patch.object(qs_mod.j67, "load_token_ref",
+                               _default_hist):
+            for n in ("MD0", "GD0"):
+                _write_run(cells[n]["run"], "triage_es", hit=True)
+            rep = qs_mod.analyze(iters=50, seed=1,
+                                 printer=lambda *a, **k: None)
+        for k in rep["classification"]:
+            self.assertTrue(rep["classification"][k].startswith(
+                "NO EVALUABLE"), rep["classification"][k])
+
+    def test_subset_delta_pregunta_unica(self):
+        """Subgrupo department: delta de puntos medios solo de esa
+        pregunta, pareado por clusters, descriptivo (sin baseline)."""
+        ra, rb = "sub_a", "sub_b"
+        qs, cases = load_phase("triage_es")
+        for run, hit in ((ra, True), (rb, False)):
+            recs = {}
+            for c in cases:
+                a = _answers_hit(qs, c.gt) if hit else _answers_miss(
+                    qs, c.gt)
+                recs[c.id] = {"answers": a}
+            store.save(run, "triage_es", {"meta": {}, "cases": recs})
+        d = qs_mod.subset_delta(ra, rb, ["triage_es"], qid="department",
+                                iters=50, seed=1)
+        self.assertIsNotNone(d)
+        self.assertEqual(d["qid"], "department")
+        self.assertLess(d["delta"], 0)    # rb falla todo -> B−A < 0
+        self.assertGreaterEqual(d["hi"], d["delta"])
+
+
+# --------------------------------------------------- JEV-77: correcciones R36
+
+class TestJEV77Prep(TmpStore):
+    """R36 §3: la preparación A3 tiene reloj y cupo propios (4 h / 150
+    peticiones locales que CUENTAN en las 12.000 duras pero no en las
+    40 h), se exige antes del primer arranque A6 y queda cerrada tras él."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+
+    def test_a3_exigida_antes_de_a6(self):
+        """Sin registro A3 el primer session_begin se rechaza (sonda R36:
+        el reloj de 40 h no puede arrancar sin que A3 esté contabilizada)."""
+        with self.assertRaises(SystemExit):
+            qs_mod.session_begin("s0")
+        qs_mod.prep(requests=5, wall_s=30, printer=lambda *a: None)
+        st = qs_mod.session_begin("s0")
+        self.assertIsInstance(st["wall_t0"], float)
+
+    def test_a3_topes_y_cuenta_en_12000(self):
+        """150 peticiones y 4 h son el tope; el gasto de A3 cuenta en las
+        12.000 duras (no en las 40 h — no hay wall_t0 aún)."""
+        out = []
+        self.assertEqual(qs_mod.prep(requests=100, wall_s=3600,
+                                     printer=out.append), 0)
+        self.assertEqual(qs_mod.prep(requests=60, wall_s=0,
+                                     printer=out.append), 1)   # 100+60>150
+        self.assertEqual(qs_mod.prep(requests=50, wall_s=4 * 3600,
+                                     printer=out.append), 1)   # 1+4 h>4 h
+        self.assertEqual(qs_mod.prep(requests=50, wall_s=3 * 3600,
+                                     printer=out.append), 0)   # =4 h exacto
+        st = qs_mod._load_state()
+        self.assertEqual(st["requests"], 150)      # cuenta en las 12.000
+        self.assertIsNone(st.get("wall_t0"))       # no abre las 40 h
+        # tras A6 la preparación queda cerrada
+        qs_mod.session_begin("s0")
+        self.assertEqual(qs_mod.prep(requests=0, wall_s=0,
+                                     printer=out.append), 1)
+
+
+class TestJEV77Instances(TmpStore):
+    """R36 §3: clasificación durable de instancias — transición
+    planificada (bloque cerrado → siguiente checkpoint, sin consumir la
+    reserva de reinicios), recarga de subsesión (mismo checkpoint) y
+    reinicio extraordinario (máx. 4, reserva propia de 288 intentos de
+    puertas sobre la total de 612)."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+        qs_mod.prep(requests=0, wall_s=0, printer=lambda *a: None)
+
+    def test_seis_new_session_rechazan_el_quinto(self):
+        """Sonda R36: sin trabajo ejecutado seis --new-session seguidos
+        son reinicios extraordinarios del mismo checkpoint — el quinto
+        supera el máximo presupuestado (4) y se rechaza."""
+        st = qs_mod.session_begin("s0")
+        self.assertEqual(st["instances"][-1]["reason"], "initial")
+        for i in range(1, 5):
+            st = qs_mod.session_begin(f"s{i}", new_session=True)
+            self.assertEqual(st["instances"][-1]["reason"], "restart")
+            self.assertEqual(st["restart_extra"], i)
+        with self.assertRaises(SystemExit):
+            qs_mod.session_begin("s5", new_session=True)
+        # el contador persistido no pasó de 4 (el rechazo no lo muta)
+        self.assertEqual(qs_mod._load_state()["restart_extra"], 4)
+
+    def test_restart_no_cambia_checkpoint(self):
+        qs_mod.session_begin("s0")
+        with self.assertRaises(SystemExit):
+            qs_mod.session_begin("s1", new_session=True,
+                                 ckpt="gemma3_27b")
+        # el bloque activo sigue siendo el inicial: no hubo cambio
+        self.assertEqual(qs_mod._load_state()["active_ckpt"],
+                         "medgemma27b")
+
+    def test_transition_exige_bloque_cerrado(self):
+        """Una transición planificada a gemma3_27b con el bloque de
+        medgemma27b aún pendiente se rechaza."""
+        qs_mod.session_begin("s0")
+        with self.assertRaises(SystemExit):
+            qs_mod.session_begin("s1", new_session=True,
+                                 reason="transition", ckpt="gemma3_27b")
+
+    def test_subsesion_durable_sin_reset_por_comando(self):
+        """La subsesión NO se resetea con gate/run/--resume: sub_t0
+        sobrevive a llamadas de la misma sesión (R36 §2); solo lo renueva
+        una recarga declarada."""
+        st = qs_mod.session_begin("s0")
+        sub0 = st["sub_t0"]
+        # dos resumes sin recarga: misma subsesión durable
+        qs_mod.session_begin("s0")
+        st2 = qs_mod.session_begin("s0")
+        self.assertEqual(st2["sub_t0"], sub0)
+        # una recarga declarada la renueva (reinicio del mismo checkpoint)
+        st3 = qs_mod.session_begin("s1", new_session=True)
+        self.assertGreater(st3["sub_t0"], sub0)
+        self.assertEqual(st3["instances"][-1]["reason"], "restart")
+
+    def test_reason_explicito_subsession(self):
+        """La clasificación declarada se honra: recarga de subsesión del
+        mismo checkpoint registra 'subsession', no 'restart'."""
+        st = qs_mod.session_begin("s0")
+        st["sub_t0"] = qs_mod._wall() - 13 * 3600   # subsesión agotada
+        qs_mod._save_state(st)
+        st2 = qs_mod.session_begin("s1", new_session=True,
+                                 reason="subsession")
+        self.assertEqual(st2["instances"][-1]["reason"], "subsession")
+        self.assertNotIn("restart_extra", st2)
+
+    def test_subsession_anticipada_cuenta_como_restart(self):
+        """Sonda R38 §2: `reason='subsession'` con las 12 h sin agotar se
+        reclasifica como reinicio extraordinario — consume restart_extra
+        y el máximo de 4 igual que un restart (no elude los límites)."""
+        qs_mod.session_begin("s0")
+        st = qs_mod.session_begin("e1", new_session=True,
+                                reason="subsession")
+        self.assertEqual(st["instances"][-1]["reason"], "restart")
+        self.assertEqual(st["restart_extra"], 1)
+        # con el máximo ya gastado, la recarga anticipada se rechaza
+        st["restart_extra"] = qs_mod.RESTART_EXTRA_MAX
+        qs_mod._save_state(st)
+        with self.assertRaises(SystemExit):
+            qs_mod.session_begin("e2", new_session=True,
+                                 reason="subsession")
+        self.assertEqual(qs_mod._load_state()["restart_extra"],
+                         qs_mod.RESTART_EXTRA_MAX)
+        # seis recargas anticipadas seguidas: ninguna es 'subsession'
+        st = qs_mod._load_state()
+        st["restart_extra"] = 0
+        qs_mod._save_state(st)
+        aceptadas = []
+        for i in range(6):
+            try:
+                qs_mod.session_begin(f"early{i}", new_session=True,
+                                     reason="subsession")
+                aceptadas.append(i)
+            except SystemExit:
+                break
+        st = qs_mod._load_state()
+        self.assertEqual(len(aceptadas), qs_mod.RESTART_EXTRA_MAX)
+        self.assertEqual(st["restart_extra"], qs_mod.RESTART_EXTRA_MAX)
+        self.assertTrue(all(i["reason"] != "subsession"
+                            for i in st["instances"] if
+                            i["session"].startswith("early")))
+
+
+class TestJEV77VisibilityR36(TmpStore):
+    """R36 §5: control de visibilidad duro — el payload <document> debe
+    decodificar EXACTAMENTE al estado del caso y los mensajes efectivos
+    deben ser los esperados; en el ciego, ningún mensaje lleva
+    instrucciones/criterios/apéndice y la gramática conserva el esquema
+    del combo (modo×orden)."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+        self.qs = TRIAGE_QS
+        self.combo_g = qs_mod.parse_gate_key(
+            "prob_typesafe_off_d0_gemma3_27b")
+        self.case = load_phase("triage_es")[1][0]   # T01_ebus_alergia
+
+    def test_estado_sustituido_falla_visible(self):
+        """Sonda R36: 'ESTADO SUSTITUIDO' en el payload del usuario es
+        violación de visibilidad — no una nota."""
+        req = _mk_request(self.qs, thinking=None)
+        req["messages"][1]["content"] = "ESTADO SUSTITUIDO"
+        rec = _mk_rec(req, usage=300)
+        fails = qs_mod._gate_case_fails(
+            self.combo_g, "triage_es", self.case.id, rec, self.qs,
+            _sha_of(req), {},
+            {"triage_es": {self.case.id: 300}}, {}, {})
+        self.assertTrue(any("estado" in f for f in fails), fails)
+
+    def test_estado_truncado_falla_visible(self):
+        """Estado truncado dentro del <document>: tampoco pasa."""
+        req = _mk_request(self.qs, thinking=None,
+                          state=self.case.state)
+        req["messages"][1]["content"] = (
+            "<document>\n"
+            + json.dumps(self.case.state[:20], ensure_ascii=False)
+            + "\n</document>")
+        rec = _mk_rec(req, usage=300)
+        fails = qs_mod._case_client_fails(
+            self.combo_g, "triage_es/T01", rec, self.qs, _sha_of(req),
+            state=self.case.state)
+        self.assertTrue(any("estado" in f for f in fails), fails)
+
+    def test_estado_integro_pasa(self):
+        """El estado correcto en el payload (como lo serializa el
+        adaptador) pasa la vigilancia."""
+        req = _mk_request(self.qs, thinking=None, state=self.case.state)
+        rec = _mk_rec(req, usage=10)
+        self.assertEqual(qs_mod._case_client_fails(
+            self.combo_g, "triage_es/T01", rec, self.qs, _sha_of(req),
+            state=self.case.state), [])
+
+    def test_ciego_inyeccion_en_user_y_schema_vacio_fallan(self):
+        """Sonda R36: instrucciones en el mensaje USER (no solo system)
+        y una gramática vacía son fallos del ciego."""
+        blind = _mk_request(self.qs, inject=False, thinking=None)
+        blind["messages"][1]["content"] = (
+            "ESTADO SUSTITUIDO "
+            + self.qs["department"]["instructions"])
+        blind["response_format"]["json_schema"]["schema"] = {
+            "type": "object", "properties": {}}
+        brec = _mk_rec(blind, usage=10)
+        fails, _ = qs_mod._blind_fails(self.combo_g, "adv1/A01", brec,
+                                     self.qs, exp_sha=_sha_of(blind))
+        self.assertTrue(any("instrucciones" in f for f in fails), fails)
+        self.assertTrue(any("esquema" in f or "schema" in f
+                            for f in fails), fails)
+        # con la referencia del combo el fallo también se detecta
+        vis = _mk_request(self.qs, thinking=None,
+                          state=self.case.state)
+        schema_v = vis["response_format"]["json_schema"]["schema"]
+        fails2, _ = qs_mod._blind_fails(
+            self.combo_g, "adv1/A01", brec, self.qs,
+            exp_schema=schema_v)
+        self.assertTrue(any("schema" in f for f in fails2), fails2)
+
+    def test_ciego_integro_pasa(self):
+        """Un ciego legítimo pasa: payload con el estado, sin inyección
+        y la gramática íntegra del combo."""
+        vis = _mk_request(self.qs, thinking=None, state=self.case.state)
+        schema_v = vis["response_format"]["json_schema"]["schema"]
+        blind = _mk_request(self.qs, inject=False, thinking=None,
+                            state=self.case.state)
+        brec = _mk_rec(blind, usage=10)
+        fails, _ = qs_mod._blind_fails(
+            self.combo_g, "adv1/A01", brec, self.qs,
+            exp_sha=_sha_of(blind), state=self.case.state,
+            exp_schema=schema_v)
+        self.assertEqual(fails, [])
+
+    def test_ciego_schema_conserva_orden_d1(self):
+        """La gramática ciega conserva el orden del combo: un schema en
+        d0 dentro de un combo d1 se detecta aunque las preguntas estén."""
+        combo_d1 = qs_mod.parse_gate_key(
+            "prob_typesafe_off_d1_gemma3_27b")
+        o1 = {"department": NAMED_ORDERS["department"]["d1"]}
+        vis = _mk_request(qs_mod._qs_eff(self.qs, "d1"),
+                          thinking=None, state=self.case.state)
+        schema_v = vis["response_format"]["json_schema"]["schema"]
+        # el ciego con el orden correcto pasa
+        blind_ok = _mk_request(qs_mod._qs_eff(self.qs, "d1"),
+                               inject=False, thinking=None,
+                               state=self.case.state)
+        self.assertEqual(qs_mod._blind_fails(
+            combo_d1, "adv1/A01", _mk_rec(blind_ok, usage=10),
+            qs_mod._qs_eff(self.qs, "d1"), state=self.case.state,
+            exp_schema=schema_v)[0], [])
+        # y un schema en d0 (mismo contenido, orden distinto) falla
+        blind_d0 = _mk_request(self.qs, inject=False, thinking=None,
+                               state=self.case.state)
+        fails, _ = qs_mod._blind_fails(
+            combo_d1, "adv1/A01", _mk_rec(blind_d0, usage=10),
+            qs_mod._qs_eff(self.qs, "d1"), state=self.case.state,
+            exp_schema=schema_v)
+        self.assertTrue(any("schema" in f or "orden" in f
+                            for f in fails), fails)
+
+
+class TestJEV77Blocks(TmpStore):
+    """R36 §1/§2: ejecución por bloques con progreso durable — solo el
+    checkpoint activo se ejecuta y solo él exige puertas; la transición
+    sella el bloque; el deadline del request es el mínimo de los tres
+    remanentes (global/celda/subsesión)."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+        self.cells = {n: {**c, "phases": ["triage_es"]}
+                      for n, c in qs_mod.CELLS_77.items()}
+        self._mp = [mock.patch.object(qs_mod, "CELLS", self.cells),
+                    mock.patch.object(qs_mod, "PHASES_ALL",
+                                      ["triage_es"]),
+                    mock.patch.object(
+                        qs_mod, "_verify_manifest",
+                        return_value=(None,
+                                      {"manifest_sha256": "fake77"}))]
+        for p in self._mp:
+            p.start()
+            self.addCleanup(p.stop)
+        qs_mod.prep(requests=0, wall_s=0, printer=lambda *a: None)
+
+    def _factory(self):
+        def mk(opts):
+            o = json.loads(opts["extra_body"])
+            th = ((o.get("chat_template_kwargs") or {})
+                  .get("enable_thinking"))
+            orders = (resolve_choice_order(opts["choice_order"])
+                      if opts.get("choice_order") else None)
+            inj = opts["inject_schema_in_prompt"] == "true"
+            return _StubModel(usage=640 if inj else 10, inject=inj,
+                              thinking=th, mode=opts["mode"],
+                              orders=orders)
+        return mk
+
+    def _refs(self, key):
+        toks = {"triage_es": {c.id: 640
+                              for c in load_phase("triage_es")[1]}}
+        for ph, c in qs_mod._gate_cases():
+            toks.setdefault(ph, {})[c.id] = 640
+        qs_mod._refs_path(key).write_text(json.dumps(
+            {"meta": {"combo": key}, "tokens": toks}))
+
+    def _gate_block(self, ckpt, session, first=False):
+        names = dict(qs_mod.BLOCKS_77)[ckpt]
+        for j, n in enumerate(names):
+            key = qs_mod.cell_gate_key(self.cells[n])
+            self._refs(key)
+            ok, det = qs_mod.gate(
+                key, session=session,
+                new_session=(first and j == 0),
+                model_factory=self._factory(),
+                printer=lambda *a: None)
+            self.assertTrue(ok, det["fails"])
+
+    def test_transition_resume_solo_puertas_del_activo(self):
+        """Sonda R36 (transition_resume): con el bloque de medgemma
+        cerrado y la transición DECLARADA, la reanudación solo
+        comprueba/ejecuta las celdas del checkpoint activo — ninguna
+        puerta del checkpoint descargado."""
+        for n in dict(qs_mod.BLOCKS_77)["medgemma27b"]:
+            _write_run(self.cells[n]["run"], "triage_es", hit=True)
+        qs_mod.session_begin("s1")
+        # la transición se declara con la nueva instancia (R38 §1) —
+        # es la única vía que mueve el checkpoint activo
+        qs_mod.session_begin("s2", new_session=True)
+        self.assertEqual(qs_mod._load_state()["active_ckpt"],
+                         "gemma3_27b")
+        checked = []
+        orig = qs_mod._cell_gate_ok
+
+        def spy(ctx, cell):
+            checked.append(cell.get("ckpt"))
+            return orig(ctx, cell)
+
+        with mock.patch.object(qs_mod, "_cell_gate_ok", spy), \
+                mock.patch.object(
+                    qs_mod.j67, "load_token_ref", _default_hist):
+            rc = qs_mod.run(session="s2", resume=True,
+                            model_factory=self._factory(),
+                            now=mock.Mock(return_value=0.0),
+                            sleep=lambda s: None,
+                            printer=lambda *a, **k: None)
+        self.assertEqual(rc, 2)          # sin puertas del activo
+        self.assertEqual(set(checked), {"gemma3_27b"})
+        self.assertNotIn("medgemma27b", checked)
+        self.assertEqual(qs_mod._load_state()["active_ckpt"],
+                         "gemma3_27b")
+
+    def test_slot_completo_no_exige_puerta(self):
+        """Slots ya cerrados se saltan ANTES de exigir puerta: en el
+        bloque activo, una celda sin pendientes no pide gate."""
+        for n in dict(qs_mod.BLOCKS_77)["medgemma27b"][:2]:
+            _write_run(self.cells[n]["run"], "triage_es", hit=True)
+        for n in dict(qs_mod.BLOCKS_77)["medgemma27b"][2:]:
+            key = qs_mod.cell_gate_key(self.cells[n])
+            gid = f"{qs_mod._gate_run(key)}@t~u"
+            toks = {"triage_es": {c.id: 310 for c in
+                                  load_phase("triage_es")[1]}}
+            rdoc = {"meta": {"combo": key}, "tokens": toks}
+            qs_mod._refs_path(key).write_text(json.dumps(rdoc))
+            _write_gate_archive(key, gid, refs_doc=rdoc)
+        qs_mod.session_begin("s1")
+        checked = []
+        orig = qs_mod._cell_gate_ok
+
+        def spy(ctx, cell):
+            checked.append(qs_mod.cell_gate_key(cell))
+            return orig(ctx, cell)
+
+        out = []
+        with mock.patch.object(qs_mod, "_cell_gate_ok", spy), \
+                mock.patch.object(qs_mod, "_validate_existing",
+                                  lambda *a, **k: None), \
+                mock.patch.object(
+                    qs_mod.j67, "load_token_ref", _default_hist):
+            rc = qs_mod.run(
+                session="s1", resume=True,
+                model_factory=self._factory(),
+                now=mock.Mock(return_value=0.0),
+                sleep=lambda s: None,
+                printer=lambda *a, **k: out.append(
+                    " ".join(map(str, a))))
+        self.assertEqual(rc, 2)
+        # las celdas con slots completos (MD0, MP0) nunca piden puerta
+        self.assertEqual(
+            sorted(checked),
+            sorted(qs_mod.cell_gate_key(self.cells[n])
+                   for n in ("MD1", "MP1")))
+        st = qs_mod._load_state()
+        self.assertEqual(st["blocks_done"], ["medgemma27b"])
+        self.assertTrue(any("TRANSICIÓN" in linea
+                            and "gemma3_27b" in linea for linea in out))
+
+    def test_retry_errors_permanece_en_el_bloque(self):
+        """Sonda R38 (block_probe): con el bloque medgemma cerrado salvo
+        un error de transporte, --retry-errors reintenta DENTRO del
+        bloque — nunca pide puertas del siguiente checkpoint ni sella
+        ni mueve el activo."""
+        for n in dict(qs_mod.BLOCKS_77)["medgemma27b"]:
+            _write_run(self.cells[n]["run"], "triage_es", hit=True)
+        d = store.load(self.cells["MD0"]["run"], "triage_es")
+        cid = next(iter(d["cases"]))
+        d["cases"][cid] = {"error": "transport failure"}
+        store.save(self.cells["MD0"]["run"], "triage_es", d)
+        qs_mod.session_begin("s0")
+        checked = []
+        with mock.patch.object(
+                qs_mod, "_cell_gate_ok",
+                side_effect=lambda ctx, cell: (
+                    checked.append(cell["ckpt"]), False)[1]), \
+                mock.patch.object(qs_mod, "_validate_existing",
+                                  lambda *a, **k: None):
+            rc = qs_mod.run(session="s0", resume=True,
+                            retry_errors=True,
+                            model_factory=self._factory(),
+                            now=mock.Mock(return_value=0.0),
+                            sleep=lambda s: None,
+                            printer=lambda *a, **k: None)
+        self.assertEqual(rc, 2)
+        self.assertEqual(checked, ["medgemma27b"])   # solo el activo
+        st = qs_mod._load_state()
+        self.assertEqual(st["active_ckpt"], "medgemma27b")
+        self.assertNotIn("medgemma27b", st.get("blocks_done") or [])
+        self.assertEqual(len(st["instances"]), 1)
+        # el error sigue presente: ni se reintentó fuera de bloque ni
+        # el bloque quedó sellado
+        self.assertIn("error", store.load(self.cells["MD0"]["run"],
+                                          "triage_es")["cases"][cid])
+
+    def test_bloque_cerrado_exige_transicion_declarada(self):
+        """R38 §1: un run con el bloque activo cerrado NO avanza el
+        checkpoint servido — anuncia TRANSICIÓN PENDIENTE y espera la
+        instancia declarada (--new-session/begin), que es la única vía
+        que mueve active_ckpt con registro durable."""
+        for n in dict(qs_mod.BLOCKS_77)["medgemma27b"]:
+            _write_run(self.cells[n]["run"], "triage_es", hit=True)
+        qs_mod.session_begin("s0")
+        out = []
+        with mock.patch.object(qs_mod, "_validate_existing",
+                               lambda *a, **k: None):
+            rc = qs_mod.run(
+                session="s0", resume=True,
+                model_factory=self._factory(),
+                now=mock.Mock(return_value=0.0), sleep=lambda s: None,
+                printer=lambda *a, **k: out.append(
+                    " ".join(map(str, a))))
+        self.assertEqual(rc, 2)
+        self.assertTrue(any("TRANSICIÓN PENDIENTE" in linea
+                            for linea in out))
+        st = qs_mod._load_state()
+        self.assertEqual(st["active_ckpt"], "medgemma27b")
+        self.assertEqual(st["blocks_done"], ["medgemma27b"])
+        self.assertEqual(len(st["instances"]), 1)     # sin transición
+        # solo tras declarar la instancia nueva el checkpoint avanza
+        st = qs_mod.session_begin("s1", new_session=True)
+        self.assertEqual(st["active_ckpt"], "gemma3_27b")
+        self.assertEqual(st["instances"][-1]["reason"], "transition")
+
+    def test_deadline_es_minimo_de_los_tres_remanentes(self):
+        """Sonda R36: con 1 s de subsesión el deadline armado es ~1 s,
+        no el presupuesto de celda ni el de sesión."""
+        st = {"session": "s1", "started": "x", "elapsed_s": 0.0,
+              "requests": 0, "cell_s": {}, "retried": {},
+              "sessions": ["s1"], "wall_t0": qs_mod._wall() - 100,
+              "sub_t0": qs_mod._wall()
+              - (qs_mod.PROFILES["jev77"]["subsession_cap_s"] - 1)}
+        cell = {**self.cells["MD0"], "budget_s": 10 * 3600}
+        key = qs_mod.cell_gate_key(cell)
+        ctx = _ctx({"MD0": cell}, st=st,
+                   hist={c.id: 310 for c in load_phase("triage_es")[1]})
+        ctx["refs_on"][key] = {
+            "triage_es": {c.id: 310
+                          for c in load_phase("triage_es")[1]}}
+        armed = []
+
+        class Armed:
+            def __init__(self, inner):
+                self.target = self
+                self.inner = inner
+                self.calls = 0
+            def meta(self):
+                return self.inner.meta()
+            def expected_system_prompt_sha256(self, q):
+                return self.inner.expected_system_prompt_sha256(q)
+            def arm_external_deadline(self, s):
+                self.armed = armed
+                armed.append(s)
+            def decide(self, *a, **k):
+                return self.inner.decide(*a, **k)
+
+        ctx["models"]["MD0"] = Armed(
+            _StubModel(usage=310, inject=True, thinking=None))
+        qs_mod._exec_slot(ctx, "MD0", "triage_es", False,
+                          mock.Mock(return_value=0.0), lambda s: None,
+                          lambda *a, **k: None)
+        self.assertTrue(armed)
+        self.assertAlmostEqual(armed[0], 1.0, places=1)
+
+    def test_integrado_cinco_bloques_cuatro_transiciones(self):
+        """Prueba integrada R36: 5 bloques, 4 transiciones planificadas,
+        un reinicio extraordinario dentro de un bloque y reanudación —
+        progreso durable, puertas solo del checkpoint activo y
+        procedencia correcta por caso."""
+        blocks = list(qs_mod.BLOCKS_77)
+        checked = []
+        orig_gate_ok = qs_mod._cell_gate_ok
+
+        def spy(ctx, cell):
+            checked.append(qs_mod.cell_gate_key(cell))
+            return orig_gate_ok(ctx, cell)
+
+        out = []
+        printer = lambda *a, **k: out.append(" ".join(map(str, a)))
+        factory = self._factory()
+        pause_calls = [0]
+
+        def pause_flip():
+            pause_calls[0] += 1
+            return pause_calls[0] > 3   # para el bloque 1 a mitad
+
+        st0 = qs_mod.session_begin("s0")   # A6 tras A3
+        self.assertEqual(st0["active_ckpt"], "medgemma27b")
+        self._gate_block("medgemma27b", "s0")
+        # bloque 1 completo → transición sellada
+        with mock.patch.object(qs_mod, "_cell_gate_ok", spy), \
+                mock.patch.object(qs_mod.j67, "load_token_ref",
+                                  _default_hist):
+            rc = qs_mod.run(session="s0", model_factory=factory,
+                            now=mock.Mock(return_value=0.0),
+                            sleep=lambda s: None, printer=printer)
+        self.assertEqual(rc, 2)
+        self.assertEqual(qs_mod._load_state()["blocks_done"],
+                         ["medgemma27b"])
+        # bloque 2 (gemma3_27b): puertas bajo nueva instancia; un
+        # reinicio extraordinario a mitad conserva el progreso y la
+        # reanudación termina el bloque
+        self._gate_block("gemma3_27b", "s1", first=True)
+        st = qs_mod._load_state()
+        self.assertEqual(st["active_ckpt"], "gemma3_27b")
+        self.assertEqual(st["instances"][-1]["reason"], "transition")
+        with mock.patch.object(qs_mod, "_cell_gate_ok", spy), \
+                mock.patch.object(qs_mod.j67, "load_token_ref",
+                                  _default_hist), \
+                mock.patch.object(qs_mod, "_pause_requested",
+                                  side_effect=pause_flip):
+            rc = qs_mod.run(session="s1", resume=True,
+                            model_factory=factory,
+                            now=mock.Mock(return_value=0.0),
+                            sleep=lambda s: None, printer=printer)
+        self.assertEqual(rc, 2)          # pausa: bloque aún pendiente
+        st = qs_mod._load_state()
+        self.assertEqual(st["active_ckpt"], "gemma3_27b")
+        self.assertNotIn("gemma3_27b", st.get("blocks_done", []))
+        # reinicio extraordinario del MISMO checkpoint + nuevas puertas
+        self._gate_block("gemma3_27b", "s1b", first=True)
+        st = qs_mod._load_state()
+        self.assertEqual(st["instances"][-1]["reason"], "restart")
+        self.assertEqual(st["restart_extra"], 1)
+        self.assertEqual(st["gate_spend"]["restart"], 24)
+        with mock.patch.object(qs_mod, "_cell_gate_ok", spy), \
+                mock.patch.object(qs_mod.j67, "load_token_ref",
+                                  _default_hist):
+            rc = qs_mod.run(session="s1b", resume=True,
+                            model_factory=factory,
+                            now=mock.Mock(return_value=0.0),
+                            sleep=lambda s: None, printer=printer)
+        self.assertEqual(rc, 2)          # transición a qwen38fp8
+        self.assertEqual(qs_mod._load_state()["blocks_done"],
+                         ["medgemma27b", "gemma3_27b"])
+        # bloques 3-5 en serie, cada uno con su instancia y sus puertas
+        sess = {3: "s2", 4: "s3", 5: "s4"}
+        for i, (ck, _) in enumerate(blocks[2:], start=3):
+            self._gate_block(ck, sess[i], first=True)
+            st = qs_mod._load_state()
+            self.assertEqual(st["active_ckpt"], ck)
+            self.assertEqual(st["instances"][-1]["reason"], "transition")
+            with mock.patch.object(qs_mod, "_cell_gate_ok", spy), \
+                    mock.patch.object(qs_mod.j67, "load_token_ref",
+                                      _default_hist):
+                rc = qs_mod.run(session=sess[i], resume=True,
+                                model_factory=factory,
+                                now=mock.Mock(return_value=0.0),
+                                sleep=lambda s: None,
+                                printer=printer)
+        self.assertEqual(rc, 0)          # encargo completo
+        st = qs_mod._load_state()
+        self.assertEqual(st["blocks_done"], [ck for ck, _ in blocks])
+        self.assertEqual(st["restart_extra"], 1)
+        # procedencia: cada caso lleva sesión, checkpoint y gate_id
+        for n, c in self.cells.items():
+            doc = store.load(c["run"], "triage_es")
+            self.assertTrue(doc["cases"], c["run"])
+            for rec in doc["cases"].values():
+                self.assertEqual(rec.get("ckpt"), c["ckpt"], c["run"])
+                self.assertTrue(rec.get("gate_id"), c["run"])
+        # ninguna puerta consultada fuera del bloque activo en su pasada
+        for k in checked:
+            self.assertTrue(k.endswith(
+                tuple("_" + ck for ck, _ in blocks)), k)
+
+
+class TestJEV77CascadeAudit(TmpStore):
+    """R36 §7: cascada parcial → NO EVALUABLE con su nota, y la
+    auditoría exige procedencia congelada (d1, revisor/versión, host,
+    manifiesto)."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+        self._man_sha = "m77"      # `_write_manifest` lo sustituye
+
+    def _write_manifest(self):
+        """Manifiesto congelado mínimo y COHERENTE con las políticas
+        efectivas de cascada — sha declarado recalculado del contenido
+        (el auditor lo verifica, R39 §3)."""
+        man = {"policies": {"cascade": {
+                   "requests": qs_mod.JEV77_CASCADE_REQUESTS,
+                   "wall_s": qs_mod.JEV77_CASCADE_WALL_S,
+                   "raw": qs_mod.JEV77_CASCADE_RAW,
+                   "audit": qs_mod.JEV77_CASCADE_AUDIT,
+                   "reviewer": dict(qs_mod.JEV77_CASCADE_REVIEWER)}},
+               "cells": {"MD0": {"run": qs_mod.CELLS_77["MD0"]["run"]}}}
+        man["manifest_sha256"] = qs_mod._manifest_content_sha(man)
+        self._man_sha = man["manifest_sha256"]
+        (self.tmp / "logs" / "qwen_manifest_jev77.json").write_text(
+            json.dumps(man))
+
+    def _write_budget(self, **over):
+        """Registro durable de la cascada completo y acreditado."""
+        b = {"requests": 700, "started_wall": 0.0,
+             "session": "s0",
+             "reviewer": {"provider": "openrouter",
+                          "model": "~typesafe/jev-latest",
+                          "adapter": "jev",
+                          "resolved": "jev-1.14-20261101"}}
+        b.update(over)
+        (self.tmp / "logs" / "jev77_cascade.json").write_text(
+            json.dumps(b))
+
+    def _write_cascade_phase(self, ph, version="jev-1.14-20261101"):
+        from jevbench import cascade as _casc
+        qs, cases = load_phase(ph)
+        rqs = _casc.review_questions(qs, ph)
+        raw = {"meta": {"d1": qs_mod.CELLS_77["MD0"]["run"],
+                        "reviewer": "jev", "host": "h",
+                        "provider": "openrouter",
+                        "model": "~typesafe/jev-latest",
+                        "session": "s0",
+                        "manifest_sha256": self._man_sha,
+                        "questions_hash": questions_hash(rqs),
+                        "reviewer_resolved": version},
+               "cases": {}}
+        aud = {"meta": {"d1": qs_mod.CELLS_77["MD0"]["run"],
+                        "raw": qs_mod.JEV77_CASCADE_RAW, "host": "h",
+                        "session": "s0",
+                        "manifest_sha256": self._man_sha},
+               "cases": {}}
+        for c in cases:
+            a = _answers_hit(qs, c.gt)
+            raw["cases"][c.id] = {"answers": a,
+                                  "reviewer_version": version}
+            aud["cases"][c.id] = {"answers": a}
+        store.save(qs_mod.JEV77_CASCADE_RAW, ph, raw)
+        store.save(qs_mod.JEV77_CASCADE_AUDIT, ph, aud)
+
+    def test_cascada_parcial_no_evaluable(self):
+        """Sonda R36: una sola fase auditada de 11 no produce delta
+        pareado válido — se publica como parcialidad NO EVALUABLE."""
+        (self.tmp / "logs" / "jev77_cascade.json").write_text(
+            json.dumps({"requests": 10, "started_wall": 0.0}))
+        self._write_cascade_phase("triage_es")
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"])
+        self.assertEqual(rep["missing"], [ph for ph in qs_mod.PHASES_ALL
+                                        if ph != "triage_es"])
+        self.assertIn("cobertura parcial", rep["note"])
+
+    def test_cascada_completa_evaluable(self):
+        self._write_budget()
+        self._write_manifest()
+        for ph in qs_mod.PHASES_ALL:
+            self._write_cascade_phase(ph)
+        rep = qs_mod._audit_cascade77()
+        self.assertTrue(rep["evaluable"], rep)
+        self.assertEqual(rep["versions"], ["jev-1.14-20261101"])
+
+    def test_parada_persistida_no_evaluable(self):
+        """Un 'stopped' durable en el registro del cupo invalida el
+        contraste aunque la cobertura estuviera completa."""
+        (self.tmp / "logs" / "jev77_cascade.json").write_text(
+            json.dumps({"requests": 10, "started_wall": 0.0,
+                        "stopped": {"reason": "DeadlineExceeded"}}))
+        for ph in qs_mod.PHASES_ALL:
+            self._write_cascade_phase(ph)
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"])
+        self.assertIn("parada", rep["note"])
+
+    def test_versiones_mezcladas_no_evaluable(self):
+        (self.tmp / "logs" / "jev77_cascade.json").write_text(
+            json.dumps({"requests": 10, "started_wall": 0.0}))
+        self._write_cascade_phase("triage_es", version="jev-a")
+        self._write_cascade_phase("adv1", version="jev-b")
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"])
+        self.assertTrue(any("mezcladas" in b for b in rep["bad_meta"]))
+
+    def test_cupo_excedido_y_version_ausente_no_evaluable(self):
+        """Sonda R38 §7: el registro con más intentos que el cupo
+        congelado, o casos raw sin reviewer_version, invalidan aunque
+        la cobertura de las 11 fases esté completa."""
+        (self.tmp / "logs" / "jev77_cascade.json").write_text(
+            json.dumps({"requests": 801, "started_wall": 0.0}))
+        self._write_manifest()
+        for ph in qs_mod.PHASES_ALL:
+            self._write_cascade_phase(ph)
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"], rep)
+        self.assertTrue(any("cupo" in b for b in rep["bad_meta"]),
+                        rep["bad_meta"])
+        # y sin versión por caso — ausente en TODOS — igual de inválido
+        (self.tmp / "logs" / "jev77_cascade.json").write_text(
+            json.dumps({"requests": 700, "started_wall": 0.0}))
+        for ph in qs_mod.PHASES_ALL:
+            d = store.load(qs_mod.JEV77_CASCADE_RAW, ph)
+            for rec in d["cases"].values():
+                rec.pop("reviewer_version", None)
+            store.save(qs_mod.JEV77_CASCADE_RAW, ph, d)
+        rep2 = qs_mod._audit_cascade77()
+        self.assertFalse(rep2["evaluable"], rep2)
+        self.assertTrue(any("reviewer_version" in b
+                            for b in rep2["bad_meta"]),
+                        rep2["bad_meta"])
+
+    def test_fusion_sin_procedencia_no_evaluable(self):
+        """La fusión debe conservar la procedencia del encargo
+        (host + manifest_sha256) — ausente invalida."""
+        (self.tmp / "logs" / "jev77_cascade.json").write_text(
+            json.dumps({"requests": 10, "started_wall": 0.0}))
+        self._write_manifest()
+        for ph in qs_mod.PHASES_ALL:
+            self._write_cascade_phase(ph)
+        d = store.load(qs_mod.JEV77_CASCADE_AUDIT, "triage_es")
+        d["meta"].pop("manifest_sha256", None)
+        store.save(qs_mod.JEV77_CASCADE_AUDIT, "triage_es", d)
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"], rep)
+        self.assertTrue(any("fusión" in b for b in rep["bad_meta"]),
+                        rep["bad_meta"])
+
+    def _baseline_evaluable(self):
+        """Fixture completo y acreditado de las 11 fases."""
+        self._write_budget()
+        self._write_manifest()
+        for ph in qs_mod.PHASES_ALL:
+            self._write_cascade_phase(ph)
+        rep = qs_mod._audit_cascade77()
+        self.assertTrue(rep["evaluable"], rep)
+
+    def test_metadatos_incompatibles_no_evaluable(self):
+        """Sonda R39 §3: procedencia PRESENTE pero incompatible en raw
+        o fusión invalida igual que la ausente — hash, preguntas,
+        proveedor/modelo y sesión se cotejan contra el encargo."""
+        mutaciones = [
+            ("fusion_sha", qs_mod.JEV77_CASCADE_AUDIT,
+             lambda m: m.update(manifest_sha256="another_encargo")),
+            ("raw_qhash", qs_mod.JEV77_CASCADE_RAW,
+             lambda m: m.update(questions_hash="foreign_questions")),
+            ("raw_provider", qs_mod.JEV77_CASCADE_RAW,
+             lambda m: m.update(provider="typesafe",
+                                model="foreign_model")),
+            ("raw_session", qs_mod.JEV77_CASCADE_RAW,
+             lambda m: m.update(session="foreign_session")),
+        ]
+        for nombre, run, mut in mutaciones:
+            with self.subTest(nombre):
+                self._baseline_evaluable()
+                doc = store.load(run, "triage_es")
+                old = copy.deepcopy(doc)
+                mut(doc["meta"])
+                store.save(run, "triage_es", doc)
+                rep = qs_mod._audit_cascade77()
+                self.assertFalse(rep["evaluable"], rep)
+                self.assertTrue(rep["bad_meta"], rep)
+                store.save(run, "triage_es", old)
+
+    def test_manifiesto_sin_sha_valido_no_evaluable(self):
+        """El manifiesto auditado exige sha declarado Y coherente con
+        el contenido — ausente o incoherente invalida."""
+        self._baseline_evaluable()
+        mp = self.tmp / "logs" / "qwen_manifest_jev77.json"
+        man = json.loads(mp.read_text())
+        man.pop("manifest_sha256")
+        mp.write_text(json.dumps(man))
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"], rep)
+        self.assertTrue(any("sha" in b for b in rep["bad_meta"]),
+                        rep["bad_meta"])
+        # y un sha declarado que no cuadra con el contenido
+        man["manifest_sha256"] = "0" * 16
+        mp.write_text(json.dumps(man))
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"], rep)
+
+    def test_contador_negativo_no_evaluable(self):
+        """Un contador de red negativo (o no entero) no es un gasto
+        válido — la auditoría lo marca."""
+        self._baseline_evaluable()
+        self._write_budget(requests=-1)
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"], rep)
+        self.assertTrue(any("cupo" in b for b in rep["bad_meta"]),
+                        rep["bad_meta"])
+
+    def test_presupuesto_sin_identidad_a4_no_evaluable(self):
+        """Sonda R40 §2: la identidad A4 congelada del revisor es
+        obligatoria en el presupuesto — ausente o incompleta invalida
+        aunque raw/fusión estén completos."""
+        # sin revisor en absoluto
+        self._baseline_evaluable()
+        (self.tmp / "logs" / "jev77_cascade.json").write_text(json.dumps(
+            {"requests": 700, "started_wall": 0.0, "session": "s0"}))
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"], rep)
+        self.assertTrue(any("revisor" in b for b in rep["bad_meta"]),
+                        rep["bad_meta"])
+        # y falta de cada campo de la identidad
+        for campo in ("adapter", "provider", "model", "resolved"):
+            with self.subTest(campo):
+                self._baseline_evaluable()
+                self._write_budget()
+                bp = self.tmp / "logs" / "jev77_cascade.json"
+                b = json.loads(bp.read_text())
+                b["reviewer"].pop(campo)
+                bp.write_text(json.dumps(b))
+                rep = qs_mod._audit_cascade77()
+                self.assertFalse(rep["evaluable"], rep)
+                self.assertTrue(
+                    any(f"revisor.{campo}" in x for x in rep["bad_meta"]),
+                    rep["bad_meta"])
+
+    def test_presupuesto_y_raw_ajenos_al_contrato_no_evaluable(self):
+        """Sonda R40 §2: presupuesto y raw coherentes ENTRE SÍ pero
+        ajenos al contrato congelado del manifiesto → NO EVALUABLE."""
+        self._baseline_evaluable()
+        self._write_budget(reviewer={"provider": "typesafe",
+                                     "model": "jev-latest",
+                                     "adapter": "jev",
+                                     "resolved": "jev-1.14-20261101"})
+        for ph in qs_mod.PHASES_ALL:
+            d = store.load(qs_mod.JEV77_CASCADE_RAW, ph)
+            d["meta"].update(provider="typesafe", model="jev-latest")
+            store.save(qs_mod.JEV77_CASCADE_RAW, ph, d)
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"], rep)
+        self.assertTrue(any("contrato" in b for b in rep["bad_meta"]),
+                        rep["bad_meta"])
+
+    def test_raw_con_adaptador_ajeno_no_evaluable(self):
+        """raw.meta.reviewer debe ser el adaptador congelado en el
+        presupuesto — otro adaptador invalida."""
+        self._baseline_evaluable()
+        d = store.load(qs_mod.JEV77_CASCADE_RAW, "triage_es")
+        d["meta"]["reviewer"] = "llm"
+        store.save(qs_mod.JEV77_CASCADE_RAW, "triage_es", d)
+        rep = qs_mod._audit_cascade77()
+        self.assertFalse(rep["evaluable"], rep)
+        self.assertTrue(any("adaptador" in b for b in rep["bad_meta"]),
+                        rep["bad_meta"])
+
+
+class TestJEV77ManifestPolicies(TmpStore):
+    """R36 §6: las políticas del encargo (reloj, subsesión, A3,
+    instancias, reservas, cascada) quedan congeladas en el manifiesto
+    jev77 — cambiarlas cambia el sha; jev68/jev76 no llevan 'policies'."""
+
+    def setUp(self):
+        super().setUp()
+        qs_mod._set_profile("jev77")
+        self.addCleanup(qs_mod._set_profile, "jev68")
+
+    def test_politicas_cambian_el_sha(self):
+        """Sonda R36: clock/subsession_cap_s y las reservas nuevas están
+        en el manifiesto — la misma fuente con otra política da otro sha."""
+        sha1 = qs_mod._plan_manifest()["manifest_sha256"]
+        for attr, val in (("clock", "monotonic"),
+                          ("subsession_cap_s", 6 * 3600)):
+            with mock.patch.dict(qs_mod.PROFILES["jev77"],
+                                 {attr: val}):
+                self.assertNotEqual(
+                    qs_mod._plan_manifest()["manifest_sha256"], sha1,
+                    attr)
+        for const in ("RESTART_EXTRA_MAX", "RESTART_GATE_RESERVE",
+                      "GATE_RESERVE_TOTAL", "PREP_MAX_REQUESTS",
+                      "JEV77_CASCADE_WALL_S"):
+            with mock.patch.object(qs_mod, const, 999):
+                self.assertNotEqual(
+                    qs_mod._plan_manifest()["manifest_sha256"], sha1,
+                    const)
+
+    def test_sin_policies_en_perfiles_historicos(self):
+        for prof in ("jev68", "jev76"):
+            qs_mod._set_profile(prof)
+            man = qs_mod._plan_manifest()
+            self.assertNotIn("policies", man)
+        qs_mod._set_profile("jev77")

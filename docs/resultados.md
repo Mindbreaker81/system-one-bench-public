@@ -10,20 +10,20 @@ python3 -m jevbench.report   # regenera este documento (runs en docs/resultados_
 python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review jev_cascade_audit jev_cascade_audit_rules \
     llm_gpt6luna_jevrev_review llm_gpt6luna_jevrev_audit llm_gpt61sol_jevrev_review llm_gpt61sol_jevrev_audit jev_cerebrasqwenrev_review \
     jev_cerebrasqwenrev_audit jev_cerebrasqwennsrev_review jev_cerebrasqwennsrev_audit llm_gpt6luna_prob llm_gpt6luna_disc \
-    llm_gpt61sol_low_prob llm_gpt61sol_low_disc llm_qwen38_27b_prob llm_qwen38flash_prob llm_cerebras_gptoss120b_low_prob \
-    llm_cerebras_qwen38_27b_low_prob llm_cerebras_qwen38_27b_nostruct_prob llm_cerebras_qwen38_27b_disc llm_cerebras_qwen38_27b_nostruct_disc llm_qwen38_27b_fp8_nostruct_prob \
-    llm_qwen38_27b_gguf81_nostruct_prob llm_qwen38_27b_nvfp4_nostruct_prob llm_qwen38_27b_fp8_inject_prob llm_qwen38_27b_fp8_nostruct_t0_prob llm_qwen38_27b_nvfp4_inject_prob \
-    llm_qwen38_27b_nvfp4_inject_disc llm_qwen38_27b_arcgguf_inject_prob llm_qwen38_27b_arcgguf_inject_disc decider_4b_jevrev_review decider_4b_jevrev_audit \
-    decider_4b_llmrev_review decider_4b_llmrev_audit decider_4b_solrev_review decider_4b_solrev_audit decider_35b_a3b \
-    decider_35b_a3b_nvfp4 decider_4b decider_4b_cascade_audit decider_4b_d35rev_audit decider_4b_aj32brev_audit \
-    decider_4b_aj8brev_audit decider_2b decider_0.8b anyjev_qwen3_32b_l0 anyjev_qwen3_8b_l0 \
-    anyjev_qwen3_1.7b_l0 gliner_decide_desc gliner_decide_bare gliner_decide_1b_desc gliner_multi_decide_desc \
-    julia_1 laya_router laya_typed legacy_laya_v2 span01_pro \
-    span01_lite span01_lite_or nimble_9b tev1_4b tev1_0.8b \
-    decider_4b_clefrev_review decider_4b_clefrev_audit clef_27b clef_flash_9b_xpu decider_4b_clefflashrev_review \
-    decider_4b_clefflashrev_audit clm_v0.1_8b strands_2b_hobson_v19_xpu strands_2b_hobson_v19_xpu_trunc dgemma_26b_a4b_nvfp4 \
-    dgemma_26b_a4b_nvfp4_s1 dgemma_26b_a4b_nvfp4_s1_jevrev_review dgemma_26b_a4b_nvfp4_s1_jevrev_audit llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob \
-    llm_qwen38_27b_fp8_jev71_off_d0_disc
+    jev_luna_decisions jev_luna_decisions_fb llm_gpt61sol_low_prob llm_gpt61sol_low_disc llm_qwen38_27b_prob \
+    llm_qwen38flash_prob llm_cerebras_gptoss120b_low_prob llm_cerebras_qwen38_27b_low_prob llm_cerebras_qwen38_27b_nostruct_prob llm_cerebras_qwen38_27b_disc \
+    llm_cerebras_qwen38_27b_nostruct_disc llm_qwen38_27b_fp8_nostruct_prob llm_qwen38_27b_gguf81_nostruct_prob llm_qwen38_27b_nvfp4_nostruct_prob llm_qwen38_27b_fp8_inject_prob \
+    llm_qwen38_27b_fp8_nostruct_t0_prob llm_qwen38_27b_nvfp4_inject_prob llm_qwen38_27b_nvfp4_inject_disc llm_qwen38_27b_arcgguf_inject_prob llm_qwen38_27b_arcgguf_inject_disc \
+    decider_4b_jevrev_review decider_4b_jevrev_audit decider_4b_llmrev_review decider_4b_llmrev_audit decider_4b_solrev_review \
+    decider_4b_solrev_audit decider_35b_a3b decider_35b_a3b_nvfp4 decider_4b decider_4b_cascade_audit \
+    decider_4b_d35rev_audit decider_4b_aj32brev_audit decider_4b_aj8brev_audit decider_2b decider_0.8b \
+    anyjev_qwen3_32b_l0 anyjev_qwen3_8b_l0 anyjev_qwen3_1.7b_l0 gliner_decide_desc gliner_decide_bare \
+    gliner_decide_1b_desc gliner_multi_decide_desc julia_1 laya_router laya_typed \
+    legacy_laya_v2 span01_pro span01_lite span01_lite_or nimble_9b \
+    tev1_4b tev1_0.8b decider_4b_clefrev_review decider_4b_clefrev_audit clef_27b \
+    clef_flash_9b_xpu decider_4b_clefflashrev_review decider_4b_clefflashrev_audit clm_v0.1_8b strands_2b_hobson_v19_xpu \
+    strands_2b_hobson_v19_xpu_trunc dgemma_26b_a4b_nvfp4 dgemma_26b_a4b_nvfp4_s1 dgemma_26b_a4b_nvfp4_s1_jevrev_review dgemma_26b_a4b_nvfp4_s1_jevrev_audit \
+    llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc
 ```
 <!-- /AUTO:comando -->
 
@@ -47,6 +47,8 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | jev_cerebrasqwennsrev_audit | 69 | 92.1 | 93.6 | 26/28 | 76.8 | 0.83 | 9/10 | 18/20 | 91.0 | 93.8 / 92.7 | 15/20 | 87.5 | 0.065 | — | 0/219 |
 | llm_gpt6luna_prob | 61 | 93.6 | 95.7 | 25/28 | 79.4 | 0.87 | 9/10 | 18/20 | 87.0 | 93.5 / 93.5 | 17/20 | 88.0 | 0.052 | 3027 | 0/219 |
 | llm_gpt6luna_disc | 59 | 93.6 | 91.4 | 26/28 | 76.5 | 0.76 | 6/10 | 17/20 | 85.0 | 92.3 / 92.7 | 18/20 | 89.5 | 0.077 | 1876 | 0/219 |
+| jev_luna_decisions | 48* | 91.4 | 89.3 | 26/28 | 73.5 | 0.76 | 7/10 | 16/19 | 73.1 | 89.6 / 89.6 | 18/19 | 90.0 | 0.099 | 677 | 0/214 |
+| jev_luna_decisions_fb | 39 | 91.4 | 89.3 | 26/28 | 73.5 | 0.76 | 7/10 | 16/20 | 72.0 | 89.6 / 89.6 | 18/20 | 88.0 | 0.100 | 677 | 0/216 |
 | llm_gpt61sol_low_prob | 65 | 92.9 | 93.6 | 26/28 | 80.0 | 0.90 | 8/10 | 18/20 | 88.5 | 94.2 / 94.6 | 18/20 | 89.5 | 0.054 | 3415 | 0/219 |
 | llm_gpt61sol_low_disc | 63 | 92.1 | 92.1 | 26/28 | 76.8 | 0.77 | 6/10 | 18/20 | 89.5 | 94.6 / 94.2 | 17/20 | 86.5 | 0.074 | 2221 | 0/219 |
 | llm_qwen38_27b_prob | -15* | 73.6 | 73.6 | 13/28 | 52.3 | — | 0/10 | 4/20 | 58.5 | 77.2 / 76.5 | 9/20 | 67.5 | 0.230 | 6799 | 53/218 |
@@ -113,12 +115,16 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | llm_qwen38_27b_fp8_jev68_off_d0_prob | 50 | 88.6 | 87.1 | 24/28 | 76.1 | 0.87 | 4/10 | 14/20 | 81.0 | 94.6 / 93.5 | 15/20 | 84.5 | 0.076 | 6253 | 1/216 |
 | llm_qwen38_27b_fp8_jev68_on_d0_prob | 61 | 91.4 | 90.7 | 25/28 | 81.9 | 0.89 | 6/10 | 17/20 | 85.0 | 94.2 / 95.0 | 16/20 | 85.5 | 0.058 | 41287 | 0/216 |
 | llm_qwen38_27b_fp8_jev71_off_d0_disc | 62 | 90.7 | 92.1 | 26/28 | 79.0 | 0.82 | 9/10 | 17/20 | 85.5 | 95.0 / 95.0 | 15/20 | 87.5 | 0.079 | 2634 | 0/216 |
+| llm_qwen38_27b_fp8_jev76_on_d0_disc | 60 | 91.4 | 92.9 | 26/28 | 82.3 | 0.84 | 7/10 | 16/20 | 84.0 | 95.0 / 95.4 | 14/20 | 86.0 | 0.063 | 26660 | 0/216 |
+| llm_qwen38_27b_fp8_jev76_on_d1_disc | 55 | 90.0 | 92.1 | 25/28 | 82.3 | 0.84 | 7/10 | 16/20 | 82.5 | 93.5 / 95.8 | 14/20 | 84.5 | 0.069 | 26633 | 0/216 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.3 | — | 0/10 | 17/20 | 79.0 | 57.7 / 57.7 | 5/20 | 59.0 | — | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
 
 *`unif choice`: elecciones casi uniformes (máx−mín < 0.05) en las 9 fases base+nuevas; no incluye adv4/adv5. No demuestra vectores nulos crudos ni fallo automático.*
 <!-- /AUTO:marcador -->
+
+**Nota 48\* (`jev_luna_decisions`):** 188/194, seis negativas del proveedor, media sobre 6 fases (Jev: 10); no comparable con el agregado completo. Detalle en «Por modelo» más abajo.
 
 Columnas: triaje = % sobre 5 preguntas × 14 casos. dept = departamento correcto.
 papers = % sobre 5 dimensiones × 31 papers. ρ = Spearman de relevancia. skip LOO = de los 10
@@ -202,6 +208,45 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   10, p = 0.01, a favor de la cascada; Holm 0.62). El resto, sin diferencia en crudo. Cuesta ~5.5× más por caso ($0.00019 frente a $0.000035)
   y es ~5× más lento (mediana 3.1 s frente a 0.64 s). El modo `discrete` rinde parecido pero
   calibra peor (Brier 0.077) y ordena peor los papers (ρ 0.76).
+- **gpt-6-luna-decisions (7-oct, JEV-80):** `gpt-6-luna` por el endpoint de decisiones de OpenRouter
+  (`/api/alpha/decisions`, adaptador `jev`; resuelve `openai/gpt-6-luna-decisions-20261006`). No se ha acreditado
+  igualdad de versión subyacente con las rutas `probabilities`/`discrete` del adaptador `llm`. Ajustado **48\*** en
+  el marcador — el `*` marca cobertura incompleta: el scorer excluye de la media las fases con errores (aquí
+  adv2/adv3/adv4/adv5), así que luna-decisions media 6 fases y Jev 10; **48\* y 45 no son comparables**. Cobertura
+  **188/194**: seis rechazos del proveedor (HTTP 502 «OpenAI refused to answer question "department"»,
+  reproducidos en ~6 peticiones HTTP por caso) en B05_trial_data_exfil (adv2), C08_transport_data_exfil (adv3),
+  D05_registry_export y D07_vecina_resultado (adv4), E01_phishing_patologia y E02_falso_recall_equipos (adv5).
+  Comparación homogénea (misma matemática; 6 fases comunes completas: triaje ES/EN, papers, adv1, ext ES/EN):
+
+  | Configuración | Ajustado 6 fases comunes | Sensibilidad: rechazo = 0 puntos (10 fases) |
+  |---|---:|---:|
+  | `jev_luna_decisions` (188/194) | **47,70** | **33,03** |
+  | `jev_v3` (194/194) | 54,63 | 45,38 |
+  | `llm_gpt6luna_prob` (194/194) | 75,60 | 61,23 |
+  | `llm_gpt6luna_disc` (194/194) | 71,72 | 59,44 |
+  | *Mayoría (oráculo)* | 0 | 0 |
+
+  La sensibilidad es una política explícita de utilidad del servicio: cada rechazo recibe 0 puntos en todas las
+  preguntas (no es una predicción recuperada). **No demuestra superar a Jev** (observaciones, sin superioridad
+  demostrada en ninguna dirección). McNemar con Holm (53 pruebas por referencia): la única p nominal <0.05 —
+  `depth` de papers frente a Jev (b=1, c=8, p=0.039) — queda con **p ajustada = 1**; frente a luna-prob nada
+  significativo (mín. 0.125). Coste medido $0.0194 los 188 éxitos ($0.000103/respuesta: **53 %** de luna-prob,
+  81 % de luna-disc, **2.97× Jev**; los rechazos no tienen coste observado) y mediana 672 ms (~4.7× más rápido
+  que luna-prob). Calibración adversarial peor que Jev (Brier noul adv1/2/5: 0.20/0.17/0.18 frente a
+  0.09/0.08/0.13; ECE 0.23/0.26/0.19) con solo 4 noul en la frontera 0.45–0.55 (Jev 29).
+  **JEV-81 (7-oct, pre-registro congelado 237259d, rev. R51):** el *fallback* por rechazo a Jev
+  (`jev_luna_decisions_fb`, 6 sustituciones) completa la cobertura (194/194, 11 fases completas) con ajustado
+  **39,1 [IC95 28,2–49,1]** frente a 45,4 [36,0–54,6] de Jev — la diferencia numérica no acredita superioridad de
+  ninguno, y no hay nada significativo tras Holm (53 pruebas por referencia). Como **alerta de manipulación**
+  (adv3–5, n=60), el rechazo detecta 5/30 con 0/30 FP observados (precisión 100 % [47,8–100], recall
+  16,7 % [5,6–34,7]; muestra pequeña) — descriptivamente por debajo del revisor Jev (25/30 TP · 1/30 FP). Las
+  **dos réplicas** (r1/r2, misma versión servida `…-20261006`) coinciden íntegramente: 934/934 decisiones,
+  Δp = 0 sobre 2091 componentes y los mismos 6 rechazos — repetibilidad observada bajo esas condiciones, no
+  determinismo general probado. Coste registrado: fusionado $0,0195 de costes conocidos (6 del primario sin
+  importe); réplica r2 $0,0194 en éxitos. Pendientes: rotación d1 justificable como prueba de sensibilidad al
+  orden (pendiente de aprobación y reglas); cascada real y uso como revisor de Jev no justificados por estos
+  datos. Pre-registro y resultados: `docs/infra_runs/luna_decisions_jev81.md` §RESULTADOS.
+  Ficha: `docs/modelos.md` §LLM generalista.
 - **gpt-6.1-sol (1-oct, `reasoning_effort=low`):** modelo de OpenAI ~20× más caro por token que
   luna, medido con el mismo protocolo. **Ajustado 65** (Cerebras probabilities sin esquema llega a 66 con GT v4, sin superioridad demostrada), por encima de
   luna (61) y a la par de la cascada `jev_cascade_audit` (64), aunque por debajo de la mejor
@@ -483,6 +528,32 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   - **JEV-69:** issue upstream abierta (system-one-adapter#50).
   - **JEV-70:** DiffusionGemma medido el 6-oct (ver arriba).
   - **JEV-73:** resuelta el 6-oct (GT v4).
+  - **JEV-76 (7-oct), factorial fresco `discrete` × thinking (8 celdas, d0+d1, GT v4):** sesión
+    `s81f-20261007-0800` en .81, 1 552/1 552 casos, 0 errores, 10,89 h de reloj del supervisor
+    (tope 14 h) y 1 600 peticiones (tope 5 000); manifiesto `e4a198a26cefaba9`, revisión Codex R53
+    APTO. Controles frescos F/T/D replicados en esta sesión; los históricos JEV-68/71 solo son
+    descriptivos.
+
+    | Celda | Config | Ajustado |
+    |---|---|---:|
+    | *Mayoría trivial* | — | 0,00 |
+    | F0′ | prob off d0 | 50,08 |
+    | T0′ | prob on d0 | 58,71 |
+    | D0′ | discrete off d0 | 63,04 |
+    | DT0 | discrete on d0 | 59,56 |
+    | F1′ | prob off d1 | 57,56 |
+    | T1′ | prob on d1 | 64,12 |
+    | D1 | discrete off d1 | 61,05 |
+    | DT1 | discrete on d1 | 55,48 |
+
+    Clasificación pre-registrada (IC 98,75 %, Bonferroni ×4): **H1 refutada en ambos órdenes**
+    (DT−D ≥ +5: d0 −3,5 [−11,4; +3,6], d1 −5,6 [−14,8; +2,6]) — thinking sobre discrete no
+    alcanza la mejora ≥5, y como los IC incluyen cero no se afirma deterioro ni equivalencia.
+    **H2:** inconclusa en d0 (DT−T +0,9 [−5,2; +6,7]) y refutada en d1 (−8,6 [−18,1; −1,9],
+    contraste a favor de prob con thinking). Interacción descriptiva ≈ −12,1 en ambos órdenes;
+    Holm 53 celdas: 0 significativas. Thinking multiplica la latencia media ×13,8/×13,2 sobre
+    discrete y ×6,8/×7,1 sobre prob. Sin afirmar superioridad ni deterioro entre tratamientos.
+    Detalle: `docs/infra_runs/qwen38_jev76.md` §RESULTADOS.
 - Repetir `python3 -m jevbench.check_versions --log` periódicamente. Si aparece una versión
   nueva de Jev, repetir `jev_v3` y la cascada.
 

@@ -13,6 +13,91 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [1.4.0] - 2026-10-07 — JEV-76: resultados del factorial discrete × thinking de Qwen3.8-27B FP8
+
+- **JEV-76 (resultados, rev. Codex R53 APTO):** sesión `s81f-20261007-0800` en .81, manifiesto
+  `e4a198a26cefaba9`. Ocho celdas frescas × 194 casos (1 552/1 552, 0 errores, 0 reintentos;
+  10,89 h de reloj del supervisor sobre 14 h; 1 600 peticiones sobre 5 000). Ajustados: prob
+  off/on d0 50,08/58,71, discrete off/on d0 63,04/59,56; d1 57,56/64,12 y 61,05/55,48.
+  - **H1 refutada en ambos órdenes** (DT−D ≥ +5: d0 −3,483 [−11,385; +3,624], d1 −5,579
+    [−14,818; +2,590], IC 98,75 %): thinking sobre discrete no alcanza la mejora pre-registrada;
+    los IC incluyen cero (ni deterioro ni equivalencia demostrados).
+  - **H2:** inconclusa en d0 (DT−T +0,851 [−5,185; +6,749]) y refutada en d1 (−8,647
+    [−18,085; −1,944], a favor de prob con thinking).
+  - **Interacción descriptiva** ≈ −12,1 puntos en ambos órdenes (bootstrap conjunto, IC95);
+    Holm 53 celdas: 0 significativas. Thinking multiplica la latencia media ×13,8/×13,2 sobre
+    discrete y ×6,8/×7,1 sobre prob.
+  - Integración: §RESULTADOS en `docs/infra_runs/qwen38_jev76.md`, viñeta en `docs/modelos.md`,
+    entrada de seguimiento en `docs/resultados.md`, celdas DT0/DT1 en `docs/resultados_runs.txt`,
+    DT0 en el marcador web y el sitio público (env verificado: DGX Spark GB10 · SGLang · FP8
+    oficial · structured + esquema en prompt · thinking · temp 0) y figura hermana del forest de
+    hipótesis en la página Límites (escala compartida −20…+10, umbral +5). Las celdas frescas
+    F/T/D no se publican (duplican JEV-68/71).
+
+- **Revisión editorial de la web (Grok R55/R55b, Cursor W8):** portada, historia y «Las pruebas» con JEV-68/71/72, JEV-76 y JEV-80/81; Clef-27B y gpt-6.1-sol como ventajas descriptivas que no sobreviven a Holm; comparador correcto de luna (61 vs Jev solo; frente a la cascada 64 sin diferencia tras Holm); metodología al día (mecanismo JEV-66, cuatro filas pre-registradas nuevas, pie 7-oct).
+
+## [1.3.0] - 2026-10-07 — JEV-80: gpt-6-luna-decisions por el endpoint de decisiones de OpenRouter; JEV-76/77/79
+
+- **JEV-80 (run `jev_luna_decisions`):** `openai/gpt-6-luna-decisions` servido en el endpoint de decisiones de
+  OpenRouter (`/api/alpha/decisions`) con el adaptador `jev`, sin cambios de código; versión resuelta
+  `openai/gpt-6-luna-decisions-20261006`. Batería GT v4: **188/194** — seis rechazos del proveedor
+  (HTTP 502 «OpenAI refused to answer question "department"», reproducidos en ~6 peticiones/caso) en
+  B05_trial_data_exfil (adv2), C08_transport_data_exfil (adv3), D05_registry_export y D07_vecina_resultado (adv4),
+  E01_phishing_patologia y E02_falso_recall_equipos (adv5). Ajustado **48\*** (cobertura incompleta: la media va
+  sobre 6 fases frente a 10 de Jev; el `*` está explicado en `docs/resultados.md`). Comparación homogénea
+  (misma matemática, 6 fases comunes completas): **47,70** frente a **54,63** de Jev, 75,60 de luna-prob y 71,72
+  de luna-disc; sensibilidad con cada rechazo a 0 puntos (10 fases): **33,03** frente a 45,38 de Jev.
+  **No demuestra superar a Jev.** McNemar con Holm (53 pruebas por referencia): la única p nominal <0.05 (`depth` de papers,
+  b=1 c=8, p=0.039) queda con p ajustada = 1. Coste medido $0.0194 los 188 éxitos (53 % de luna-prob, 81 % de
+  luna-disc, 2.97× Jev) y mediana 672 ms. Brier adversarial peor que Jev (adv1/2/5: 0.20/0.17/0.18 vs
+  0.09/0.08/0.13); frontera 0.45–0.55: 4 vs 29. Marcador (`docs/resultados.md` con nota del asterisco), ficha
+  (`docs/modelos.md`), `resultados_runs.txt`, web y sitio actualizados. Revisión previa R47 (Codex). No se
+  prioriza revisor ni rotación; siguiente paso sugerido: diagnóstico acotado de las negativas y *fallback* a Jev.
+  En «Global ajustado» los agregados con `*` quedan fuera del ranking (bloque «Cobertura incompleta»); la web
+  exporta n_ok/n_total y el motivo (no medido vs fases con errores); coste/latencia públicos de luna-decisions
+  usan los 188 éxitos homogéneos de R47 ($0,1031/1.000 · 672 ms).
+- **JEV-81 (pre-registro congelado 237259d, ejecutado el 7-oct; rev. R51 de Codex: ejecución y cifras
+  conformes):** `jevbench/jev81.py` + `docs/infra_runs/luna_decisions_jev81.md` (fallback por rechazo, rechazo
+  como alerta, repetibilidad; validación de universo/hashes/GT, criterio de rechazo explícito 502+«refused to
+  answer», `--write` sin sobrescritura, procedencia con sha de fuentes/GT).
+  - **Fallback (`jev_luna_decisions_fb`):** 6 sustituciones a `jev_v3` → 194/194, ajustado **39,1
+    [IC95 28,2–49,1]** frente a 45,4 [36,0–54,6] de Jev; nada significativo tras Holm (53 pruebas por
+    referencia); coste efectivo registrado $0,0195 (6 costes del primario desconocidos; recombinación offline).
+  - **Alerta por rechazo (adv3–5, n=60):** 5/30 TP, 0/30 FP observados (precisión 100 % [47,8–100], recall
+    16,7 % [5,6–34,7]); descriptivamente por debajo del revisor Jev (25/30).
+  - **Repetibilidad (`jev_luna_decisions_r2`, $0,0194 registrados en éxitos):** las dos réplicas con la misma
+    versión servida (`…-20261006`) coinciden íntegramente (934/934 decisiones, Δp = 0 en 2091 componentes,
+    mismos 6 rechazos) — repetibilidad observada, no determinismo general probado.
+  - Integración: fila descriptiva en marcador/web/sitio («gpt-6-luna (decisions) → Jev si rechaza», familia
+    LLM, entra en el ranking por ser 194/194; la réplica r2 no entra), nota JEV-81 en `docs/resultados.md`,
+    bloque en la ficha y §RESULTADOS en el pre-registro. Pendientes valorados por R51: rotación d1 justificable
+    como sensibilidad (pendiente de aprobación); cascada real y revisor no justificados por estos datos.
+- **JEV-79:** página «Límites y cautelas» rediseñada — mapa del experimento, forest plot de hipótesis
+  (estimación + IC + umbral + veredicto), antes/después con el prompt real, figuras con escala declarada,
+  glosario, accesibilidad y díptico ciego/visible (4cbe318).
+- **JEV-77 (MedGemma-27B-IT):** perfil `jev77` del supervisor (3c662c4); A3 en .80 y congelado A4 con manifiesto
+  `008c1cdd499b6f92` (0969900); el sondeo A4 del revisor usa el formato wire noul del banco (0fc8fd4); Enmienda 1
+  con gramática JSON restringida en los 5 checkpoints (3b4bbac). Batería en curso.
+- **JEV-76 (Qwen3.8-27B FP8):** congelado — referencias tokenizer, manifiesto `e4a198a26cefaba9` y ocho puertas
+  PASS en .81 (0813da4). Batería en curso.
+
+## [1.2.0] - 2026-10-07 — JEV-76/77/78: pre-registros en borrador y perfiles del supervisor
+
+- **JEV-76 (Qwen3.8-27B FP8, discrete × thinking):**
+  - Factorial fresco d0+d1 de 8 celdas en .81. Primarias H1 = DT−D ≥ 5 y H2 = DT−T ≥ 5 por orden, con IC98,75 (Bonferroni sobre 4).
+  - Interacción conjunta solo descriptiva. 14 h de reloj del supervisor.
+  - Pre-registro en borrador: `docs/infra_runs/qwen38_jev76.md` (Codex R33/R35 APTO-BORRADOR).
+- **`jevbench/qwen_session.py`:**
+  - Perfiles `--profile jev68|jev76`, con estado, manifiesto, referencias y puertas propios. JEV-68 se reproduce idéntico (manifiesto `26bbda7c05059d26` y analysis.json).
+  - La puerta discrete+thinking usa `token_rule` contra su propia referencia tokenizer.
+  - `analyze` factorial. 18 tests nuevos.
+- **JEV-77 (MedGemma-27B-IT frente a Gemma 3-27B-IT y Qwen FP8):**
+  - Las 18 celdas y la cascada híbrida van en .80. Primarias H1/H2 en d0 con IC97,5; d1, 4B y cascada, descriptivos.
+  - Aprobación en dos etapas (preparación técnica sintética → congelado → batería).
+  - Borrador: `docs/infra_runs/medgemma_jev77.md` (Codex R30–R35). Pendiente: perfil `jev77` del supervisor.
+- **JEV-78:** issue de viabilidad de la Decisions API de OpenAI (`/v1/decisions`, gpt-6-luna). Sin llamadas.
+- **ai-models:** se añade `hf/Qwen/Qwen3.8-27B-FP8` (rev `017b9c7a`, SHA256 verificado).
+
 ## [1.1.0] - 2026-10-07 — JEV-68/71/72: sesión Qwen3.8-27B FP8 en .81 (thinking, rotación, discrete, diagnóstico); web JEV-74/75
 
 - **Sesión pre-registrada `s81q-20261006-2046`** (SGLang FP8, DGX .81; supervisor `jevbench/qwen_session.py`,
