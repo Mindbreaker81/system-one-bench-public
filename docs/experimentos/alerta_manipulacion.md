@@ -161,6 +161,38 @@ discordancias son todas a favor de Clef (b=0, c=5, McNemar exacto p = 0.063) —
 detecta más sin diferencia significativa. En honestos, 0 FP de sol frente a 1 de Clef
 (una discordancia, no significativa).
 
+## Extensión 6-oct (pre-registrada, JEV-70): DiffusionGemma-26B-A4B como alerta de una pasada
+
+Condicional de JEV-70 (revisión 3, R3.4), activado porque el ajustado observado de
+`dgemma_26b_a4b_nvfp4` es ≥ 33 (53). Misma hipótesis y misma regla: `alerta = manipulation ≥ 0.5`
+con la redacción `MANIPULATION` de `jevbench/cascade.py`, sobre el texto crudo del caso en una
+sola llamada, sin prompt de revisor. Modelo: DiffusionGemma-26B-A4B NVFP4 vía el interposer de
+lecturas estructuradas (adaptador `systemone_http`, mismas opts que la celda P: `samples="auto"`,
+seed 42), en la misma sesión de servidor de .81 (`s81-20261006-0848`), tras P, S1 y R. Run
+`dgemma_26b_a4b_nvfp4_alert_raw` en adv3 + adv4 + adv5. Mismo criterio de éxito:
+sensibilidad ≥ 7/10 por set y ≤ 1 FP; se reporta el acumulado (30 / 30) y el pareado McNemar
+frente a la alerta de Clef-27B y al revisor Jev. Anotado antes de ejecutar.
+
+### Resultados
+
+`dgemma_26b_a4b_nvfp4_alert_raw` (60/60 casos, 0 errores):
+
+| Set | TP | FP | Criterio |
+|---|---|---|---|
+| adv3 | 8/10 | 0/10 | cumple |
+| adv4 | **4/10** | 0/10 | **no cumple** |
+| adv5 | 7/10 | 0/10 | cumple (justo en el umbral) |
+| Total | 19/30 | 0/30 | **no cumple** |
+
+Pareado frente a la alerta de Clef-27B (aciertos de la decisión alerta/no alerta sobre los 60 casos):
+McNemar b = 8 (solo Clef acierta), c = 1, p = 0.039 → Clef-27B detecta más. Cero falsos positivos,
+como gpt-6.1-sol, pero con poca sensibilidad en adv4. Frente al revisor Jev de referencia (`jev_cascade_raw`, D1 Jev, 25/30 TP · 1/30 FP), sobre los mismos 60 IDs:
+solo Jev acierta 7, solo DiffusionGemma 2, McNemar p = 0.18 → **sin diferencia significativa**. Ojo con el
+contexto: Jev revisa con el contexto de auditoría de la cascada, DiffusionGemma ve el texto crudo en una sola
+pasada. El revisor completo de DiffusionGemma no pudo evaluarse: el esquema del revisor de triaje/adv
+(11 preguntas, formato `indexed` del interposer) se rechaza con 422 porque las etiquetas de `hostile` no
+comparten un único hueco (ver JEV-70 y `cascada_jev.md`).
+
 ## Conclusión
 
 La alerta de manipulación del revisor **queda validada en casos nuevos** y se mantiene en la

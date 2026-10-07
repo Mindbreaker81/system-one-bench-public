@@ -1,15 +1,20 @@
 """The unified scorer must reproduce the numbers published in the legacy reports
 (jev_vs_laya.md, anyjev_vs_jev.md). Run: python -m unittest discover tests"""
-import os
 import unittest
-
-os.environ["JEVBENCH_GT"] = "v1"  # the reports were scored with the original GT
+from unittest import mock
 
 from jevbench import legacy_import, metrics
 from jevbench.score import baseline, score_run
 
 
 class LegacyRescore(unittest.TestCase):
+    def setUp(self):
+        # GT v4 (JEV-73): v1 solo en estas regresiones; no contaminar los tests
+        # del sitio ni las comprobaciones de la batería actual al importar el módulo.
+        patch = mock.patch.dict('os.environ', {'JEVBENCH_GT': 'v1'})
+        patch.start()
+        self.addCleanup(patch.stop)
+
     @classmethod
     def setUpClass(cls):
         legacy_import.main()

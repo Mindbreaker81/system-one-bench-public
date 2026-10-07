@@ -29,7 +29,7 @@ abstract / skip) y `practice` (noul: ¿cambia la práctica clínica?).
 |---|---|---|---|
 | `triage_es`, `triage_en` | `bench_cases.json` | 14 × 2 | mayoría 66 % |
 | `triage_ext_es`, `triage_ext_en` | `triage_ext_cases.json` | 26 × 2 | más urgencias y hostiles; mayoría 58 % |
-| `papers32` | `papers32.json` + `paper_gt32.json` | 32 | abstracts reales de PubMed |
+| `papers32` | `papers32.json` + `paper_gt32.json` | 31 | abstracts reales de PubMed; GT v4, sin el duplicado P02 |
 | `adv1`, `adv2` | `adversarial_cases.json`, `adversarial2_cases.json` | 10 + 10 | desequilibrados: 17/20 admin |
 | `adv3` | `adversarial3_cases.json` | 20 | 10 manipulados + 10 honestos, 5 por departamento |
 | `adv4` | `adversarial4_cases.json` | 20 | timos (pago, datos, marketing) + honestos trampa; validación de reglas fijas |
@@ -38,6 +38,14 @@ abstract / skip) y `practice` (noul: ¿cambia la práctica clínica?).
 
 En `jevbench.run`, `--phases all` son las seis primeras de la versión original (triaje, papers,
 adv1–2, ood) y `all+new` añade triaje ampliado y adv3. `adv4` y `adv5` se piden explícitamente.
+
+La batería actual suma **194 casos en 11 fases** (191 sin OOD). Desde el GT v4
+(6-oct-2026) se ha retirado P02, cuyo fetch duplicó el PMID 37130440 de P03;
+P03 conserva su GT. El nombre de fase **`papers32` se mantiene** por compatibilidad
+con comandos y resultados históricos, aunque ahora contiene 31 papers. Las copias
+`papers32.v3.json` y `paper_gt32.v3.json` conservan los 32 casos anteriores; los
+resultados guardados se re-puntúan con el GT actual sin volver a ejecutar modelos.
+Las cifras calculadas con GT v3 y v4 no se deben comparar directamente.
 
 ## Puntuación
 

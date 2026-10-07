@@ -3,11 +3,13 @@
 Versiones:
 - `*.v1.json`: GT original de Lyra (20–23 sep 2026). Lo usan los informes antiguos y `tests/` (`JEVBENCH_GT=v1`).
 - `*.v2.json`: GT del 26-sep (P04 corregido + casos nuevos validados), antes de la adjudicación de la 2ª anotación.
-- Actual (sin sufijo): v3, tras la adjudicación del 27-sep.
+- `paper_gt32.v3.json` y `papers32.v3.json`: papers antes de retirar el duplicado P02 (32 casos); las demás fases mantienen el GT adjudicado del 27-sep.
+- Actual (sin sufijo): v4, desde el 6-oct; `papers32` tiene 31 casos, sin P02.
 - `*.anot2.json`: variante de análisis con TODAS las respuestas humanas de la 2ª anotación aplicadas. No es GT oficial.
 
 | Fecha | Fichero | Caso | Cambio | Motivo | Decidido por |
 |---|---|---|---|---|---|
+| 2026-10-06 | paper_gt32.json + papers32.json | P02 | GT v4: eliminar el caso y su GT; conservar P03 sin cambios | P02 y P03 duplicaban el PMID 37130440. El fetch de Lyra buscaba por relevancia y tomaba el primer resultado sin deduplicar: la consulta de P02 sobre broncoscopia robótica devolvió el meta-análisis de navegación que correspondía a P03. No es posible identificar un sustituto inequívoco; no se añade ningún caso. | usuario vía orquestador (decisión JEV-73, previa al cambio; conservar el par consulta-paper correcto P03) |
 | 2026-09-26 | paper_gt32.json | P04 | domain `ild` → `ip` | `ild` no es una opción válida; la criocriobiopsia está en la descripción de `ip` | usuario (delegado en Claude) |
 | 2026-09-26 | paper_gt32.json | P04 | design `cohort` → `meta` | el título es "…A Systematic Review" | usuario (delegado en Claude) |
 | 2026-09-27 | bench_cases.json | T03_disnea_progresiva | department `consulta_externa` → `urgencias` | disnea de reposo + ortopnea + edemas = descompensación; coherente con urgency=2 | usuario (adjudicación JEV-28, 2ª anotación) |

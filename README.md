@@ -2,7 +2,7 @@
 
 # system-one-bench: banco de pruebas de decisores "System One"
 
-**Versión 0.32.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
+**Versión 1.1.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
 
 Banco de pruebas para comparar **Jev** (TypeSafe), un modelo cerrado que no genera texto sino
 que responde preguntas tipadas con probabilidades, con las alternativas abiertas que prometen lo
@@ -53,7 +53,7 @@ Lee esto antes de citar ninguna cifra:
 
   | Set | Casos | Quién redactó el GT | Quién lo validó |
   |---|---|---|---|
-  | Triaje ES/EN, papers, adversarial 1–2 | 14 (×2 idiomas), 32, 10+10 | Un agente LLM (Lyra), 20–23 sep 2026 | Sin revisión sistemática; 11 cambios de campo posteriores (2 en P04 y 9 de la adjudicación de la 2ª anotación) |
+  | Triaje ES/EN, papers, adversarial 1–2 | 14 (×2 idiomas), 31, 10+10 | Un agente LLM (Lyra), 20–23 sep 2026 | Sin revisión sistemática; 11 cambios de campo posteriores (2 en P04 y 9 de la adjudicación de la 2ª anotación); GT v4 elimina el duplicado P02 |
   | Triaje ampliado ES/EN, adversarial 3–4 | 26 (×2), 20, 20 | Claude | El responsable del proyecto, antes de ejecutar ningún modelo |
   | Adversarial 5 | 20 | Claude | Claude, por delegación (sin revisión humana) |
 
@@ -61,7 +61,7 @@ Lee esto antes de citar ninguna cifra:
   con el GT fue del 58 % en urgencia y del 65 % en "¿hay que responder hoy?". Diferencias de 1–2
   puntos en esas preguntas no significan nada
   ([`docs/segunda_anotacion/resultados.md`](docs/segunda_anotacion/resultados.md)).
-- **Los sets son pequeños** (10–32 casos). Usa siempre los intervalos de confianza y el test
+- **Los sets son pequeños** (10–31 casos). Usa siempre los intervalos de confianza y el test
   pareado de McNemar (`--vs`) antes de afirmar que un modelo es mejor.
 - **Adversarial 1 y 2 están desequilibrados:** responder siempre `admin` saca 17/20. Para comparar
   modelos en manipulación, usa adversarial 3–5.
@@ -71,7 +71,9 @@ Lee esto antes de citar ninguna cifra:
   decidir sobre pacientes.
 
 Todos los cambios del GT están en [`data/GT_CHANGELOG.md`](data/GT_CHANGELOG.md), con las
-versiones anteriores conservadas (`*.v1.json`, `*.v2.json`).
+versiones anteriores conservadas (`*.v1.json`, `*.v2.json` y los papers `*.v3.json`).
+El GT actual es v4: 194 casos en 11 fases (191 sin OOD); la fase `papers32` mantiene
+su nombre, con 31 papers tras retirar P02 y conservar P03 sin cambios.
 
 ## Cómo repetir las pruebas
 

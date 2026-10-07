@@ -352,15 +352,29 @@ class TestRunSupervisor(unittest.TestCase):
         verificable, no ok implícito."""
         rec = {"raw": [{"llm_response": {"choices": [{}],
                                          "usage": {"prompt_tokens": 100}}}]}
-        st, _ = j67._token_rule_ok({"mode": "discrete", "rot": 0},
-                                   "triage_es", rec,
-                                   {"triage_es": {"x": 300}}, {})
-        # sin ref de caso concreto -> ok con nota, no violación
+        # sin referencia del caso -> violación, no ok
+        st, det = j67._token_rule_ok({"mode": "discrete", "rot": 0},
+                                     "triage_es", rec,
+                                     {"triage_es": {"x": 300}}, {})
+        self.assertEqual((st, det), ("violacion", "sin ref"))
         rec["_cid"] = "x"
-        st2, _ = j67._token_rule_ok({"mode": "discrete", "rot": 0},
-                                    "triage_es", rec,
-                                    {"triage_es": {"x": 300}}, {})
-        self.assertEqual(st2, "violacion")
+        st2, det2 = j67._token_rule_ok({"mode": "discrete", "rot": 0},
+                                       "triage_es", rec,
+                                       {"triage_es": {"x": 300}}, {})
+        self.assertEqual((st2, det2), ("violacion", "sin offset de puerta"))
+
+    def test_missing_reference_is_violation(self):
+        """Referencia ausente (`sin ref`) = violación en los tres caminos:
+        probabilities base, rot1 y discrete — nunca un ok implícito."""
+        rec = {"raw": [{"llm_response": {"choices": [{}],
+                                         "usage": {"prompt_tokens": 100}}}]}
+        for cell in ({"mode": "probabilities", "rot": 0},
+                     {"mode": "probabilities", "rot": 1},
+                     {"mode": "discrete", "rot": 0}):
+            for r in (rec, {**rec, "_cid": "desconocido"}):
+                st, det = j67._token_rule_ok(cell, "triage_es", r,
+                                             {"triage_es": {"x": 300}}, {})
+                self.assertEqual((st, det), ("violacion", "sin ref"), cell)
 
 
 class TestAuditYPlive(unittest.TestCase):

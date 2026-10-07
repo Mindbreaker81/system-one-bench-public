@@ -13,6 +13,134 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [1.1.0] - 2026-10-07 — JEV-68/71/72: sesión Qwen3.8-27B FP8 en .81 (thinking, rotación, discrete, diagnóstico); web JEV-74/75
+
+- **Sesión pre-registrada `s81q-20261006-2046`** (SGLang FP8, DGX .81; supervisor `jevbench/qwen_session.py`,
+  manifiesto final `26bbda7c05059d26` tras las enmiendas 1 y 2). 17 celdas evaluables, 1.517/1.517 casos,
+  puertas de visibilidad superadas; 7,7 h y 1.628 peticiones contabilizadas (topes 10 h / 5.000).
+  - Ajustado (GT v4): F0/F1/F2/F3 = 49,57 / 58,41 / 51,97 / 48,80; T0/T1 (thinking) = 61,26 / 64,92; D0 (discrete) = 62,42.
+  - **P68 thinking:** +11,7 (d0) y +6,5 (d1); la mejora ≥+5 en ambos órdenes queda INCONCLUSA (IC97,5 cruzan).
+  - **P72 rotación:** rango 9,6 [4,6; 17,6] → estabilidad INCONCLUSA; **primacía CONFIRMADA**
+    (+35,1 pp de errores, IC95 [16,7; 52,8], Holm p=0,009; subconjunto congelado de 37 registros).
+  - **P71.1 discrete:** +12,9 [3,1; 24,9] → ≥+10 INCONCLUSA. **S202:** 253/255 decisiones iguales → CONFIRMADA.
+  - **P71.2 variantes de prompt (V3/V5):** −1,1 / −2,2 pp → REFUTADA una ganancia ≥+10 pp.
+  - Holm sobre las 53 celdas: ningún contraste significativo en las tres familias.
+  - Desviaciones registradas: canario solo observacional (enmienda 1), tope T0/T1 150→210 min antes de
+    alcanzarlo (enmienda 2, `--amend-manifest`), SIGINT con reanudación en la misma sesión.
+  - `analyze` añade salidas descriptivas: vectores nulos crudos (2 en F0/F1/F2, adv2/B07), latencia y tokens,
+    desglose P71.1 y baselines.
+  - Ficha, `docs/modelos.md`, `docs/resultados.md`, marcador (3 runs d0) y web/sitio (F0/T0/D0).
+- **publish:** el saneado de `meta.host` es recursivo (los runs de la sesión anidan el meta de las referencias
+  de puerta); test de regresión. Tres tests que necesitan `raw` se omiten en el export público.
+- **JEV-74:** tarjetas de «El circuito recomendado» en una columna con detalle desplegable.
+- **JEV-75:** página «Límites y cautelas» con diagramas SVG (artifact y sitio); cascadas etiquetadas «· regla audit/review».
+
+## [1.0.0] - 2026-10-06 — GT v4 (JEV-73): papers32 sin el duplicado P02; mantenimiento Qwen (JEV-71/72)
+
+**Versión major: cambia el ground truth.** Los resultados con GT v3 dejan de ser comparables con los de GT v4.
+
+- **JEV-73 (GT v4):** papers32 P02 y P03 eran el mismo paper (PMID 37130440), con GT distinto en `practice`.
+  - Causa: el fetch por relevancia de Lyra duplicó el meta-análisis de P03 en la consulta de P02.
+  - Se retira **P02**, el caso cuyo fetch falló. P03 conserva su GT. Batería: 31 papers, 194 casos
+    (191 en el sitio, sin OOD); el nombre de fase `papers32` no cambia.
+  - Se conservan `data/{paper_gt32,papers32}.v3.json`; registro en `data/GT_CHANGELOG.md`.
+  - Nuevo test `tests/test_battery_integrity.py`: ni estados ni PMIDs duplicados.
+  - Todo re-puntuado sin re-ejecutar modelos. Cambia el ajustado redondeado de 6 runs del marcador
+    (span01_pro 18→17, Cerebras nostruct 65→66, jev_cerebrasqwennsrev_review 68→69,
+    gliner_multi_decide_desc −74→−75, llm_qwen38_27b_prob −16→−15, llm_qwen38flash −40→−39).
+    Ninguna clasificación tras Holm al 5 % cambia en los 28 contrastes revisados, aunque se mueven p
+    concretos.
+  - `publish.py` sanea también las copias versionadas `papers32.vN.json` (sin abstracts).
+  - Narrativas vigentes (ficha, marcador, web, sitio) actualizadas a GT v4. Los manifiestos y los
+    recuentos de ejecución quedan como histórico GT v3.
+- **Mantenimiento Qwen3.8-27B (revisión R13):**
+  - significaciones sin corrección reescritas como p cruda, sin Holm (53 celdas), y familia de 10
+    preguntas agregadas declarada en JEV-67;
+  - matiz de la gramática (probabilidades);
+  - `department` 13 + 1 en vez de 14;
+  - addenda «cerrado por JEV-67» en manifiestos antiguos;
+  - test de referencia ausente (JEV-72 §1).
+- **JEV-71 §3–4:** `jevbench.score --summary --adj-ci` (IC bootstrap estratificado del ajustado; supone
+  registros independientes) y `--null-as-error` (sensibilidad: vector crudo nulo como error de formato).
+  Ambos son opt-in; el marcador oficial no cambia.
+- **JEV-69:** borrador en inglés de la issue para system-one-adapter en `docs/upstream/` (sin publicar).
+- Implementación: Codex (T4, T6, tras el traspaso de OpenCode) y Devin (T2, T3, C9). Revisión: Codex
+  (R13–R15) y Claude (T4, T6).
+
+## [0.35.0] - 2026-10-06 — JEV-70: DiffusionGemma → revisor Jev, web y saneado del sitio
+
+- **Cascada DiffusionGemma → Jev** (pre-registrada en `c4f8975`; Jev 1.13):
+  - S1 → Jev: `audit` **64** / `review` 63, frente a 53 de la D1;
+  - P → Jev: 62 / 63;
+  - ninguna celda significativa tras Holm frente a la D1, Decider-4B → Jev ni Jev → Jev (subida
+    descriptiva);
+  - alerta del revisor 25/30 TP · 1/30 FP, cumple; la alerta de una pasada sacó 19/30;
+  - 2.ª pasada $0.0098 por cascada, mediana 605 ms. Marcador: `…_s1_jevrev_{review,audit}`.
+- **Web (artifact) y sitio regenerados:**
+  - familia DiffusionGemma, con S1, P, la ruta TypeSafe discrete, las cascadas con Jev y las alertas;
+  - fila en la tabla «Modelos», tarjetas e hito del 6-oct;
+  - las significaciones antiguas sin corrección múltiple (Clef vs Jev en depth/urgency, sol como revisor) se
+    reescriben como p cruda, no significativa tras Holm.
+- **Saneado del sitio público:** `site.py` publicaba en `data/meta.json` la ruta local del GGUF de los runs
+  Qwen3.8 de Arc (JEV-67). Ahora reduce rutas a su nombre de fichero, y `tests/test_site.py` prohíbe
+  rutas y usuarios y pasa `publish.scan` sobre el sitio. **El despliegue actual de Netlify aún la contiene**
+  hasta que se redespliegue.
+- Implementación de Devin (W1, C8), revisión de Codex (R11, R12 APTO).
+
+## [0.34.0] - 2026-10-06 — JEV-70: DiffusionGemma-26B-A4B, resultados
+
+- **DiffusionGemma-26B-A4B NVFP4** vía las lecturas estructuradas de vLLM (`1b3b88ec`, interposer
+  de la PR #57250), en dos DGX Spark. La puerta de montaje se aprobó en cada batería.
+  - **P** (`samples="auto"`): ajustado **53**, 195/195 sin errores, Brier noul 0.095, mediana 318 ms.
+  - **S1** (una lectura): 53, Brier 0.101, mediana 122 ms; la regla fijada **recomienda S1**.
+  - Frente a jev_v3 (45): sin diferencia demostrada tras Holm. La única celda cruda es
+    papers32.depth, p=0.002 → Holm 0.097.
+  - Calibración peor que la de Jev (P.b confirmada).
+- **Sensibilidad al orden de las opciones** (Rot1): ajustado 45, acierto en `choice` −7.3 pp
+  (IC95 −11.8 a −3.0).
+- **Reproducibilidad:**
+  - misma sesión: 259/260 decisiones iguales (R.a inconclusa);
+  - entre hosts: 249/260 (X.a refutada);
+  - las probabilidades varían en ambos casos.
+- **Ruta del adaptador TypeSafe**, con `--reasoning-parser gemma4`:
+  - discrete: ajustado **51**, 0 errores, mediana 516 ms; papers32.depth mejor que Jev tras Holm;
+  - probabilities: parada por la regla de errores (7 respuestas que la librería no valida).
+- **Revisor no evaluable:** el esquema del revisor de triaje/adv (11 preguntas, formato `indexed` del
+  interposer) se rechaza con 422 en las 160 revisiones de esas fases, porque las etiquetas de `hostile`
+  no comparten un único hueco.
+- **Alerta de una pasada:** 19/30 TP, 0/30 FP; no cumple (adv4 4/10). Clef-27B detecta más
+  (8–1, p=0.039).
+- **Hallazgo en el banco:** papers32 P02 y P03 son el mismo paper con GT distinto en `practice` (JEV-73).
+- Marcador: P y S1 en `docs/resultados_runs.txt`. Ficha en `docs/modelos.md`, fila en AGENTS.md y
+  resultados en el manifiesto, en `alerta_manipulacion.md` y en `cascada_jev.md`.
+- `dgemma_gate`: atribución conjunta de casos con estado idéntico (Devin C7, revisada por Codex en R8).
+  Cifras reproducidas de forma independiente (OpenCode/GLM) y conclusiones revisadas por Codex.
+
+## [0.33.0] - 2026-10-06 — JEV-70 F0: DiffusionGemma-26B-A4B, herramientas y congelado
+
+- **F0 de JEV-70 completada en .80 y .81** (build vLLM `1b3b88ec` idéntica, NVFP4
+  `ec4ff3df`, CANVAS 64, MAXLEN 16 384): canario **sigue los criterios** (C+b 5/5,
+  C+c 5/5) en ambos hosts; smoke correcto; **puerta de montaje §6.4 aprobada** en
+  canarios (15/15) y smokes P, X y Rot1 (6/6, tres familias). Manifiesto congelado:
+  `docs/infra_runs/dgemma_26b_a4b_nvfp4.md` (+ evidencias en su carpeta).
+- **Revisiones 3–5 del pre-registro** (comentarios de la issue): dos Spark (.81
+  P/S1/R; .80 réplica X, rotación Rot1 y ruta TypeSafe); condicional revisor/alerta
+  si P ≥ 33. Ruta TypeSafe: **L no ejecutable** (el motor de difusión rechaza
+  `temperature`/`seed`) y **L′ no ejecutable** (salida `thought\n{…}` del canal de
+  pensamiento de Gemma); se pre-registra L″ con `--reasoning-parser gemma4` en sesión
+  aparte. Entorno: `ninja` en el PATH, caché de vLLM propia en .80 (la de
+  `~/.cache/vllm` es de root) y `VLLM_LOGGING_LEVEL=DEBUG` (único nivel que registra
+  el prompt en esta build).
+- **Harness:** `systemone_http` con `extra`, `timeout`, `capture_raw`,
+  `rotate_choice` y cuerpo del error HTTP en `diag`; nuevos `jevbench.dgemma_preflight`
+  (§6.2–6.3), `dgemma_canary` (§6.5 y calentamiento), `dgemma_gate` (puerta §6.4
+  sobre el log DEBUG, atribución por caso), `dgemma_f1` (runner caso a caso con
+  reglas de parada, sesión, lock, tope persistente y pasada única de reintento) y
+  `dgemma_report` (§8.2 + celdas nuevas, McNemar-Holm); `scripts/serve_dgemma.sh`.
+  `rotation.rotate_choice` aplica el residuo por pregunta (idéntico con `shift=1`).
+- **Orquestación multiagente:** implementación Devin, revisión independiente Codex
+  (R1–R6, todos los hallazgos aceptados y corregidos), consolidación Claude.
+
 ## [0.32.0] - 2026-10-04 — JEV-67: Qwen3.8-27B local con preguntas visibles
 
 - **Batería con visibilidad verificada (JEV-67):** Qwen3.8-27B local, thinking

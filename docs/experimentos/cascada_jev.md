@@ -308,3 +308,68 @@ recomendación general no cambia por coste: Jev → Jev audit sigue siendo el ci
 Decider-4B → Jev la opción barata y Clef-27B la 100 % local; Decider-4B → sol es la
 opción de máximo agregado cuando la 2ª pasada puede ser API de pago. Como alerta de
 una pasada sol no cumple (ver `alerta_manipulacion.md`).
+
+## Revisor local: DiffusionGemma-26B-A4B (JEV-70, 6-oct, GT v3) — no evaluable
+
+Condicional pre-registrado en JEV-70 (ajustado de P = 53 ≥ 33):
+`python3 -m jevbench.cascade --d1 decider_4b --adapter systemone_http --opt <opts de P> --prefix
+decider_4b_dgemmarev --control ""`, en las 11 fases y en la misma sesión de .81.
+
+**No evaluable para el criterio JEV-32.** El interposer de lecturas estructuradas
+(`structured_server.py` @ vLLM `1b3b88ec`) rechaza con HTTP 422 las 160 revisiones de triaje y adv:
+- el esquema del revisor tiene 11 preguntas (5 originales + 5 `__ok` + `manipulation`);
+- con más de 10, el servidor usa el formato `indexed`, y la etiqueta de `hostile` no ocupa un único hueco
+  («labels do not share one template slot»).
+
+Solo se revisaron papers32 (32/32) y ood (3/3), que no forman parte del criterio. Los runs
+`decider_4b_dgemmarev_*` se conservan como evidencia; no entran en el marcador. No se probaron
+variantes (p. ej. `chunk_rows`), porque no estaban pre-registradas.
+
+## DiffusionGemma como D1 con revisor Jev (JEV-70 ampliación, 6-oct, GT v3) — pre-registro
+
+Anotado antes de ejecutar, a petición del usuario. Jev comprobado con `jevbench.check_versions` el 6-oct:
+`jev-1.13-20260917`, la misma versión de todo el banco.
+
+- **Cascada principal:** D1 = `dgemma_26b_a4b_nvfp4_s1` (la configuración recomendada por JEV-70).
+  `python3 -m jevbench.cascade --d1 dgemma_26b_a4b_nvfp4_s1 --prefix dgemma_26b_a4b_nvfp4_s1_jevrev --control ""`
+  (revisor Jev por OpenRouter, como `decider_4b_jevrev_*`, en las 11 fases).
+- **Secundaria:** D1 = `dgemma_26b_a4b_nvfp4` (P), con prefijo `dgemma_26b_a4b_nvfp4_jevrev`.
+- **Lecturas fijadas:**
+  - Ajustado de `_audit` y `_review` frente a su D1.
+  - McNemar exacto `_audit` vs D1 en las 53 celdas fase × pregunta, con Holm. Se habla de
+    «mejora» solo con celdas significativas tras Holm; si no las hay, el cambio de ajustado es
+    descriptivo.
+  - Comparación descriptiva y McNemar-Holm frente a `decider_4b_jevrev_audit` (64) y
+    `jev_cascade_audit`, las cascadas con revisor Jev de referencia.
+  - Alerta `manipulation ≥ 0.5` del revisor, sobre `_raw` en adv3–5: TP/FP con el criterio de
+    `alerta_manipulacion.md` (≥ 7/10 por set, ≤ 1 FP).
+  - Coste medido de la 2.ª pasada (suma de `cost`) y latencia del revisor.
+- No se ajusta ninguna regla de fusión: `audit` y `review` son las de siempre.
+
+### Resultados
+
+195 casos revisados en cada cascada, 0 errores (9 fases de la llamada por defecto + adv4/adv5 en una segunda
+llamada, mismas opciones).
+
+| Run | D1 | `audit` | `review` | `avg` |
+|---|---|---|---|---|
+| `dgemma_26b_a4b_nvfp4_s1_jevrev_*` (principal) | 53.0 | **64.1** | 63.0 | 56.6 |
+| `dgemma_26b_a4b_nvfp4_jevrev_*` (secundaria) | 52.6 | 62.0 | 63.0 | 54.5 |
+| Referencias: `decider_4b_jevrev_audit` · `jev_cascade_audit` | 33 · 45 | 64.0 · 63.6 | | |
+
+- **McNemar-Holm** (53 celdas): `audit` frente a su D1, a `decider_4b_jevrev_audit` y a `jev_cascade_audit`
+  **no tiene ninguna celda con p < 0.05**, en ninguna de las dos cascadas. Según la regla fijada, la subida
+  de +11 (S1 → Jev) es **descriptiva**: no hay mejora demostrada por pregunta. El agregado queda cerca de
+  Decider-4B → Jev y de Jev → Jev; no detectar diferencia tras Holm no demuestra que sean equivalentes.
+- **Alerta del revisor** (`_raw`, `manipulation ≥ 0.5`, criterio ≥ 7/10 y ≤ 1 FP por set):
+  - principal: adv3 9/10 · 0 FP, adv4 7/10 · 0, adv5 9/10 · 1 → 25/30 · 1/30, **cumple**;
+  - secundaria: 25/30 · 0/30, **cumple**.
+
+  Es el mismo nivel que la alerta del revisor Jev de referencia (25/30). Con el contexto de auditoría de
+  la cascada, Jev recupera la sensibilidad en adv4 que la alerta de una pasada de DiffusionGemma no tenía (4/10).
+- **Coste medido de la 2.ª pasada:** $0.00985 por cascada (195 casos, ~$0.00005/caso). Mediana del revisor:
+  605 ms por caso en la principal y 601 ms en la secundaria.
+- **Lectura:** DiffusionGemma (S1, local, 122 ms) → Jev da un agregado de 64, cercano al de las dos
+  referencias fijadas (Decider-4B → Jev 64, Jev → Jev 63.6). Sin ninguna celda significativa no se puede afirmar
+  ventaja ni equivalencia. No es la mayor cascada con revisor Jev: gpt-6-luna → Jev llega a ~71, y luna (61) y
+  sol (65) son D1 más fuertes. No cambia la recomendación vigente.

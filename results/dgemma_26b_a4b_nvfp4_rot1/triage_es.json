@@ -1,0 +1,725 @@
+{
+ "meta": {
+  "adapter": "systemone_http",
+  "opts": {
+   "path": "/v1/systemone",
+   "model": "dgemma",
+   "timeout": "120",
+   "capture_raw": "true",
+   "extra": "{\"seed\":42,\"samples\":\"auto\",\"auto_threshold\":0.1,\"auto_max\":4,\"steps\":1,\"think\":0,\"format\":\"lines\"}",
+   "rotate_choice": "1"
+  },
+  "model": "dgemma",
+  "rotate_choice": 1,
+  "perm_sha256": "15f6174736a0",
+  "phase": "triage_es",
+  "questions_hash": "9a81e9763d94",
+  "host": "x86-dev",
+  "arch": "x86_64",
+  "python": "3.14.4",
+  "git": "1d7464b",
+  "updated": "2026-10-06T09:59:41"
+ },
+ "cases": {
+  "T01_ebus_alergia": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "consulta_externa": 2.6250673812740446e-07,
+      "urgencias": 2.243948832036829e-06,
+      "admin": 1.2401962622231406e-07,
+      "bronchoscopia": 0.9999973695248036
+     },
+     "confidence": 0.9999973695248036
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.999818990600306,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 8.08827811754637e-05,
+      "1": 1.9243837342988748e-05,
+      "2": 0.9998998733814816
+     },
+     "confidence": 0.9998998733814816
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9999995048476511
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 3.356758099853587e-07
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.9999955620087673
+    }
+   },
+   "ms": 125,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 334,
+    "output_tokens": 29
+   },
+   "raw_sha256": "76e973825c1f30ca5963133f077a5d4f303e055a0db957a6439b9315ed74c123"
+  },
+  "T02_factura_duplicada": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "probabilities": {
+      "consulta_externa": 0.0003071083623635239,
+      "urgencias": 0.00018455348907553529,
+      "admin": 0.9992805858482879,
+      "bronchoscopia": 0.00022775230027294657
+     },
+     "confidence": 0.9992805858482879
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.9736514898834631,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.026416820854892033,
+      "1": 0.9735148684067529,
+      "2": 6.831073835506199e-05
+     },
+     "confidence": 0.9735148684067529
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.00013695070143277373
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 2.027930853595108e-06
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.7085827663989763
+    }
+   },
+   "ms": 328,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 316,
+    "output_tokens": 29
+   },
+   "raw_sha256": "f8b5bfe209a52f833982b7173a5daeb6dce38d2b5bce616f7836879ba0caa8f0"
+  },
+  "T03_disnea_progresiva": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "urgencias",
+     "probabilities": {
+      "consulta_externa": 0.15905097454277692,
+      "urgencias": 0.840295144357431,
+      "admin": 0.00020913860802404047,
+      "bronchoscopia": 0.00044474249176810923
+     },
+     "confidence": 0.840295144357431
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.9854676123102617,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.00129174568940518,
+      "1": 0.011948896310928055,
+      "2": 0.9867593579996669
+     },
+     "confidence": 0.9867593579996669
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9999517743255992
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 1.1771769229361909e-06
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.9765261919560895
+    }
+   },
+   "ms": 315,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 327,
+    "output_tokens": 29
+   },
+   "raw_sha256": "d54b10ba68a28bd965769586fcd203e14bfcf20f83b1d4aaca46fb10788087df"
+  },
+  "T04_cita_vaga": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "probabilities": {
+      "consulta_externa": 0.9969400789022759,
+      "urgencias": 0.0025219068589532752,
+      "admin": 0.00019410127713044838,
+      "bronchoscopia": 0.00034391296164042586
+     },
+     "confidence": 0.9969400789022759
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.5193219063049185,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.48068755180777445,
+      "1": 0.5193029900795326,
+      "2": 9.45811269290903e-06
+     },
+     "confidence": 0.5193029900795326
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9959202715594367
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 1.680125416583139e-05
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.11480689686970558
+    }
+   },
+   "ms": 324,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 302,
+    "output_tokens": 29
+   },
+   "raw_sha256": "2262d6a5efae4fdcbca84d4b853f010eb15d9c5f97eb3113b65fe0d89f4d0df3"
+  },
+  "T05_ansia_biopsia": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "probabilities": {
+      "consulta_externa": 0.8544082279416472,
+      "urgencias": 0.011592508731160267,
+      "admin": 0.00011427651935738655,
+      "bronchoscopia": 0.13388498680783512
+     },
+     "confidence": 0.8544082279416472
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.2131822522458189,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0004670352687313826,
+      "1": 0.7858836772167184,
+      "2": 0.21364928751455028
+     },
+     "confidence": 0.7858836772167184
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9954904608255201
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.00014668633161435215
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.999994312436366
+    }
+   },
+   "ms": 336,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 313,
+    "output_tokens": 29
+   },
+   "raw_sha256": "b2e87c600961492ffa4875fe920d1ef9d4e7d07adb76708905a4444224c95673"
+  },
+  "T06_preparacion_fbro": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "consulta_externa": 8.961771742066453e-05,
+      "urgencias": 0.0003983440678836515,
+      "admin": 3.873359822440425e-06,
+      "bronchoscopia": 0.9995081648548731
+     },
+     "confidence": 0.9995081648548731
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.9898168617635731,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.010468537740269335,
+      "1": 0.9892460627558881,
+      "2": 0.00028539950384247207
+     },
+     "confidence": 0.9892460627558881
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9999722259806775
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 1.2310535131957461e-06
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.042189805681977076
+    }
+   },
+   "ms": 314,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 319,
+    "output_tokens": 29
+   },
+   "raw_sha256": "749b0e4d9fdb0a1f51e9734107066b5a9616c2e0da3d6262aaf290534858ff86"
+  },
+  "T07_hemoptisis": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "urgencias",
+     "probabilities": {
+      "consulta_externa": 0.003966925781897544,
+      "urgencias": 0.9959839818011651,
+      "admin": 8.345761704414172e-06,
+      "bronchoscopia": 4.074665523287358e-05
+     },
+     "confidence": 0.9959839818011651
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.999902681932401,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 4.6286473336371275e-05,
+      "1": 4.745120926262798e-06,
+      "2": 0.9999489684057374
+     },
+     "confidence": 0.9999489684057374
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9999994429865805
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 1.2281691516306823e-07
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.999989320796239
+    }
+   },
+   "ms": 132,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 320,
+    "output_tokens": 29
+   },
+   "raw_sha256": "39076c3c90fa2f1440c29ba18082e2ac7de37c5a9736b02b3ec3957d89f4a89d"
+  },
+  "T08_copia_espirometria": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "probabilities": {
+      "consulta_externa": 0.002007702644425434,
+      "urgencias": 0.0005275983595379115,
+      "admin": 0.9968043632431679,
+      "bronchoscopia": 0.0006603357528687262
+     },
+     "confidence": 0.9968043632431679
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.33424741377760925,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.6657838858335552,
+      "1": 0.33418481455528015,
+      "2": 3.129961116455202e-05
+     },
+     "confidence": 0.6657838858335552
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.01388192134098119
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 1.6497334274347705e-05
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.5855287453023941
+    }
+   },
+   "ms": 311,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 304,
+    "output_tokens": 29
+   },
+   "raw_sha256": "08c84b7bad2aeff1625a1252cd84d0e0c22fa38eef2b5d6e3dc781b828c691d9"
+  },
+  "T09_reprogramar_tabaco": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "probabilities": {
+      "consulta_externa": 0.9966391553032176,
+      "urgencias": 0.0023343344373559435,
+      "admin": 0.00028682502521655003,
+      "bronchoscopia": 0.0007396852342099871
+     },
+     "confidence": 0.9966391553032176
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.880743910815974,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.11926834267418797,
+      "1": 0.8807194038356501,
+      "2": 1.2253490161980121e-05
+     },
+     "confidence": 0.8807194038356501
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.36490472574849275
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 6.224689275102129e-05
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.19571406884931491
+    }
+   },
+   "ms": 327,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 305,
+    "output_tokens": 29
+   },
+   "raw_sha256": "21341bcebe42b32cbffa6d25dbe47212130c0452cbfff63d3905f548123796f8"
+  },
+  "T10_queja_espera": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "consulta_externa",
+     "probabilities": {
+      "consulta_externa": 0.8771024834214388,
+      "urgencias": 0.010640888329315028,
+      "admin": 0.10888405529324535,
+      "bronchoscopia": 0.003372572956000844
+     },
+     "confidence": 0.8771024834214388
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0067271765760266,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.002394130855510115,
+      "1": 0.9884845617129532,
+      "2": 0.009121307431536687
+     },
+     "confidence": 0.9884845617129532
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0005555806958708676
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.6199057833341867
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.38190239841853707
+    }
+   },
+   "ms": 325,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 309,
+    "output_tokens": 29
+   },
+   "raw_sha256": "aeddda755559aa9bf459657aa82f053a94f7bee4699325e82831037f8a162939"
+  },
+  "T11_deriva_ebus_hospital": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "consulta_externa": 0.003148129697048329,
+      "urgencias": 0.0014247836215292133,
+      "admin": 7.3024377502194405e-06,
+      "bronchoscopia": 0.9954197842436723
+     },
+     "confidence": 0.9954197842436723
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0439805442894146,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.0009208799579572442,
+      "1": 0.9541776957946709,
+      "2": 0.04490142424737185
+     },
+     "confidence": 0.9541776957946709
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.9999117807099286
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 3.0774361503516805e-06
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.06350260339211682
+    }
+   },
+   "ms": 333,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 320,
+    "output_tokens": 29
+   },
+   "raw_sha256": "34a79188f3ad4a11c26b7f0e226fad28c3100851d6ac3362eeb01081142fab03"
+  },
+  "T12_autorizacion_seguro": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "consulta_externa": 0.0020510148000131997,
+      "urgencias": 0.0030917137431432087,
+      "admin": 0.032658231657270415,
+      "bronchoscopia": 0.9621990397995732
+     },
+     "confidence": 0.9621990397995732
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0172087719170815,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.001479826170950098,
+      "1": 0.9798315757410182,
+      "2": 0.01868859808803167
+     },
+     "confidence": 0.9798315757410182
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.8840032218801682
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 5.0054220578710664e-05
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.07581166426236417
+    }
+   },
+   "ms": 320,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 311,
+    "output_tokens": 29
+   },
+   "raw_sha256": "c7351a2794b6a271a0a7b16f1e9a981685a2a51eaf885406f63c117e5bf92614"
+  },
+  "T13_insultos_amenaza": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "probabilities": {
+      "consulta_externa": 0.00211562093440993,
+      "urgencias": 0.0008799165273825857,
+      "admin": 0.9959312282952579,
+      "bronchoscopia": 0.0010732342429495409
+     },
+     "confidence": 0.9959312282952579
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.293170530391083,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.04792426708380577,
+      "1": 0.6109809354413054,
+      "2": 0.34109479747488886
+     },
+     "confidence": 0.6109809354413054
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 6.976394977762355e-05
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 0.9999833135254452
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.44613724691370765
+    }
+   },
+   "ms": 318,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 316,
+    "output_tokens": 29
+   },
+   "raw_sha256": "fe22c460bcf9d9ece6d7f9e3e378219914913154fb6f410762235f06608100aa"
+  },
+  "T14_parking_trap": {
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "admin",
+     "probabilities": {
+      "consulta_externa": 0.00815970327363871,
+      "urgencias": 0.004113401284536739,
+      "admin": 0.9555414974021843,
+      "bronchoscopia": 0.03218539803964025
+     },
+     "confidence": 0.9555414974021843
+    },
+    "urgency": {
+     "type": "score",
+     "score": 0.08748144138705781,
+     "legend": {
+      "0": "bajo: routine, no deadline",
+      "1": "medio: should be handled soon",
+      "2": "critico: deadline, blocking, or safety issue"
+     },
+     "probabilities": {
+      "0": 0.9125836747744902,
+      "1": 0.08735120906396172,
+      "2": 6.51161615480446e-05
+     },
+     "confidence": 0.9125836747744902
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.004140250502524563
+    },
+    "hostile": {
+     "type": "noul",
+     "noul": 7.026967558885973e-06
+    },
+    "same_day": {
+     "type": "noul",
+     "noul": 0.2042304394877001
+    }
+   },
+   "ms": 333,
+   "cost": null,
+   "model": "dgemma",
+   "usage": {
+    "input_tokens": 314,
+    "output_tokens": 29
+   },
+   "raw_sha256": "15d8ec6d478b5d2cc7e126ab37e4618465eb5d1bfb00217fd317a44a9bf8148a"
+  }
+ }
+}

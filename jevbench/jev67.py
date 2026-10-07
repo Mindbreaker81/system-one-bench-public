@@ -51,7 +51,7 @@ from .score import adjusted, score_run
 
 # ---------------------------------------------------------------- constantes
 
-# Las 11 fases de la batería completa (195 casos), orden fijado en §7.1.
+# Las 11 fases de la batería completa (194 casos con GT v4, JEV-73), orden fijado en §7.1.
 PHASES_ALL = ["triage_es", "triage_en", "papers32", "adv1", "adv2", "ood",
               "triage_ext_es", "triage_ext_en", "adv3", "adv4", "adv5"]
 

@@ -3,7 +3,61 @@
 Todos implementan (o imitan) el contrato "System One": estado + preguntas tipadas
 (`choice` / `score` / `noul`) → distribuciones de probabilidad, sin generar texto.
 
+Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los recuentos de ejecución de 195 casos, costes y acuerdos sobre 969 decisiones o 259 etiquetas corresponden al histórico **GT v3**; no se vuelven a ejecutar los modelos. P02 se retiró y P03 conserva su GT. La línea base de mayoría es ajustado 0 y 51.3 % en papers.
+
 ---
+
+## DiffusionGemma-26B-A4B (Google, NVFP4 de NVIDIA)
+
+- **Modelo/código:** [nvidia/diffusiongemma-26B-A4B-it-NVFP4](https://huggingface.co/nvidia/diffusiongemma-26B-A4B-it-NVFP4)
+  @ `ec4ff3df`, Apache-2.0: modelo de **difusión de texto**, MoE 26B con 4B activos. Se sirve con
+  vLLM en el commit `1b3b88ec` (PR [vllm-project/vllm#57250](https://github.com/vllm-project/vllm/pull/57250)),
+  que añade las **lecturas estructuradas**: el interposer `structured_server.py` expone `POST /v1/systemone`.
+  Siembra el canvas con la plantilla de respuesta, deja como ruido solo el hueco de cada etiqueta,
+  hace un paso de eliminación de ruido y lee las probabilidades de las etiquetas en esos huecos.
+  Es un **prototipo**, no un endpoint estándar de vLLM.
+- **Ejecución (6-oct, JEV-70):** dos DGX Spark (GB10), build idéntica, NVFP4, canvas 64, ventana
+  16 384, adaptador `systemone_http`. Pre-registro con revisiones 3–5 y manifiesto
+  `docs/infra_runs/dgemma_26b_a4b_nvfp4.md`. **Puerta de montaje** (el modelo ve las preguntas,
+  comprobado en el log del motor, caso a caso): aprobada en P, S1, R, X y Rot1. Canario: **sigue los
+  criterios**.
+- **Run `dgemma_26b_a4b_nvfp4`** (`samples="auto"`): 195 casos, 0 errores. Ajustado **53**
+  (jev_v3 45, decider_4b 33, clef_27b 52). Fases:
+  - triaje ES/EN 91.4/94.3; papers 79.7 (ρ 0.84); ext ES/EN 91.5/91.9;
+  - adv3/4/5 86.5/86.0/83.0; ood 100.
+
+  Brier noul 0.095 (peor calibrado que Jev, 0.071) y mediana **318 ms**. Frente a Jev, solo
+  `papers32.depth` es significativo en crudo (b=1, c=13, p=0.002), pero no tras Holm
+  (0.097): **sin diferencia demostrada**.
+- **Run `dgemma_26b_a4b_nvfp4_s1`** (una lectura): ajustado 53, Brier 0.101, mediana **122 ms**. Coincide
+  con P en el 97.3 % de las decisiones. La regla pre-registrada **recomienda S1**: mismo nivel y
+  2.6× más rápido.
+- **Sensibilidad al orden de las opciones** (`_rot1`, `choice` rotadas una posición): ajustado 45.
+  Cambian 33/259 etiquetas `choice` y el acierto en `choice` baja **7.3 pp** (IC95 −11.8 a −3.0),
+  como Qwen3.8 en JEV-67. Hay que leerlo contra el ruido entre hosts: 249/260 decisiones iguales en
+  la réplica de .80. La repetición en el mismo host da 259/260.
+- **Ruta del adaptador TypeSafe** (`llm`, JSON generado por difusión, con
+  `--reasoning-parser gemma4`):
+  - **discrete:** ajustado **51**, 0 errores, mediana 516 ms; `papers32.depth` mejor que Jev tras
+    Holm (b=1, c=20).
+  - **probabilities:** no evaluable; se paró por la regla de errores (7 respuestas que la librería
+    no valida).
+  - Sin el parser, la salida lleva delante el canal de pensamiento (`thought\n`). El motor de
+    difusión no admite `temperature` ni `seed`.
+- **Revisor y alerta** (condicional P ≥ 33):
+  - **Revisor no evaluable:** el esquema del revisor de triaje/adv tiene 11 preguntas, así que el
+    interposer usa el formato `indexed`. Ahí las etiquetas de `hostile` no comparten un único hueco y
+    el servidor responde 422 en las 160 revisiones de triaje/adv. Papers32 (10 preguntas) y ood sí se revisaron.
+  - **Alerta de una pasada:** 19/30 TP y 0/30 FP; no cumple el criterio (adv4 4/10). Clef-27B
+    detecta más (McNemar 8–1, p cruda =0.039).
+- **Como D1 con revisor Jev** (`dgemma_26b_a4b_nvfp4_s1_jevrev_*`, pre-registrado en `cascada_jev.md`):
+  `audit` 64 / `review` 63, frente a 53 de la D1, con ninguna celda significativa tras Holm frente a la D1,
+  a Decider-4B → Jev o a Jev → Jev (subida descriptiva). Alerta del revisor 25/30 TP · 1/30 FP: cumple.
+  La 2.ª pasada cuesta ~$0.00005 por caso y su mediana es de 605 ms.
+- **Límites:** `cost=null` (sin tarifa API; no se mide electricidad). Las latencias son de cliente,
+  con túnel SSH y log del motor en DEBUG. Hay no determinismo entre hosts (máx |Δp| 0.76) y,
+  en menor grado, dentro de la misma sesión. P02/P03 duplicaban el mismo paper con GT distinto en GT v3;
+  JEV-73 retiró P02 del GT v4.
 
 ## CLM-v0.1-8B (Contrastive-LM)
 
@@ -17,10 +71,12 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   vLLM `--runner pooling --enforce-eager --max-model-len 2048`, CLM en CPU
   (`--action-cache 0`); adaptador `systemone_http`, alias `clm-latest`.
 - **Run `clm_v0.1_8b`:** 195 casos, 11 fases, 0 errores. Ajustado **−35**
-  (mayoría 0), triaje ES/EN 67.9/58.6, papers 50.6, ext ES/EN 67.3/66.5,
+  (mayoría 0), triaje ES/EN 67.9/58.6, papers 50.3, ext ES/EN 67.3/66.5,
   adv3/4/5 59.0/54.5/59.5, Brier noul 0.238 y mediana cliente **80 ms**.
-  Varias derrotas significativas frente a Jev en fases válidas; ninguna victoria
-  significativa frente a Jev o Decider-4B. No se recomienda en este banco.
+  Varias derrotas con p cruda <0.05 frente a Jev en fases válidas (tras Holm
+  sobre las 53 celdas solo sigue `department` de triaje_ext_es, p=0.03);
+  ninguna victoria significativa frente a Jev o Decider-4B. No se recomienda
+  en este banco.
 - **Límites de registro:** el adaptador guarda el host del cliente y el endpoint,
   pero no el hardware remoto ni revisiones; los datos anteriores corresponden al
   preflight. `cost=null`: no hay tarifa API, pero el coste eléctrico no se mide.
@@ -44,20 +100,21 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   SSH; adaptador `systemone_http`. Manifiesto:
   `docs/infra_runs/strands_2b_hobson_v19_xpu.md`.
 - **Run `strands_2b_hobson_v19_xpu`:** 195 casos, 11 fases, 1 error: P11 excede la
-  ventana 4096 y `--strict-window` devuelve HTTP 422 (papers32 queda 31/32, por
+  ventana 4096 y `--strict-window` devuelve HTTP 422 (papers32 queda 30/31 con GT v4, por
   eso el ajustado lleva `*` y no cuenta esa fase). Ajustado **21\*** (mayoría 0):
-  triaje ES/EN 83.6/83.6, papers 59.4 (ρ relevancia 0.79), ext ES/EN 78.5/82.3,
+  triaje ES/EN 83.6/83.6, papers 59.7 (ρ relevancia 0.78), ext ES/EN 78.5/82.3,
   adv3/4/5 75.5/78.5/76.0, Brier noul 0.134, mediana cliente **~0,13 s**. Por
   encima de la mayoría en todas las fases salvo adv1 (65.0 frente a 83.0) y adv2
   (empate, 75.0); en dept de adv1+2 saca 9/20, muy bajo la trivial 17/20 — elige
-  departamentos clínicos donde lo trivial es `admin`. Derrotas significativas:
-  `same_day` de triaje_ext_es frente a Jev (0–9, p<0.01) y `relevance` de papers
-  frente a Decider-4B (0–10, p<0.01). Ninguna victoria significativa.
+  departamentos clínicos donde lo trivial es `admin`. Derrotas con p cruda <0.01:
+  `same_day` de triaje_ext_es frente a Jev (0–9) y `relevance` de papers
+  frente a Decider-4B (0–9) — ninguna significativa tras Holm (53 celdas:
+  0.21 y 0.21). Ninguna victoria significativa.
 - **Variante `strands_2b_hobson_v19_xpu_trunc` (mismo día):** batería completa sin
   `--strict-window`, es decir, con el truncado silencioso por defecto del
   servidor. 195/195, 0 errores, ajustado **21** sin `*`: los 194 casos dentro de
   ventana responden idéntico (McNemar p=1.00); P11 truncado acierta `domain` y
-  `design` y falla `depth`/`practice`/`relevance`, dejando papers en 59.1.
+  `design` y falla `depth`/`practice`/`relevance`, dejando papers en 59.4 con GT v4.
 - **Entrenamiento (inventario):** corpus v5 propio + multi-step (ContractNLI,
   MuSiQue, BoardgameQA) + preguntas generadas + adecuación de respuestas
   (HelpSteer2); sin solapamiento conocido con los casos del banco. Su «JevBench
@@ -111,9 +168,9 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
     sobreconfiado de fábrica, `noul` sensible a la redacción de la etiqueta.
   - Única vía útil: fine-tuning en dominio si hace falta on-premise.
 - **Re-test en GPU con el harness (27-sep, `laya` 0.3.20, GB10, ~30 ms/caso):** `laya_router`
-  reproduce el rerun v2 de Lyra (triaje ES 62.1 / EN 73.6, papers 48.8, ρ 0.22, adv 5/20;
-  casos nuevos: triaje ext 55.0/71.5, adv3 7/20). La variante `typed-decisions` (su fine-tune
-  de 0.766 en su set) no ayuda aquí: 67.1/75.0, papers 45.6, adv 3/20, adv3 8/20. Las dos
+  reproduce las respuestas del rerun v2 de Lyra; re-puntuado con GT v4 da triaje ES 62.1 / EN 73.6, papers 48.1, ρ 0.18, adv 5/20;
+  casos nuevos: triaje ext 55.0/71.5, adv3 7/20. La variante `typed-decisions` (su fine-tune
+  de 0.766 en su set) no ayuda aquí: 67.1/75.0, papers 45.5, adv 3/20, adv3 8/20. El rerun original sobre 32 papers daba 48.8; las cifras anteriores están re-puntuadas con GT v4. Las dos
   quedan en o por debajo de la línea base de mayoría en triaje ES y en adversarial.
 
 ## Decider
@@ -154,7 +211,7 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   - bf16 con `decider.infer`: hay que pasar `--opt use_graphs=false`, porque los CUDA graphs rompen el MoE. ~680 ms/caso.
   - NVFP4 **solo con vLLM 0.29 + ModelOpt** (`scripts/serve_decider_nvfp4.sh`, adaptador
     `systemone_http`). Carga con kernels CUTLASS FP4 en sm_121. **Rinde igual que bf16**
-    (sin diferencias pareadas significativas; triaje 85.0/81.4, papers 70.3, ρ 0.87, adv3 12/20)
+    (sin diferencias pareadas significativas; triaje 85.0/81.4, papers 70.6, ρ 0.88, adv3 12/20)
     y va 3.5× más rápido (190 ms/caso), con ~20 GB.
 - **Intento anterior (26-sep, Lyra):** `decider-2b` en CPU ARM bf16 sin soporte bf16
   nativo: fallback de mkldnn a BLAS, sin `causal_conv1d` ni `flash-linear-attention`
@@ -227,23 +284,25 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   $0.10/$0.50 por Mtok. 195 casos por modo, 0 errores. Coste total $0.038 (`_prob`) y $0.025
   (`_disc`); mediana 3.1 s y 1.9 s por caso.
 - **Resultado (luna):** en una pasada queda al nivel de la cascada de Jev (ver `docs/resultados.md`).
-  Frente a `jev_v3`, solo `depth` de papers es significativo (p < 0.01, a favor del LLM); frente a
-  `jev_cascade_audit`, solo `urgency` de adv4 (p = 0.01, a favor de la cascada). ~5.5× más caro y
+  Frente a `jev_v3`, solo `depth` de papers destaca en crudo (p < 0.01, a favor del LLM;
+  Holm 0.097 — no significativa tras Holm de las 53 celdas); frente a
+  `jev_cascade_audit`, solo `urgency` de adv4 (p = 0.01, a favor de la cascada;
+  Holm 0.62). ~5.5× más caro y
   ~5× más lento que Jev.
 - **Probado (1-oct):** `gpt-6.1-sol` (OpenAI resuelve el alias sin fecha: `gpt-6.1-sol`)
   con `--opt reasoning_effort=low` (va como `reasoning={"effort":"low"}` en la API
   Responses). $2.00/$10.00 por Mtok — 20× luna; la página de precios de OpenAI no fue
   legible y el dato coincide en OpenRouter y fichas de terceros (pendiente confirmar en
   la consola). 195 casos, 0 errores, coste total medido **$0.56** (~$0.0029/caso) y
-  mediana 3.4 s/caso. Ajustado 65: la mejor una pasada medida, a la par de
+  mediana 3.4 s/caso. Ajustado 65; Cerebras probabilities sin esquema llega a 66 con GT v4 (ventaja descriptiva, sin superioridad demostrada), a la par de
   `jev_cascade_audit` (64) y por encima de luna (61); ver `docs/resultados.md`.
 - **Alcance completo de sol (4-oct, JEV-60):** el modo `discrete` da ajustado 63
   (`llm_gpt61sol_low_disc`, $0.38, 2.2 s/caso) — ~2 puntos bajo `probabilities`, como luna.
   Como **revisor de Decider-4B** (`decider_4b_solrev_*`) cumple el criterio JEV-32 y es el
   primer revisor que supera en ajustado al revisor Jev sobre ese D1: audit **66** / review
   **68** frente a 64 (136 % de la ganancia en adv3+adv5, 105 % en triaje, alerta adv5
-  9/10 TP · 0 FP); significativo solo en `relevance` de papers frente al revisor Jev
-  (p = 0.04). Pasada-2: $1.05 (~$0.0054/caso, ~100× Jev). Como D1 con revisor Jev
+  9/10 TP · 0 FP); solo destaca en crudo `relevance` de papers frente al revisor Jev
+  (p = 0.04; no significativa tras Holm de las 53 celdas). Pasada-2: $1.05 (~$0.0054/caso, ~100× Jev). Como D1 con revisor Jev
   (`llm_gpt61sol_jevrev_*`): ajustado 66, bajo `llm_gpt6luna_jevrev_audit` (71). Como
   **alerta de una pasada** (`llm_gpt61sol_low_alert_raw`): 22/30 TP · 0/30 FP — no cumple
   (adv4 5/10). Detalle: `docs/experimentos/cascada_jev.md` y
@@ -260,11 +319,11 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   195 casos, 0 errores, coste medido **$0.12 (~$0.00062/caso, ~3× luna y ~18× Jev)**,
   latencia API ~0.5 s/caso (los `ms` y `usage.latency` del run incluyen la espera
   del pacing). Resultado: ajustado **34**, sobre la mayoría y muy por encima del
-  Qwen3.8-27B local NVFP4 (−16) — comparación descriptiva, no ablación de
+  Qwen3.8-27B local NVFP4 (−15 con GT v4) — comparación descriptiva, no ablación de
   cuantización — pero por debajo de Jev (45), Clef-27B (52), luna (61) y sol (65).
   Sin victorias ni derrotas significativas por pregunta frente a Jev ni frente a
   luna en las fases comparativas; la brecha agregada viene de adv3 (77.5 frente a
-  87.5/88.0), triaje ext_es (87.7), ρ relevancia de papers (0.64 frente a ~0.87) y
+  87.5/88.0), triaje ext_es (87.7), ρ relevancia de papers (0.63 frente a ~0.87) y
   calibración (Brier noul 0.108 frente a ~0.05).
 - **Probado (3-oct, JEV-54): `qwen-3.8-27b` en la API de Cerebras** — mismo
   protocolo que el run anterior salvo modelo y tarifas ($0.99/$1.49 por Mtok).
@@ -275,10 +334,11 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   razona más que el de GPT-OSS (~700 vs ~230 tokens de salida por caso):
   **$0.44 medidos** (~$0.0022/caso). 195 casos, 0 errores. Resultado: ajustado
   **59** — por encima de Jev (45) y Clef-27B (52), solo por debajo de luna (61)
-  y sol (65). Gana a Jev en `same_day` de adv5 con significación (6–0, p = 0.03;
+  y sol (65). Gana a Jev en `same_day` de adv5 en crudo (6–0, p = 0.03;
+  no significativa tras Holm de las 53 celdas — Holm 1.0;
   `urgency` de adv5 5–0 queda en p = 0.06); sin derrotas significativas frente a
   Jev ni luna. Contrasta con el mismo tamaño servido local en NVFP4 (ajustado
-  −16): la comparación nube-local es descriptiva — difieren precisión, backend,
+  −15 con GT v4): la comparación nube-local es descriptiva — difieren precisión, backend,
   muestreo y razonamiento. **JEV-57 (4-oct), revisión:** FP8/SGLang
   tiene 5/10 elecciones uniformes con esquema y 0/10 sin él (9/10 dept);
   NVFP4 sin esquema acierta 9/10. Ollama tiene 8/10 uniformes con esquema
@@ -291,11 +351,11 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   `docs/infra_runs/llm_cerebras_qwen38_27b_low_prob.md` y
   `docs/infra_runs/llm_qwen38_27b_fp8_nostruct_prob.md`.
   **JEV-61 (revisión):** Cerebras probabilities con/sin esquema obtiene
-  **59/65** (Brier 0.060/0.056); discrete **58/58** (0.077/0.072).
+  **59/66** (Brier 0.060/0.056); discrete **58/58** (0.077/0.072).
   Las cuatro baterías completan 195 casos sin errores; cada variante sin
   esquema requirió un reintento por malformado. Mínimo McNemar entre
   probabilities=0.0625: no significación al 5 %, no equivalencia demostrada.
-  Jev→Cerebras audit: **68/69**, Brier 0.064/0.065 frente a Jev→Jev
+  Jev→Cerebras audit: **68/69**; review sin esquema **69** (antes 68 con GT v3), Brier 0.064/0.065 frente a Jev→Jev
   64 y 0.055; alerta 24/23 TP de 30, 0 FP. Coste pasada-2 $0.78/$0.73.
   No demuestra superioridad global. Manifiestos en `docs/infra_runs/`.
 - **Como revisor de la cascada (luna)** (`--adapter llm` en `jevbench.cascade`): sobre Decider-4B
@@ -309,10 +369,10 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   NVFP4 de 4 bits con LM head BF16, no backbone completo BF16) es el primer
   **resultado negativo** de un LLM grande: con thinking apagado + el muestreo de la ficha
   (temp 0.7, top_p 0.8, presence 1.5) queda apenas por encima de la línea base trivial
-  (triaje 73.6, ρ papers −0.17, adv total 58.5 — peor que responder siempre `admin` —,
+  (triaje 73.6, ρ papers no definida (relevancia constante en GT v4), adv total 58.5 — peor que responder siempre `admin` —,
   Brier 0.231, ~6.8 s/caso). Thinking `low` no lo arregla y encarece la latencia
   (18–45 s/caso). Run: `llm_qwen38_27b_prob`. **Revisión JEV-57/58:** NVFP4 sin esquema da
-  **52**, FP8 **49**, GGUF **48**, frente al histórico −16. También
+  **52**, FP8 **49**, GGUF **48**, frente al histórico −16 (GT v3; −15 al re-puntuar con GT v4). También
   cambian los límites respecto al histórico; no una ablación de una sola
   variable. El diagnóstico documentado no separa documento, prompt/esquema
   del adaptador y servidor; Flash-Next/vLLM es otro modelo. Las 11 fases
@@ -339,11 +399,12 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   solo en el JSON Schema, que SGLang/llama.cpp no inyectan en el prompt (los
   tokens de entrada lo confirman: 222 frente a 958 en Cerebras para el mismo
   caso). En esas celdas el modelo **responde a ciegas**: los ceros y —por la
-  misma ruta de la librería— el −16/−40 históricos son el síntoma, no una
+  misma ruta de la librería— el −16/−40 históricos (GT v3) son el síntoma, no una
   cualidad del modelo ni del prompt TypeSafe (los timeouts de `discrete` son
-  coherentes con ello, aunque discrete con inyección no se midió). La
+  coherentes con ello; discrete con inyección no se había medido
+  entonces — lo mide JEV-67, ver abajo). La
   no-inyección está verificada en las builds de SGLang y llama.cpp usadas;
-  OpenAI/Cerebras inyectan según los tokens; vLLM 0.29.0 y Ollama 0.32.14
+  Cerebras inyecta según los tokens medidos; OpenAI no fue sondeado; vLLM 0.29.0 y Ollama 0.32.14
   tampoco inyectan (sonda JEV-67).
   **Confirmado en JEV-66**: inyectando el esquema en
   el system prompt con la misma gramática, 0 nulos en los tres bloques y el
@@ -361,9 +422,11 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   GGUF **63** — la mejor ruta local medida, +13/+15 sobre `probabilities` en
   la misma precisión (ganancia concentrada en `same_day`/`urgency`; el modo
   cambia prompt y formato a la vez, así que no se puede atribuir al literal:
-  en Cerebras con thinking low el signo se invierte, 58 vs 59/65). La
+  en Cerebras con thinking low el signo se invierte, 58 vs 59/66). La
   gramática **no** cambia decisiones en FP8 con preguntas
-  visibles: 967/969 iguales frente a nostruct (Δ ajustado −0.2). Los
+  visibles: 967/969 iguales frente a nostruct (Δ ajustado −0.2), aunque
+  **sí mueve las probabilidades** (skip LOO en papers: 9/10 con gramática
+  frente a 4/10 sin ella; papers 77.1 vs 75.8). Los
   timeouts/`length` de discrete en JEV-65 eran del modelo a ciegas: con
   inyección, 0 fallos en papers en ambos backends. Rotación de opciones
   `choice`: 24/259 cambios, 3/24 conservan posición (sin exceso
@@ -373,15 +436,30 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   `vLLM 0.29.0` tampoco inyecta el esquema (sonda T+C, D-vllm: 16 nulos
   ciego / 0 inyectado); Ollama 0.32.14 tampoco (ver manifiesto).
   Ruta recomendada local: `structured=true` + `inject_schema_in_prompt=true`;
-  `discrete` es la mejor medida (63) pero solo se probó en NVFP4 y GGUF —
-  en FP8 no hay discrete+inject. Manifiesto:
+  `discrete` es la mejor medida (63); en JEV-67 solo se había probado en NVFP4 y GGUF
+  (FP8 + discrete + inject se midió después en JEV-71.1, D0 = 62,42; ver abajo). Manifiesto:
   `docs/infra_runs/qwen38_jev67.md`.
+  **JEV-68/71/72 (6–7 oct), sesión FP8 en .81 con GT v4 (194 casos):** todo pre-registrado, con puertas de visibilidad
+  por combinación, auditoría caso a caso (1 517/1 517) y 0 errores.
+  - **Ajustado:** sin thinking, por orden de `department`: d0 49.6 · d1 58.4 · d2 52.0 · d3 48.8. Con thinking: d0
+    **61.3** · d1 **64.9**. `discrete` (FP8) **62.4**.
+  - **Thinking:** +11.7 y +6.5, pero el umbral ≥ +5 en ambos órdenes queda **inconcluso** (IC 97.5 % que rozan 0).
+    La latencia pasa de ~6.8 a ~47 s por caso.
+  - **Orden de las opciones:** la estabilidad (rango d0–d3 = 9.6) queda inconclusa. La **primacía queda
+    confirmada**: con `bronchoscopia` primera, los casos trampa por palabra clave fallan +35 pp más que con ella
+    última (Holm p = 0.009).
+  - **Discrete en FP8:** +12.9, inconcluso para ≥ +10.
+  - **Frases anti-inyección con preguntas visibles:** **refutado** que mejoren ≥ 10 pp.
+  - **Desviaciones:** canario como observación (Enmienda 1) y tope de las celdas con thinking 150→210 min (Enmienda 2;
+    sin ella T1 se habría parado).
+  - Manifiesto: `docs/infra_runs/qwen38_jev68.md`.
   **Qwen3.8-Flash-Next** (`Mia-AiLab/Qwen3.8-Flash-Next-NVFP4`, revisión
   `925d7be6c14c6c9442ef83e8f05b5a3c39304f69`, vLLM, NVFP4, .81) da un resultado aún peor
-  con thinking activado — sin él fallaba el smoke —: score ajustado −40, triaje 65.7/55.0,
-  papers 38.1 (ρ −0.01), adv3 65.3, Brier 0.317 y mediana 49.7 s/caso. Jev y gpt-6-luna
-  lo superan con significación en múltiples preguntas de triaje, papers y adv3; el Flash no
-  supera significativamente a ninguno. De 195 casos quedan 4 timeouts tras el reintento
+  con thinking activado — sin él fallaba el smoke —: score ajustado −39, triaje 65.7/55.0,
+  papers 38.1 (ρ 0.03), adv3 65.3, Brier 0.317 y mediana 49.7 s/caso. Jev y gpt-6-luna
+  lo superan en múltiples preguntas de triaje, papers y adv3 —varias celdas
+  siguen significativas tras Holm (53 celdas)—; el Flash no supera a ninguno
+  tras Holm. De 195 casos quedan 4 timeouts tras el reintento
   (191 respuestas); la pasada más reintento tardó ~14.7 h. En este run histórico el timeout
   cubría cada petición y faltaban un límite total por caso y un tope de tokens; se corrigió
   después en la versión 0.13.0, sin alterar el resultado guardado.
@@ -422,7 +500,7 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
 - **Instalación** (local, CPU): `snapshot_download('SupersonicLabs/Julia-1',
   local_dir='models/Julia-1')` + `pip install -e models/Julia-1`, en `.venv-julia` con torch
   CPU. Adaptador: `julia`.
-- **Resultados (26-sep, CPU x86, 835 ms/caso):** triaje 36.4/37.1, papers 48.8 (ρ 0.22),
+- **Resultados (26-sep, re-puntuados con GT v4, CPU x86, 835 ms/caso):** triaje 36.4/37.1, papers 48.4 (ρ 0.20; histórico sobre 32 papers: 48.8, ρ 0.22),
   adversarial 3/20. Queda **por debajo de la línea base de mayoría** en todo, y su Brier en
   sí/no (0.485) indica respuestas muy confiadas y equivocadas.
 - **Diagnóstico:** es extremadamente sensible a la redacción. Sobre la factura duplicada:
@@ -452,7 +530,8 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   | `fastino/gliner2-privacy-filter-PII-multi` | 0.3B | PII/guardrail: posible capa de reglas |
 
   Dataset propio: `fastino/fast-decisions` (con él publican 60.2% vs "JevK5" 57.6%).
-- **Resultados (Decide 0.5B, zero-shot):** triaje 79.3/71.4, papers 45.6% (relevance=1 en
+- **Puntuación vigente:** `gliner_multi_decide_desc` obtiene ajustado −75 (GT v3: −74), frente a la línea base 0; papers 46.8 %.
+- **Resultados históricos (Decide 0.5B, zero-shot, GT original):** triaje 79.3/71.4, papers 45.6% (relevance=1 en
   los 32: varianza cero), adversarial 3/20. Falla toda la familia keyword-stuffing.
 - **Problemas del test anterior que hay que corregir:**
   - Urgencia y relevancia se pasaron como etiquetas `"0"/"1"/"2"`, sin la descripción de
@@ -494,13 +573,14 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   (dataset público `respanai/behavior-benchmark`). En su benchmark invertido
   (Span-01 como juez de 11 decisores), Jev 1.13 lidera en accuracy (0.932).
 - **Resultados en nuestra batería (29-sep; runs `span01_pro`, `span01_lite`,
-  `span01_lite_or`; 185 casos, 0 errores):** competitivo pero por debajo de Jev
-  en conjunto. Pro por OpenRouter: triaje 85.0/84.3, papers 71.9, adv3 72.0
-  (Jev: 88.6/90.0, 67.5, 87.5). Jev le gana con significación en `same_day` de
+  `span01_lite_or`; 195 casos ejecutados con GT v3, 194 puntuados con GT v4, 0 errores):** competitivo pero por debajo de Jev
+  en conjunto (ajustado pro 17, frente a Jev 45). Pro por OpenRouter: triaje 85.0/84.3, papers 71.0, adv3 72.0
+  (Jev: 88.6/90.0, 67.1, 87.5). Jev le gana en crudo en `same_day` de
   triaje ext ES (p≈0.00) y EN (p=0.02) y en `urgency` de adv3 (p=0.02); a
-  `span01_lite` nativo además en `department` de adv3 y triaje ext ES (p<0.05).
-  Span-01 supera a Jev con significación en `depth` de papers32 (17/32 vs 6/32,
-  p=0.01; cascada LOO 21/32 vs 18/32). Lite≈pro por OpenRouter; lite nativo
+  `span01_lite` nativo además en `department` de adv3 y triaje ext ES (p<0.05)
+  — ninguna de esas celdas sobrevive a Holm (53 celdas).
+  Span-01 supera a Jev en crudo en `depth` de papers32 (16/31 vs 6/31,
+  p=0.01, tampoco significativa tras Holm; cascada LOO 20/31 vs 18/31). Lite≈pro por OpenRouter; lite nativo
   algo peor. Coste medido pro: **$0.003 los 195 casos** ($0.000016/caso, ~2×
   más barato que Jev y ~12× más que gpt-6-luna) y ~0.6 s/caso; lite gratis.
   El "+18 % sobre Jev" del vendedor es de su benchmark de trazas, no se
@@ -546,10 +626,10 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
 - **Resultados (30-sep; run `nimble_9b`; 195 casos, 0 errores):** en el
   conjunto queda entre Decider-4B y Jev: ajustado 44 (jev_v3 45, decider_4b
   33). Triaje 92.9/88.6 (a la par de Jev), papers 70.3 pero ρ relevancia solo
-  0.48, adv3 85.5, adv4 79.0, adv5 81.5, ood 100 %. Brier noul 0.084.
+  0.49, adv3 85.5, adv4 79.0, adv5 81.5, ood 100 %. Brier noul 0.084.
   Sin diferencias significativas frente a `jev_v3`, `decider_4b` ni
   `llm_gpt6luna_prob` salvo `urgency` de adv4, donde **supera** a gpt-6-luna
-  (b=9, c=0, p<0.01). Es el open-weight puro más fuerte medido hasta ahora sin
+  (b=9, c=0, p cruda <0.01; no significativa tras Holm de las 53 celdas). Es el open-weight puro más fuerte medido hasta ahora sin
   revisor. No genera texto: ejecuta un forward por campo, cinco por caso de triaje.
 ## Tev1 (Together AI)
 
@@ -582,19 +662,20 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   torch 2.14.1+cu130). Mismo adaptador y mismos parámetros en ambos.
 - **Resultados (30-sep; runs `tev1_4b`, `tev1_0.8b`; 195 casos, 0 errores):**
   - **4B:** ajustado 27 — por debajo de Nimble-9B (44), Jev (45) y Decider-4B
-    (33). Triaje 87.1/87.1, papers 64.4 (ρ 0.83), adv3 75.0, adv4 77.5,
+    (33). Triaje 87.1/87.1, papers 63.9 (ρ 0.83), adv3 75.0, adv4 77.5,
     adv5 72.5, ood 100 %, Brier noul 0.115. McNemar: sin diferencias
     significativas frente a jev_v3, decider_4b ni nimble_9b; gpt-6-luna le
-    gana en `depth` de papers32 (16–2, p<0.01). Mediana ~0.45 s/estado
+    gana en `depth` de papers32 en crudo (16–2, p<0.01; Holm 0.07 — no
+    significativa tras Holm). Mediana ~0.45 s/estado
     (≈90 ms por pregunta, una por generación).
   - **0.8B (negativo):** ajustado **−7**, por debajo de la mayoría trivial.
-    Triaje 67.9/72.1, papers 64.7 (ρ 0.70), adv3 64.0, adv4 68.5, adv5 67.0,
+    Triaje 67.9/72.1, papers 64.2 (ρ 0.71), adv3 64.0, adv4 68.5, adv5 67.0,
     adv1+2 dept 9/20 (peor que responder siempre `admin`: 17/20), Brier 0.171
     y mucha masa en la frontera 0.45–0.55 (12 binarios en adv3). McNemar:
-    el 4B le gana en `same_day` de adv4 (10–1, p=0.01); los incumbentes le
-    ganan con significación en varias preguntas (p. ej. `department` de
+    el 4B le gana en `same_day` de adv4 en crudo (10–1, p=0.01); los incumbentes
+    le ganan en crudo en varias preguntas (p. ej. `department` de
     adv3/ext_es frente a jev_v3, 0–6, p=0.03; `clinical` de triaje ES frente
-    a Jev y gpt-6-luna, p≤0.03). Mediana ~0.14 s/estado. El escalado de
+    a Jev y gpt-6-luna, p≤0.03) — ninguna significativa tras Holm (53 celdas). Mediana ~0.14 s/estado. El escalado de
     4B→0.8B rompe el contrato de decisión: no baja gradualmente, cae bajo
     la línea base.
 
@@ -630,8 +711,8 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
 - **Resultados (3-oct; run `clef_27b`; 195 casos, 0 errores):** ajustado **52**,
   por encima de Jev (45), Nimble-9B (44) y Decider-4B (33), solo por debajo de
   gpt-6.1-sol (65), gpt-6-luna (61) y varias cascadas. Triaje 89.3/90.7, ext
-  93.5/93.8, papers 75.6 (ρ relevancia 0.88; `depth` 15/32 vs 6/32 de Jev,
-  McNemar p=0.02), adv3 88.5, adv4 83.5, adv5 81.0, ood 100 %, Brier noul 0.064.
+  93.5/93.8, papers 75.5 (ρ relevancia 0.88; `depth` 15/31 vs 6/31 de Jev,
+  McNemar p cruda =0.02; no significativa tras Holm de las 53 celdas), adv3 88.5, adv4 83.5, adv5 81.0, ood 100 %, Brier noul 0.064.
   adv1/adv2 se describen, pero no se usan como evidencia comparativa. **Sin ninguna derrota
   significativa** frente a jev_v3 (peor caso adv5 `department` 12/20 vs 15/20,
   p=0.25). Punto débil: `department` de adv1+adv2 (9/20, bajo la mayoría
@@ -662,13 +743,15 @@ Todos implementan (o imitan) el contrato "System One": estado + preguntas tipada
   `docs/infra_runs/clef_flash_9b_xpu.md`.
 - **Resultados (3-oct; run `clef_flash_9b_xpu`; 195 casos, 0 errores):**
   ajustado **41** — por debajo de Clef-27B (52) y de Jev (45), por encima de
-  Decider-4B (33). Triaje 87.9/86.4, ext 90.8/92.7, papers 71.6 (ρ 0.90, la
+  Decider-4B (33). Triaje 87.9/86.4, ext 90.8/92.7, papers 71.9 (ρ 0.90, la
   tercera mejor relevancia de una pasada, tras gpt-6.1-sol y D35-A3B),
   adv3/4/5 81.5/82.0/80.0, ood 100 %, Brier noul
-  0.087. Frente al 27B solo una pérdida significativa: `urgency` en adv2
-  (6/10 vs 9/10, p=0.03); `urgency` de adv1 queda al borde (5/0, p=0.06).
-  Frente a Jev, victoria significativa en `depth` de papers (13/32 vs 6/32,
-  8–1 pareado, p=0.04; también 9–0 frente a Decider-4B). Punto débil:
+  0.087. Frente al 27B solo una pérdida con p cruda <0.05: `urgency` en adv2
+  (6/10 vs 9/10, p=0.03); `urgency` de adv1 queda al borde (5/0, p=0.06) —
+  ninguna significativa tras Holm.
+  Frente a Jev, victoria en crudo en `depth` de papers (13/31 vs 6/31,
+  8–1 pareado, p=0.04; también 9–0 frente a Decider-4B, p cruda =0.004) —
+  ninguna significativa tras Holm de las 53 celdas. Punto débil:
   `department` de adv1+adv2 (9/20, bajo la mayoría 17/20) y el total de esos
   sets queda bajo la línea trivial (74.5 frente a 79.0). Mediana
   ~0.14 s/caso en XPU (vs ~0.87 s del 27B en GB10 — hardware distinto, no es

@@ -41,6 +41,13 @@ https://github.com/typesafe-ai/system-one-adapter-python
                                      prompt and schema (same transform as
                                      jevbench.rotation.rotate_choice); labels, criteria
                                      and GT stay intact — only the order changes
+  choice_order=<qid>:<orden>         JEV-68/72: like rotate_choice but restricted to ONE
+                                     named choice question, with an explicit order —
+                                     either a frozen named order (d0..d3, see
+                                     jevbench.rotation.NAMED_ORDERS) or a
+                                     comma-separated label list; mutually exclusive
+                                     with rotate_choice. Prompt and schema see the
+                                     same order; labels, criteria and GT are intact
   capture_raw=<bool>                 store the raw provider attempts (request payload and
                                      unnormalized response) in each case's `raw` field;
                                      note the request body (incl. extra_body) is stored
@@ -61,6 +68,9 @@ from ..env import load_env
 from ..redact import redact_value
 from ..rotation import rotate_choice as _rotate_choice
 from ..rotation import rotation_manifest as _rotation_manifest
+from ..rotation import (order_manifest as _order_manifest,
+                        reorder_choice as _reorder_choice,
+                        resolve_choice_order as _resolve_choice_order)
 
 # $/Mtok (input, output); public list prices, override with --opt usd_in=… usd_out=…
 # gpt-6.1-sol (1-oct-2026): la página de precios de OpenAI no fue legible; el dato
@@ -244,6 +254,7 @@ def _openai_provider(model, base_url, extra_body, api_key=None, timeout=None, ma
             super().__init__(model, base_url=base_url, api_key=api_key)
             self._clock = time.monotonic
             self._case_deadline = None
+            self._ext_deadline = None
             self._last_request = None
             self.case_attempts = 0
             self.case_last_error = None
@@ -257,16 +268,32 @@ def _openai_provider(model, base_url, extra_body, api_key=None, timeout=None, ma
             self.case_attempts = 0
             self.case_last_error = None
 
+        def arm_external_deadline(self, budget_s):
+            """Tope operativo externo (presupuesto restante de sesión/celda que
+            arma el supervisor), en el reloj del proveedor. No es configuración:
+            no viaja en meta() ni en las opciones congeladas — la petición se
+            para al llegar al deadline en vez de reescribir timeout/case_timeout
+            (R17 §4)."""
+            self._ext_deadline = (self._clock() + budget_s
+                                  if budget_s is not None else None)
+
         def _request_timeout(self):
-            """min(timeout, remaining case budget); fails before opening a request
-            when the case budget is already spent."""
+            """min(timeout, remaining case budget, external deadline); fails
+            before opening a request when any budget is already spent."""
             remaining = None
             if self._case_deadline is not None:
                 remaining = self._case_deadline - self._clock()
                 if remaining <= 0:
                     raise TypeSafeError(
                         f"case_timeout agotado tras {self.case_attempts} peticion(es)")
-            limits = [t for t in (timeout, remaining) if t is not None]
+            ext = None
+            if self._ext_deadline is not None:
+                ext = self._ext_deadline - self._clock()
+                if ext <= 0:
+                    raise TypeSafeError(
+                        "tope externo de presupuesto agotado antes de abrir "
+                        "la petición")
+            limits = [t for t in (timeout, remaining, ext) if t is not None]
             return min(limits) if limits else None
 
         def _chat_limit_kwarg(self):
@@ -349,7 +376,7 @@ class LLM(Adapter):
                  api_key=None, usd_in=None, usd_out=None, timeout=None, case_timeout=None,
                  min_interval=None, max_tokens=None, reasoning_effort=None,
                  prompt="typesafe", capture_raw=False, inject_schema_in_prompt=False,
-                 rotate_choice=0, **opts):
+                 rotate_choice=0, choice_order=None, **opts):
         super().__init__(**opts)
         load_env()
         import system_one_adapter
@@ -364,6 +391,12 @@ class LLM(Adapter):
                 "inject_schema_in_prompt solo tiene sentido con structured=true: "
                 "en structured=false la librería ya añade el esquema al prompt")
         self.rotate_choice = int(rotate_choice or 0)
+        self.choice_order = (_resolve_choice_order(choice_order)
+                             if choice_order else None)
+        if self.choice_order and self.rotate_choice:
+            raise ValueError(
+                "choice_order y rotate_choice son excluyentes: un orden "
+                "explícito por pregunta no se combina con la rotación global")
         self._perm_sha256 = None
         self.timeout = _positive(timeout, "timeout", float)
         self.case_timeout = _positive(case_timeout, "case_timeout", float)
@@ -417,7 +450,9 @@ class LLM(Adapter):
         when it cannot be reproduced locally (typesafe-family + nostruct:
         the schema appendix needs the library's schema builder); callers
         should still compare questions_hash, which pins the schema."""
-        if self.rotate_choice:
+        if self.choice_order:
+            questions = _reorder_choice(questions, self.choice_order)
+        elif self.rotate_choice:
             questions = _rotate_choice(questions, self.rotate_choice)
         if self.prompt_variant == "simple":
             p = simple_system_prompt(questions, self.mode)
@@ -463,11 +498,18 @@ class LLM(Adapter):
                 "system_prompt_sha256": self._system_prompt_sha256,
                 "inject_schema_in_prompt": self.inject_schema_in_prompt,
                 "rotate_choice": self.rotate_choice, "perm_sha256": self._perm_sha256,
+                "choice_order": self.choice_order,
                 "prompt_template_sha256": _prompt_template_sha256(self.prompt_variant),
                 "usd_per_mtok": [self.usd_in, self.usd_out], **self.versions}
 
     def decide(self, state, questions):
-        if self.rotate_choice:
+        if self.choice_order:
+            # JEV-68/72: reorder only the named questions' criteria keys (same
+            # order in prompt and schema; literal->etiqueta original intacto).
+            questions = _reorder_choice(questions, self.choice_order)
+            self._perm_sha256 = _order_manifest(
+                questions, self.choice_order)["perm_sha256"]
+        elif self.rotate_choice:
             # JEV-67: rotate the choice criteria keys before the library builds
             # prompt and schema, so both see exactly the rotated order.
             questions = _rotate_choice(questions, self.rotate_choice)

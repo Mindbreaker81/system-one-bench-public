@@ -109,6 +109,16 @@ def _load(name):
         versioned = DATA / name.replace(".json", f".{version}.json")
         if versioned.exists():
             return json.loads(versioned.read_text())
+        if name == "papers32.json" and version in ("v1", "v2"):
+            # GT v4 (JEV-73): v1/v2 también necesitan los 32 estados originales.
+            # No crear/modificar fuentes .v1/.v2: hasta v3 eran idénticas.
+            original = DATA / "papers32.v3.json"
+            if not original.exists():
+                # El espejo exporta solo ficheros seguidos por git; esta copia
+                # legacy permite las regresiones antes de integrar el archivo v3.
+                original = DATA.parent / "legacy" / "lyra_laya_vs_jev" / name
+            if original.exists():
+                return json.loads(original.read_text())
     return json.loads((DATA / name).read_text())
 
 
