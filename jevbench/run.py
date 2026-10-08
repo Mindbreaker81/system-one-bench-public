@@ -13,7 +13,7 @@ import sys
 import time
 import traceback
 
-from . import adapters, store
+from . import adapters, cost_guard, store
 from .battery import EXTRA_PHASES, PHASES, load_phase, missing_abstracts, questions_hash
 from .redact import redact_options
 
@@ -55,6 +55,9 @@ def main():
                     help="JEV-82 guard: stop before the next case when a recorded case cost exceeds this")
     ap.add_argument("--max-cost", type=float,
                     help="JEV-82 guard: stop before the next case when the run's recorded accumulated cost exceeds this")
+    ap.add_argument("--stamp-config", action="store_true",
+                    help="JEV-84 opt-in (bloque S): huella config_sha256 por caso "
+                         "+ preflight de configuración antes de llamadas/meta")
     args = ap.parse_args()
 
     phases = PHASES if args.phases == "all" else (PHASES + EXTRA_PHASES if args.phases == "all+new" else args.phases.split(","))
@@ -97,15 +100,33 @@ def main():
                 ledger = max(ledger, prev)
         prior_cost = max(recorded, ledger)
     session_cost, session_unknown, stop = 0.0, 0, None
+    stamp = args.stamp_config
 
     for phase in phases:
         qs, cases = load_phase(phase)
         doc = store.load(args.run, phase) or {"meta": {}, "cases": {}}
-        doc["meta"].update({
-            "adapter": args.adapter, "opts": safe_opts(opts), **model.meta(), "phase": phase,
-            "questions_hash": questions_hash(qs), "host": platform.node(), "arch": platform.machine(),
+        prev = dict(doc.get("meta") or {})
+        base_meta = {
+            "adapter": args.adapter, "opts": safe_opts(opts), **model.meta(),
+            "phase": phase, "questions_hash": questions_hash(qs),
+            "host": platform.node(), "arch": platform.machine(),
             "python": sys.version.split()[0], "git": git_rev(),
-            "updated": dt.datetime.now().isoformat(timespec="seconds")})
+            "updated": dt.datetime.now().isoformat(timespec="seconds")}
+        # preflight de configuración ANTES de tocar meta / abrir llamadas (S)
+        if stamp:
+            probe = {**model.meta(), "adapter": args.adapter,
+                     "questions_hash": questions_hash(qs)}
+            bad_ph, mm = cost_guard.run_config_mismatches(
+                store, args.run, probe)
+            if not mm and prev:
+                mm = cost_guard.config_mismatches(prev, base_meta)
+                bad_ph = phase if mm else None
+            if mm:
+                detail = "; ".join(f"{k}: {a!r}→{b!r}" for k, a, b in mm)
+                raise SystemExit(
+                    f"{args.run}/{bad_ph}: configuración efectiva distinta "
+                    f"({detail}) — 0 llamadas; meta intacta")
+        doc["meta"].update(base_meta)
         todo = [c for c in cases if c.id not in doc["cases"]
                 or (args.retry_errors and "error" in doc["cases"][c.id])]
         done = len(cases) - len(todo)
@@ -161,8 +182,11 @@ def main():
                 if isinstance(err_cost, (int, float)) and not isinstance(err_cost, bool):
                     rec["cost"] = err_cost
                 print(f"{phase} {c.id}: ERROR {rec['error'][:120]}", flush=True)
-            doc["cases"][c.id] = rec
             doc["meta"].update(model.meta())
+            if stamp:
+                cost_guard.stamp_case_config(
+                    rec, {**doc["meta"], **model.meta()})
+            doc["cases"][c.id] = rec
             case_cost = rec.get("cost")
             if isinstance(case_cost, (int, float)):
                 session_cost += case_cost

@@ -13,6 +13,95 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [1.5.1] - 2026-10-08 — JEV-84: Haiku 5.5 como revisor / alerta / réplica H-adapt (pre-registro congelado y resultados)
+
+- **JEV-85 (8-oct; revisión Codex R79 CORREGIR aplicada):** OpenMed
+  `Ministral-3B-Medical-v1` (~4 B bf16, Mistral3, checkpoint «research» sin
+  licencia documentada) por el adaptador `llm` contra vLLM
+  `0.29.1rc1.dev551+g1b3b88ec2` en .80 — resultado **negativo descriptivo de
+  cobertura incompleta**. `llm_ministral3b_med_prob` (primario): 171/194
+  válidas, 23 errores persistentes — **incumplió el criterio de parada >20**
+  declarado de antemano (la vigilancia no estaba en el lanzador; desviación de
+  protocolo) — ajustado **−7\*** sobre 3/10 fases. `llm_ministral3b_med_disc`
+  (secundario descriptivo): 187/194, 7 errores, **45\*** sobre 4/10 fases; los
+  titulares no son comparables con la cobertura completa de Jev (45) ni
+  Decider-4B (33). Holm de 53 contrastes por modo: solo sobrevive la derrota de
+  `prob` en `department` de triage_ext_es (13–0, p_Holm 0,013); la mejora
+  nominal de `disc` en `depth` de papers32 es exploratoria (p_Holm 0,34). Brier
+  y latencia publicados son el resumen de 9 fases; **coste API no registrado**
+  (endpoint local sin tarifa; electricidad/hardware no medidos). Manifiesto con
+  §RESULTADOS corregido y evidencia remota archivada (SHA256SUMS de los pesos,
+  config/README del checkpoint, pip freeze con sha256, `git rev-parse` de vLLM
+  y extracto del arranque) en `docs/infra_runs/ministral3b_med_jev85*/`. Ficha
+  en `docs/modelos.md`, nota en `resultados.md`, runs en `resultados_runs.txt`,
+  web y sitio (etiquetas con asterisco + cobertura incompleta + desviación de
+  parada; sin tarjeta propia: frase en la tarjeta de descartados, fila en la
+  tabla de modelos, hito 8-oct y fila de metodología). Sin cambio en la
+  recomendación vigente.
+- **JEV-85 (8-oct; revisión Codex R80 CORREGIR aplicada):** correcciones de
+  presentación, sin cambios en datos/GT/scorer ni en las conclusiones. El
+  sitio público ya no muestra `$0` con un n ficticio para los dos runs
+  Ministral: `cost_per_1000`/`cost_n` se publican `null` (`cost_unknown` en
+  `jevbench/site.py`) y `coste.html` renderiza **«no registrado»** en celda y
+  tooltip. La latencia del sitio se alinea con la cifra documentada
+  (**4 780 / 1 913 ms**, mediana del resumen del scorer sobre las 9 fases
+  base+nuevas vía `ms_median`), con el universo declarado en `cost_scope` y
+  en el pie de `coste.html`. Trazabilidad HF acotada en el manifiesto y en
+  `docs/modelos.md`: la revisión `3a5363c…` y la igualdad del sha256 con el
+  LFS oid quedan **declaradas por el ejecutor**, no acreditadas por las
+  capturas archivadas. Celda del anexo Holm corregida (`triage_ext_en /
+  hostile`, disc: 0–0 → 1–0; `p`/`p_Holm` ya eran correctos). Test nuevo en
+  `tests/test_site.py` (`test_unregistered_cost_and_nine_phase_latency`).
+- **JEV-84 (resultados, 8-oct; revisión Codex R76 CORREGIR aplicada):** ejecución R1→R2→A→S
+  con los comandos pre-registrados (`run_{R1,R2,A,S}.sh`), 642 registros nuevos, 0 errores,
+  sin `cost_stop` ni drift; coste nuevo **$0,3339903** (R1 0,1292866 · R2 0,1258361 ·
+  A 0,0090470 · S 0,0698206; cupo restante al terminar 0,9660097). Huellas por adquisición
+  (R1 `f45c01d2…`, R2 `c9f2359e…`, A/S `4ee0c0b9…`); versiones observadas `claude-haiku-5-5`.
+  **Bloque R: NO CUMPLE en ambos D1** — fracciones JEV-32 y condición de pérdidas OK,
+  falla la alerta de adv4 (5/10 TP en los dos D1); el criterio original JEV-32 (A) sí lo
+  cumple Decider→Haiku evaluado con GT v4 (distinción histórica pre-especificada: no
+  sustituye a B ni habilita rol). **Holm R 212 = 0 significativas** (p mínima 0,207).
+  Ajustados audit: Decider→Haiku **66**, Jev→Haiku **74** = el mayor **entre configuraciones
+  audit completas** (anterior máximo audit 71, `llm_gpt6luna_jevrev_audit`; la corrección
+  de R76: la variante review 75,79→76 es secundario descriptivo del mismo raw, no
+  adquisición independiente — no afirmar «mayor del banco» sin el matiz). **Bloque A: NO
+  CUMPLE** (46/60 aciertos; 16/30 TP · 0/30 FP; McNemar–Holm de 2: Clef 56/60, p 0,0127;
+  revisor Jev 54/60, p 0,0215 — a favor de las referencias). **Bloque S: ESTABLE** —
+  acuerdo 919/964 = 95,33 % [CP 93,8–96,6, con dependencia intra-caso], Δ ajustado −1,80
+  [−4,97; +1,49], Brier noul 0,064→0,063. Tarjeta habilitada **solo por S**
+  («Haiku 5.5 — reproducibilidad descriptiva»), sin sello de revisor ni alerta; el circuito
+  recomendado no cambia. Integrado en el manifiesto §RESULTADOS, `cascada_jev.md`,
+  `alerta_manipulacion.md`, `modelos.md`, `resultados.md` (marcador:
+  `decider_4b_haiku55rev_audit` 66, `jev_haiku55rev_audit` 74, `llm_haiku55_adapt_prob_r2`
+  67), web y sitio (RUNS/PAIRS/REVIEWERS/REV/RUN_DATES, tarjeta, revisor, alerta, hito
+  8-oct, fila de metodología). Limitaciones: benchmark conocido (no holdout), preflight
+  manual del cupo sin log, IC CP con dependencia intra-caso.
+- **JEV-84 (T24…T24h, Codex R68–R75 APTO, aprobado 8-oct; sin batería aún):**
+  `docs/infra_runs/claude_haiku55_jev84.md` — revisor / alerta / réplica H-adapt.
+  Holm R = 212 (2×2×53), Holm A = 2; umbrales JEV-32 exactos del scorer; criterio
+  original (Decider, alerta adv5) vs ampliado JEV-84 (D1 Jev, alerta por set);
+  estados NO EVALUABLE; tarjeta con habilitación ≠ contenido; cupo global <$1,50.
+  Análisis: `scripts/jev84_analyze.py`. Extensión en
+  `docs/experimentos/alerta_manipulacion.md`.
+- **Harness / cost_guard (opt-in cascade + alert_onepass):** `case_cost` bloquea
+  reanudación hasta `--amend-case-cost-stop`; presupuesto `>=`; configuración
+  **canónica** (todos los campos + `d1`/`reviewer`/`prefix`; `None` comparable;
+  whitelist dinámica post-decide); `config_sha256` por caso; versión `resolved`
+  única del run; drift con evidencia+gasto; `--retry-errors` durable por caso.
+  Cupo monótono con desconocidos. `jevbench.run --stamp-config` (bloque S).
+- **Analizador:** `run_gate` único (criterio numérico = Holm R/A/S); cobertura →
+  NO EVALUABLE; raw completo + drift + procedencia; familia 212 intacta
+  (`p=None`); D1/intervención vs `R_PAIRS`; procedencia histórica solo vía
+  lista blanca congelada `HISTORICAL_REFERENCE_RUNS` (R74-P1-1; r2/A/R nuevos
+  sin huella → NO_EVALUABLE; sin bypass «faltan todas las huellas»).
+- **Manifiesto:** S = JEV-82 + `--stamp-config`; garantías `case_cost`/`>=`/retry
+  = R/A; alert comprueba adapter/questions_hash en este pre-registro (sin
+  afirmar histórico previo a HEAD); P2 R74 (garantía histórica incompleta,
+  prompts variables, límites runner) documentados; provisión R/S y comandos
+  exactos.
+- Tests: `tests/test_cascade_cost_guard.py`, `tests/test_alert_onepass_cost_guard.py`,
+  `tests/test_jev84_analyze.py`, `tests/test_run_cost_guard.py`.
+
 ## [1.5.0] - 2026-10-07 — JEV-77: resultados MedGemma/Gemma 3/Qwen en .80; JEV-82: rotación d1 de gpt-6-luna-decisions (pre-registro 28727d3); JEV-78/83: Decisions API nativa de OpenAI y Claude Haiku 5.5
 
 - **`check_versions`:** sondea también `openai/gpt-6-luna-decisions` (OpenRouter) con conjunto

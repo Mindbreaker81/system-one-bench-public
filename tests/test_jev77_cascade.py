@@ -470,10 +470,14 @@ class TestJEV77CascadeBudget(unittest.TestCase):
                     printer=lambda *a: None)
         self.assertEqual(rc, 2)
         raw = store.load("flip_raw", "adv1")
-        self.assertEqual(raw["meta"]["version_drift"],
-                         {"frozen": "jev-a", "observed": "jev-b",
-                          "case": raw["meta"]["version_drift"]["case"]})
-        self.assertEqual(len(raw["cases"]), 1)  # solo el primer caso
+        drift = raw["meta"]["version_drift"]
+        self.assertEqual(drift["frozen"], "jev-a")
+        self.assertEqual(drift["observed"], "jev-b")
+        self.assertIn("case", drift)
+        # R69 F3: evidencia/coste del intento divergente en meta
+        self.assertIn("cost", drift)
+        self.assertIn("answers", drift)
+        self.assertEqual(len(raw["cases"]), 1)  # R38: no entra en cases
         versions = {c.get("reviewer_version")
                     for c in raw["cases"].values()}
         self.assertEqual(versions, {"jev-a"})

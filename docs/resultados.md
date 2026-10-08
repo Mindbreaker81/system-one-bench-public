@@ -25,7 +25,8 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
     strands_2b_hobson_v19_xpu_trunc dgemma_26b_a4b_nvfp4 dgemma_26b_a4b_nvfp4_s1 dgemma_26b_a4b_nvfp4_s1_jevrev_review dgemma_26b_a4b_nvfp4_s1_jevrev_audit \
     llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc \
     llm_medgemma_27b_it_bf16_jev77_d0_disc llm_gemma3_27b_it_bf16_jev77_d0_disc medgemma_27b_jev77_jevrev_audit oai_luna_decisions llm_haiku55_off_prob \
-    llm_haiku55_off_disc llm_haiku55_adapt_prob
+    llm_haiku55_off_disc llm_haiku55_adapt_prob decider_4b_haiku55rev_audit jev_haiku55rev_audit llm_haiku55_adapt_prob_r2 \
+    llm_ministral3b_med_prob llm_ministral3b_med_disc
 ```
 <!-- /AUTO:comando -->
 
@@ -126,6 +127,11 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | llm_haiku55_off_prob | 62 | 93.6 | 95.0 | 26/28 | 73.9 | 0.87 | 5/10 | 17/20 | 88.0 | 91.5 / 91.2 | 16/20 | 87.5 | 0.061 | 1656 | 0/216 |
 | llm_haiku55_off_disc | 64 | 93.6 | 92.9 | 27/28 | 77.4 | 0.88 | 6/10 | 18/20 | 86.0 | 93.5 / 93.5 | 19/20 | 90.5 | 0.085 | 1285 | 0/216 |
 | llm_haiku55_adapt_prob | 69 | 93.6 | 94.3 | 26/28 | 75.5 | 0.79 | 7/10 | 18/20 | 90.5 | 91.9 / 92.7 | 18/20 | 93.0 | 0.059 | 2639 | 0/216 |
+| decider_4b_haiku55rev_audit | 66 | 87.9 | 91.4 | 26/28 | 73.5 | 0.81 | 5/10 | 19/20 | 89.0 | 91.9 / 95.0 | 19/20 | 94.5 | 0.080 | — | 0/216 |
+| jev_haiku55rev_audit | 74 | 92.9 | 94.3 | 26/28 | 77.4 | 0.87 | 5/10 | 19/20 | 92.0 | 94.6 / 93.5 | 20/20 | 96.0 | 0.060 | — | 0/216 |
+| llm_haiku55_adapt_prob_r2 | 67 | 94.3 | 95.0 | 26/28 | 74.8 | 0.82 | 5/10 | 18/20 | 89.5 | 91.2 / 90.8 | 17/20 | 90.0 | 0.059 | 2533 | 0/216 |
+| llm_ministral3b_med_prob | -7* | 76.4 | 83.3 | 12/28 | 71.8 | 0.64 | 7/8 | 7/19 | 63.1 | 76.2 / 80.8 | 11/20 | 71.0 | 0.138 | 4780 | 1/181 |
+| llm_ministral3b_med_disc | 45* | 76.2 | 80.0 | 16/28 | 78.3 | 0.88 | 9/10 | 6/18 | 63.3 | 83.8 / 84.6 | 9/19 | 67.4 | 0.160 | 1913 | 0/206 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.3 | — | 0/10 | 17/20 | 79.0 | 57.7 / 57.7 | 5/20 | 59.0 | — | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
@@ -166,12 +172,14 @@ Versiones de Jev comprobadas: `docs/versiones_jev.md` (sin cambios a 27-sep).
   manipulados, 1/30 FP** con revisor Jev — y **27/30 con Clef-27B en una sola pasada**, sin
   revisor (1/30 FP). No cambia el routing.
 - **Alternativa más barata con la misma calidad:** Decider-4B local → revisor Jev.
-- **Revisor de mayor ajustado medido (nuevo, 4-oct):** Decider-4B → revisor
-  **gpt-6.1-sol (low)** (`decider_4b_solrev_review` 68 / `_audit` 66, por encima del 64
-  del revisor Jev; la única celda con p cruda <0.05 es `relevance` de papers,
-  p = 0.04, no significativa tras Holm de las 53 celdas).
-  La pasada-2 cuesta ~$0.005/caso, ~100× la de Jev — solo si el revisor puede ser API de
-  pago y se quiere el máximo agregado.
+- **Revisor de mayor ajustado en regla `audit` sobre Decider-4B (4-oct; matiz 8-oct):**
+  Decider-4B → revisor **gpt-6.1-sol (low)** (`decider_4b_solrev_audit` 66 [65,82], por
+  encima del 64 del revisor Jev y del 65,64 del revisor Haiku 5.5; en regla `review` el
+  máximo sobre ese D1 es Haiku: 70,39 (70 redondeado) frente a 67,53 de sol; la única
+  celda con p cruda <0.05 es `relevance` de papers, p = 0.04, no significativa tras Holm
+  de las 53 celdas). La pasada-2 cuesta ~$0.005/caso, ~100× la de Jev — solo si el revisor
+  puede ser API de pago y se quiere el máximo audit (el revisor Haiku, que le supera en
+  review, no cumple el criterio ampliado por su alerta de adv4; JEV-84).
 - **Alternativa 100 % local (nuevo, 3-oct):** Decider-4B → revisor **Clef-27B**
   (`decider_4b_clefrev_audit`, ajustado 58) cumple el criterio JEV-32 que ningún local
   cumplía (~89 % de la ganancia de Jev en adv3+adv5, ~61 % en triaje, alerta 9/10 · 1 FP
@@ -280,6 +288,20 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   E11 (adv5) se perdió por un corte y se repitió (≥195 respuestas); el coste de H-adapt ($0,0704) es **cota
   inferior**. Costes: $0.0502/$0.0314/$0.0704. Pre-registro y resultados:
   `docs/infra_runs/claude_haiku55_jev83.md` §RESULTADOS. Ficha: `docs/modelos.md` §LLM generalista.
+- **claude-haiku-5-5 como revisor y alerta (8-oct, JEV-84):** con la misma config H-adapt
+  (thinking adaptive), Haiku **no cumple** el criterio ampliado de revisor en ningún D1 — la
+  alerta de adv4 se queda en 5/10 TP en ambos: Decider-4B→Haiku `audit` **66** (cumple los
+  umbrales del criterio original JEV-32 evaluados con GT v4) y Jev→Haiku `audit` **74**, el
+  mayor ajustado **entre configuraciones audit completas** (anterior máximo audit 71; la
+  fusión `review` de la misma adquisición llega a 76 como secundario descriptivo del mismo
+  raw) —, con Holm 212 = 0 significativas (sin superioridad ni equivalencia). Su **alerta de
+  una pasada tampoco cumple** (16/30 TP, 0/30 FP) y pierde frente a Clef-27B (56/60) y al
+  revisor Jev (54/60) tras Holm de 2 (p 0,013 / 0,021). La réplica H-adapt r2 es **estable**
+  (919/964 = 95,33 % acuerdos, Δ ajustado −1,80 [−4,97; +1,49], ajustado 67). Coste nuevo
+  del encargo $0,334; tarjeta web solo de reproducibilidad descriptiva, sin roles
+  confirmados. Detalle: `docs/experimentos/cascada_jev.md`,
+  `docs/experimentos/alerta_manipulacion.md` y `docs/infra_runs/claude_haiku55_jev84.md`
+  §RESULTADOS.
 - **gpt-6.1-sol (1-oct, `reasoning_effort=low`):** modelo de OpenAI ~20× más caro por token que
   luna, medido con el mismo protocolo. **Ajustado 65** (Cerebras probabilities sin esquema llega a 66 con GT v4, sin superioridad demostrada), por encima de
   luna (61) y a la par de la cascada `jev_cascade_audit` (64), aunque por debajo de la mejor
@@ -308,9 +330,9 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   entre Span-01 (8/30) y Clef-27B (27/30). Detalle: `docs/experimentos/cascada_jev.md` y
   `docs/experimentos/alerta_manipulacion.md`.
 - **Cascadas con LLM (29-sep):** `llm_gpt6luna_jevrev_audit` (LLM → revisor Jev) es la
-  mejor configuración medida (adv total 92.0, adv5 88.5, Brier 0.045, alerta 9/10 con 1 FP),
-  sin diferencia significativa con `jev_cascade_audit` — lo que no demuestra equivalencia — a
-  ~3× el coste y la latencia.
+  mejor configuración medida **con revisor Jev** (adv total 92.0, adv5 88.5, Brier 0.045,
+  alerta 9/10 con 1 FP), sin diferencia significativa con `jev_cascade_audit` — lo que no
+  demuestra equivalencia — a ~3× el coste y la latencia.
   `decider_4b_llmrev_audit` (revisor LLM) recupera el 77 % de la ganancia de Jev en adv3+adv5
   — el primer revisor no-Jev que supera el 50 % ahí — pero falla el criterio JEV-32 por triaje
   (28 %) y por la alerta (6/10). Detalle: `docs/experimentos/cascada_jev.md`.
@@ -486,6 +508,19 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   Runs `llm_medgemma_27b_it_bf16_jev77_d0_disc`, `llm_gemma3_27b_it_bf16_jev77_d0_disc`,
   `medgemma_27b_jev77_jevrev_audit`. Ficha: `docs/modelos.md` §MedGemma; detalle:
   `docs/infra_runs/medgemma_jev77.md` §RESULTADOS.
+- **OpenMed Ministral-3B-Medical-v1 (8-oct, JEV-85, cobertura incompleta):** «LLM médico
+  pequeño» (~4 B bf16, Mistral3) servido con vLLM en .80 vía adaptador `llm`,
+  `structured=false` con preguntas visibles. **Descriptivo, no válido como batería
+  completa:** el run primario `llm_ministral3b_med_prob` incumplió el criterio de parada
+  declarado (> 20 errores: 23 persistentes, casi todos JSON malformado) con **171/194**
+  respuestas válidas y ajustado **−7\*** sobre 3/10 fases; el secundario
+  `llm_ministral3b_med_disc` quedó en **187/194** (7 errores) y **45\*** sobre 4/10 fases —
+  titulares no comparables con la cobertura completa de Jev (45) ni Decider-4B (33). Tras
+  Holm (53 contrastes por modo) solo sobrevive la derrota de `prob` en `department` de
+  triage_ext_es; la mejora nominal de `disc` en `depth` de papers32 es exploratoria
+  (p_Holm 0,34). Coste API no registrado; licencia del checkpoint no documentada.
+  Ficha: `docs/modelos.md` §OpenMed Ministral-3B-Medical-v1; detalle:
+  `docs/infra_runs/ministral3b_med_jev85.md` §RESULTADOS.
 
 **Experimentos** (`docs/experimentos/`):
 - `cascada_jev.md`: revisor-auditor (Jev→Jev, Decider→Decider, Decider→Jev y revisores 100%

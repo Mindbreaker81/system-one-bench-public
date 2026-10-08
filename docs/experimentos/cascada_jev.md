@@ -195,7 +195,8 @@ triaje (media ES/EN) +1.8 (28 %) ✗; sin pérdidas > 2 puntos ✓; alerta adv5 
 adv3+adv5; le fallan las ganancias en triaje y la alerta de manipulación (se escapan E03,
 E06, E09, E10).
 
-**LLM + revisor Jev** es, en números absolutos, la mejor configuración medida: adv total 92.0,
+**LLM + revisor Jev** es, en números absolutos, la mejor configuración medida **con revisor
+Jev**: adv total 92.0,
 adv5 88.5, mejor Brier noul (0.045), alerta 9/10 con 1 FP. Frente al LLM sin revisor, solo `urgency` de
 adv4 mejora de forma significativa (McNemar p = 0.02); frente a `jev_cascade_audit`, ninguna
 diferencia significativa en ninguna fase. Coste por caso ≈ $0.00019 (D1) + $0.00005 (revisor)
@@ -300,13 +301,18 @@ revisor: mediana 5.7 s/caso de cliente (0.6 s el revisor Jev).
 **sol como D1 con revisor Jev:** `llm_gpt61sol_jevrev_audit`/`_review` dan ajustado
 **66** (adv3 91.5/92.5, adv5 85.5/86.5; alerta adv5 9/10 con 1 FP en E11). Por debajo
 de `llm_gpt6luna_jevrev_audit` (71), que sigue siendo la configuración con mayor
-ajustado medido; el D1 de sol no mejora al de luna cuando el revisor es Jev.
+ajustado medido **con revisor Jev** (el 8-oct, JEV-84, Jev→Haiku audit 74 pasó a ser el
+máximo entre configuraciones audit completas); el D1 de sol no mejora al de luna cuando
+el revisor es Jev.
 
-Conclusión: sol es el **mejor revisor medido sobre Decider-4B** (y el primero que
-supera al revisor Jev en ajustado), pero a ~100× el coste de la pasada-2 de Jev. La
-recomendación general no cambia por coste: Jev → Jev audit sigue siendo el circuito,
-Decider-4B → Jev la opción barata y Clef-27B la 100 % local; Decider-4B → sol es la
-opción de máximo agregado cuando la 2ª pasada puede ser API de pago. Como alerta de
+Conclusión: sol es el **mejor revisor medido sobre Decider-4B en regla `audit`** (65,82,
+por delante del 65,64 del revisor Haiku 5.5 y del 64 del revisor Jev; en regla `review`
+el máximo sobre ese D1 es ahora Haiku: 70,39 frente a 67,53 de sol — diferencias
+descriptivas, sin significación demostrada) y el primero que superó al revisor Jev en
+ajustado, pero a ~100× el coste de la pasada-2 de Jev. La recomendación general no
+cambia por coste: Jev → Jev audit sigue siendo el circuito, Decider-4B → Jev la opción
+barata y Clef-27B la 100 % local; Decider-4B → sol es la opción de máximo agregado
+**en audit** cuando la 2ª pasada puede ser API de pago. Como alerta de
 una pasada sol no cumple (ver `alerta_manipulacion.md`).
 
 ## Revisor local: DiffusionGemma-26B-A4B (JEV-70, 6-oct, GT v3) — no evaluable
@@ -373,3 +379,54 @@ llamada, mismas opciones).
   referencias fijadas (Decider-4B → Jev 64, Jev → Jev 63.6). Sin ninguna celda significativa no se puede afirmar
   ventaja ni equivalencia. No es la mayor cascada con revisor Jev: gpt-6-luna → Jev llega a ~71, y luna (61) y
   sol (65) son D1 más fuertes. No cambia la recomendación vigente.
+
+## Revisor API: Claude Haiku 5.5 (JEV-84, 8-oct, GT v4)
+
+Revisor = **`claude-haiku-5-5`** vía API Anthropic (adaptador `llm`, `mode=probabilities`,
+`structured=true`, `thinking=adaptive`, `effort=medium`: la configuración primaria
+pre-registrada). D1 = `decider_4b` y `jev_v3` (runs `decider_4b_haiku55rev_*` y
+`jev_haiku55rev_*`; 194/194 casos revisados cada uno, 0 errores, huella por registro).
+Pre-registro congelado en `docs/infra_runs/claude_haiku55_jev84.md`, con dos criterios
+fijados antes de medir: el **A) original JEV-32** (Decider: fracciones ≥ 50 %, sin fase
+−2 pts, alerta adv5) y el **B) ampliado JEV-84** (además, alerta por set en adv3–adv5 y
+el mismo esquema sobre D1 = Jev con referencia `jev_cascade_audit`).
+
+| run (regla `audit`) | triaje ES/EN | papers (ρ) | adv dept 1+2 | adv total | triaje ext ES/EN | adv3 dept | adv3 total | adv4 total | adv5 total | ajustado |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Decider-4B (D1) | 85.7/85.7 | 65.5 (0.78) | 14/20 | 71.5 | 90.8/90.0 | 12/20 | 77.0 | 83.0 | 75.0 | 33 |
+| → Jev | 90.7/93.6 | 71.9 (0.76) | 19/20 | 88.5 | 93.1/92.3 | 18/20 | 93.5 | 86.0 | 85.0 | 64 |
+| → **Haiku 5.5** | 87.9/91.4 | 73.5 (0.81) | 19/20 | 89.0 | 91.9/95.0 | 19/20 | 94.5 | 87.5 | 90.0 | **66** |
+| Jev (D1) | 88.6/90.0 | 67.1 (0.87) | 14/20 | 79.0 | 95.0/92.7 | 17/20 | 87.5 | 79.0 | 77.0 | 45 |
+| → Jev | 91.4/93.6 | 73.5 (0.87) | 18/20 | 88.5 | 94.6/93.5 | 18/20 | 92.0 | 85.0 | 85.0 | 64 |
+| → **Haiku 5.5** | 92.9/94.3 | 77.4 (0.87) | 19/20 | 92.0 | 94.6/93.5 | 20/20 | 96.0 | 92.5 | 88.0 | **74** |
+| *mayoría (oráculo)* | 66.4/66.4 | 51.3 (—) | 17/20 | 79.0 | 57.7/57.7 | 5/20 | 59.0 | 76.5 | 63.0 | 0 |
+
+**Criterio ampliado (B): NO CUMPLE en ambos D1** — la alerta del revisor falla en adv4 en
+los dos (5/10 TP; 0 FP sobre Decider y 1 FP sobre Jev; adv3 8/10 · 1 y 8/10 · 0, adv5
+8/10 · 0 y 7/10 · 0). Las fracciones JEV-32 y la condición de pérdidas sí se cumplen
+(Decider: 123 % en adv3+adv5 y 61 % en triaje, sin pérdidas; Jev: 156 % y 133 %, solo
+−0,38 en `triage_ext_es`). **Criterio original (A):** Decider-4B→Haiku satisface sus
+umbrales numéricos evaluados con GT v4 (su alerta exigida es solo adv5: 8/10 · 0), pero no
+es una réplica literal del plan JEV-32 (GT v3 en origen) ni un revisor 100 % local: Haiku
+usa API. A es una distinción histórica pre-especificada; no cambia el estado del bloque R.
+
+**Holm R (familia pre-registrada de 212 celdas = 2 D1 × 2 comparadores × 53): 0
+significativas** (p mínima ajustada 0,207): los agregados altos no prueban superioridad ni
+equivalencia. Es evaluación pre-especificada sobre un benchmark conocido, no un holdout nuevo.
+
+**Máximo del banco, con el matiz de la revisión R76:** `jev_haiku55rev_audit` (73,78 → 74)
+es el mayor ajustado medido **entre las configuraciones audit completas** del banco con
+GT v4; el anterior máximo audit era `llm_gpt6luna_jevrev_audit` (70,65 → 71). La fusión
+`review` de la misma adquisición alcanza **75,79 (76)** — respuestas de revisión del mismo
+raw, no una adquisición independiente, y no es la configuración primaria de la familia R:
+se reporta como secundario descriptivo, sin inferencia ni cambio de criterio. No afirmar
+«mayor del banco» sin el matiz audit/review. Decider→Haiku: audit 66 / review 70.
+
+Coste de las dos pasadas-2: **$0,2551** (0,1292866 + 0,1258361; 194 casos cada una,
+tarifas 0,10/0,50 $/MTok). Detalle completo (coste por bloque, huellas, alerta de una
+pasada y réplica H-adapt): `docs/infra_runs/claude_haiku55_jev84.md` §RESULTADOS.
+
+Conclusión: Haiku 5.5 **no se confirma como revisor** (criterio ampliado NO CUMPLE por
+adv4 en ambos D1, aunque supere las fracciones y sea el máximo audit del banco). Como
+alerta de una pasada tampoco cumple (ver `alerta_manipulacion.md`). La recomendación no
+cambia: Jev → Jev `audit` (y Decider-4B → Jev como opción barata).

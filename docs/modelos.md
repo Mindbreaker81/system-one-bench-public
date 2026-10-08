@@ -399,6 +399,34 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
     descriptiva en las 10 fases comunes: 61,7 / 64,1 / 69,3 frente a luna-prob 61,2, nativo 38,2 y Jev 45,4 —
     sin prueba de superioridad; el marcador redondea 61,74/64,13/69,29 a 62/64/69. Pre-registro y resultados:
     `docs/infra_runs/claude_haiku55_jev83.md` §RESULTADOS.
+- **JEV-84 (8-oct, resultados): `claude-haiku-5-5` como revisor, alerta de una pasada y réplica
+  H-adapt** (pre-registro congelado `637126c`; misma configuración que H-adapt:
+  `thinking=adaptive`, `effort=medium`, `mode=probabilities`, `structured=true`). Tres bloques,
+  642 registros nuevos, 0 errores, huella por registro (`config_sha256`), coste total
+  **$0,3339903** (R1 0,1292866 + R2 0,1258361 + A 0,0090470 + S 0,0698206):
+  - **Revisor (bloque R) NO CUMPLE el criterio ampliado en ambos D1** por la alerta de adv4
+    (5/10 TP). Fracciones JEV-32 y condición de pérdidas sí cumplidas: Decider-4B→Haiku
+    `audit` **66** (123 % / 61 %, sin pérdidas, adv5 8/10 · 0 FP — cumple los umbrales del
+    criterio original JEV-32 evaluados con GT v4, que solo exige adv5) y Jev→Haiku `audit`
+    **74** (156 % / 133 %, solo −0,38 en `triage_ext_es`, adv4 5/10 · 1 FP). Holm R (212
+    celdas) = **0 significativas** (p mínima 0,207). El 74 es el mayor ajustado medido
+    **entre configuraciones audit completas** (anterior máximo audit 71,
+    `llm_gpt6luna_jevrev_audit`); la fusión `review` de la misma adquisición llega a **76**
+    (75,79) como secundario descriptivo — respuestas del mismo raw, no adquisición
+    independiente ni configuración primaria; no afirmar «mayor del banco» sin el matiz.
+  - **Alerta de una pasada (bloque A) NO CUMPLE:** 16/30 TP y 0/30 FP (adv3/4/5: 6/4/6 de 10).
+    McNemar–Holm de 2 sobre los 60 IDs: pierde frente a Clef-27B (46 vs 56 aciertos,
+    p Holm 0,0127) y frente a la alerta del revisor Jev (46 vs 54, p Holm 0,0215; la de Jev
+    es su alerta de revisión de 2ª pasada, pre-registrado).
+  - **Réplica H-adapt r2 (bloque S, descriptivo) ESTABLE:** acuerdo 919/964 decisiones =
+    95,33 % (IC CP [93,8; 96,6] con dependencia intra-caso; 39 casos con discrepancias),
+    ajustado 67,49 frente a 69,29 de r1: Δ −1,80 [−4,97; +1,49], Brier noul 0,064→0,063.
+    Estabilidad descriptiva sobre un benchmark conocido: no determinismo ni equivalencia.
+  Tarjeta habilitada **solo por S** (reproducibilidad descriptiva, sin sello de revisor ni
+  alerta). Limitaciones: R y A sobre benchmark conocido (no holdout), IC CP con dependencia
+  intra-caso, preflight manual del cupo sin log. Pre-registro y resultados:
+  `docs/infra_runs/claude_haiku55_jev84.md` §RESULTADOS; detalle en
+  `docs/experimentos/cascada_jev.md` y `docs/experimentos/alerta_manipulacion.md`.
 - **Probado (1-oct):** `gpt-6.1-sol` (OpenAI resuelve el alias sin fecha: `gpt-6.1-sol`)
   con `--opt reasoning_effort=low` (va como `reasoning={"effort":"low"}` en la API
   Responses). $2.00/$10.00 por Mtok — 20× luna; la página de precios de OpenAI no fue
@@ -883,3 +911,43 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
   en cada set** (21/30 acumulado) — cumple el criterio justo en el límite;
   el 27B sacó 27/30 con 1 FP. McNemar pareado: p=0.18, sin diferencia
   significativa.
+
+## OpenMed Ministral-3B-Medical-v1
+
+- **HF:** [OpenMed/Ministral-3B-Medical-v1](https://huggingface.co/OpenMed/Ministral-3B-Medical-v1),
+  revisión fijada `3a5363c38b873702b97c386c6f24e047101fd541` (no gated;
+  revisión declarada por el ejecutor — las capturas archivadas no vinculan
+  el commit con los blobs, ver el manifiesto).
+  `Mistral3ForConditionalGeneration` (pixtral + ministral3), pipeline
+  `image-text-to-text`, ~4 B bf16, safetensors único de 7 698 241 104 B
+  (sha256 `1e0bcea1…88f2fcb`; igualdad con el LFS oid de HF declarada por el
+  ejecutor), `chat_template.jinja` propio.
+  **Licencia del checkpoint no documentada** en la ficha (no se hereda la del
+  SDK ni se supone la de la base); tampoco documenta entrenamiento ni
+  evaluación — «research checkpoint», EN-only declarado, sin reclamación
+  clínica. Se evalúa como punto de datos «LLM médico pequeño» vía el
+  `system-one-adapter`.
+- **Ejecución (8-oct, JEV-85):** adaptador `llm` contra vLLM
+  `0.29.1rc1.dev551+g1b3b88ec2` (editable, commit `1b3b88ec`) en el DGX Spark
+  GB10 de .80: `--dtype bfloat16 --limit-mm-per-prompt '{"image":0}'
+  --max-model-len 32768 --gpu-memory-utilization 0.45`, temp 0 / seed 101,
+  `structured=false` (vLLM no inyecta el esquema; preguntas visibles en el
+  prompt, verificado en el raw del smoke), `max_tokens=4096`,
+  `case_timeout=600`, una pasada + un `--retry-errors` por fase. Cliente por
+  túnel SSH. Manifiesto y evidencia: `docs/infra_runs/ministral3b_med_jev85.md`.
+- **Resultados (GT v4, revisión R79 — cobertura incompleta, descriptivo):**
+  run primario `llm_ministral3b_med_prob` **171/194** respuestas válidas, 23
+  errores persistentes (22 JSON malformado + 1 `length`), ajustado **−7\***
+  (−35–19; la media sale de solo 3/10 fases limpias). Run secundario
+  `llm_ministral3b_med_disc` **187/194**, 7 errores (4 de validación + 3
+  `length`), ajustado **45\*** (30–58; 4/10 fases). `prob` **incumplió el
+  criterio de parada** declarado (> 20 errores totales: 24 tras la primera
+  pasada); la vigilancia no estaba implementada en el lanzador — desviación de
+  protocolo declarada, no una batería completa válida.
+- **Frente a Jev (McNemar + Holm, 53 contrastes por modo):** en `prob` solo
+  sobrevive la derrota en `department` de triage_ext_es (13–0, p_Holm 0,013);
+  en `disc` ningún contraste sobrevive — la ventaja nominal en `depth` de
+  papers32 (1–11) era exploratoria (p_Holm 0,34). **Sin equivalencia ni
+  superioridad demostradas; no es candidato a revisor.** Brier noul 0,138/0,160
+  y mediana 4 780/1 913 ms son el resumen de 9 fases; coste API no registrado
+  (endpoint local sin tarifa; electricidad y hardware no medidos).

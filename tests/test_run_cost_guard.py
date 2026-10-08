@@ -188,6 +188,64 @@ class CostGuard(unittest.TestCase):
         self.assertTrue(stop["before_requests"])
         self.assertAlmostEqual(stop["accumulated"], 0.036)
 
+    def test_sin_stamp_config_no_huella(self):
+        """Sin --stamp-config el runner no escribe config_sha256 (previo)."""
+        doc, _ = self._run(cost=0.001)
+        self.assertTrue(doc["cases"])
+        self.assertTrue(all("config_sha256" not in r
+                            for r in doc["cases"].values()))
+
+    def test_stamp_config_huella_y_rechaza_effort(self):
+        """R72-P1-2b: con --stamp-config, high→medium aborta 0 llamadas."""
+        from jevbench import cost_guard
+
+        class Effort(FakeAdapter):
+            def __init__(self, effort, interrupt=False, **k):
+                super().__init__(cost=0.0001, **k)
+                self.effort = effort
+                self.interrupt = interrupt
+
+            def meta(self):
+                return {"model": "same-alias", "resolved": "snapshot-A",
+                        "thinking": "adaptive", "effort": self.effort,
+                        "max_tokens": 8192}
+
+            def decide(self, state, qs):
+                if self.interrupt and self.calls == 1:
+                    raise KeyboardInterrupt()
+                r = super().decide(state, qs)
+                r["model"] = "snapshot-A"
+                return r
+
+        def invoke(name, a):
+            argv = ["run", "fake", "--run", name, "--phases", "ood",
+                    "--stamp-config",
+                    "--max-case-cost", ".01", "--max-cost", ".15"]
+            with mock.patch.object(sys, "argv", argv), \
+                 mock.patch.dict(run.adapters.REGISTRY, {"fake": "x:y"}), \
+                 mock.patch.object(run.adapters, "get",
+                                   return_value=lambda **o: a):
+                try:
+                    run.main()
+                    return None
+                except (KeyboardInterrupt, SystemExit) as e:
+                    return type(e).__name__
+
+        first = Effort("high", interrupt=True)
+        self.assertEqual(invoke("s_mixed", first), "KeyboardInterrupt")
+        self.assertEqual(first.calls, 1)
+        prior = store.load("s_mixed", "ood")
+        self.assertEqual(prior["meta"]["effort"], "high")
+        self.assertIn("config_sha256", next(iter(prior["cases"].values())))
+        resume = Effort("medium")
+        self.assertEqual(invoke("s_mixed", resume), "SystemExit")
+        self.assertEqual(resume.calls, 0)
+        self.assertEqual(store.load("s_mixed", "ood")["meta"]["effort"], "high")
+        # huella canónica distinta entre efforts
+        self.assertNotEqual(
+            cost_guard.config_sha256({"effort": "high", "max_tokens": 8192}),
+            cost_guard.config_sha256({"effort": "medium", "max_tokens": 8192}))
+
 
 if __name__ == "__main__":
     unittest.main()
