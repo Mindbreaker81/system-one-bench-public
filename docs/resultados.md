@@ -171,7 +171,7 @@ Versiones de Jev comprobadas: `docs/versiones_jev.md` (sin cambios a 27-sep).
   casos nuevos (adv5: 9/10 manipulados, 1/10 FP). Acumulado adv3 + adv4 + adv5: **25/30
   manipulados, 1/30 FP** con revisor Jev — y **27/30 con Clef-27B en una sola pasada**, sin
   revisor (1/30 FP). No cambia el routing.
-- **Alternativa más barata con la misma calidad:** Decider-4B local → revisor Jev.
+- **Alternativa más barata, con agregado próximo (sin diferencia demostrada; no prueba equivalencia):** Decider-4B local → revisor Jev.
 - **Revisor de mayor ajustado en regla `audit` sobre Decider-4B (4-oct; matiz 8-oct):**
   Decider-4B → revisor **gpt-6.1-sol (low)** (`decider_4b_solrev_audit` 66 [65,82], por
   encima del 64 del revisor Jev y del 65,64 del revisor Haiku 5.5; en regla `review` el
@@ -460,7 +460,7 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   - **S1** (una lectura): 53, Brier 0.101, 122 ms; la regla pre-registrada la recomienda.
   - Frente a `jev_v3`: sin diferencia demostrada tras Holm (`papers32.depth` 13–1, p cruda 0.002,
     Holm 0.097). La calibración noul es peor que la de Jev.
-  - Sensible al orden de las opciones `choice` (−7.3 pp al rotarlas).
+  - Sensible al orden de las opciones `choice` (−7.4 pp de acierto en `choice` al rotarlas, GT v4; −7.3 con GT v3).
   - Ruta del adaptador TypeSafe en `discrete`: 51.
   - Revisor no evaluable (422 del interposer en triaje/adv). Alerta de una pasada: 19/30 TP · 0/30 FP,
     no cumple (adv4 4/10).

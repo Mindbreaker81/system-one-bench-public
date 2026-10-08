@@ -288,3 +288,30 @@ class McNemarMatchesScore(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RotationCurrentGT(unittest.TestCase):
+    """JEV-86: la rotación usa solo los casos del GT vigente (P02 retirado en v4) y reproduce
+    el recálculo independiente de Codex R82 sobre los runs reales."""
+
+    def setUp(self):
+        if not (store.ROOT / dgemma_report.RUNS["Rot1"]).exists():
+            self.skipTest("runs DiffusionGemma no disponibles")
+
+    def test_recalculo_gt_v4(self):
+        r = dgemma_report.rotation(dgemma_report.RUNS["P"], dgemma_report.RUNS["Rot1"])
+        self.assertEqual(r["paired"], 256)
+        self.assertEqual(r["table"], (192, 7, 26, 31))
+        d, lo, hi = r["newcombe"]
+        self.assertAlmostEqual(d * 100, -7.421875, places=4)
+        self.assertLess(hi, 0)
+        self.assertFalse(any(c["pc"].endswith("/P02") for c in
+                             dgemma_report.choice_changes(dgemma_report.RUNS["P"],
+                                                          dgemma_report.RUNS["Rot1"])[0]
+                             if c["pc"] in dgemma_report._current_choice_keys()))
+
+    def test_try_avisa_en_stderr(self):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertIsNone(dgemma_report._try(lambda: {}["P02"]))
+        self.assertIn("KeyError", err.getvalue())

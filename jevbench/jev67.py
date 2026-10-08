@@ -1478,7 +1478,9 @@ def main():
         sys.exit(0 if status in ("complete", "stopped") else 2)
     if args.cmd == "report":
         report(args.json)
+        from .attest import public_exit
+        return public_exit()
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

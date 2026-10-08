@@ -5433,7 +5433,8 @@ def main():
                     amend_manifest=args.amend_manifest)
     if args.cmd == "analyze":
         analyze(out_json=args.json, iters=args.iters)
-        return 0
+        from .attest import public_exit
+        return public_exit()
 
 
 if __name__ == "__main__":

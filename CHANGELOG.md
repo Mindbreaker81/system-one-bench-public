@@ -13,6 +13,40 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [1.5.2] - 2026-10-08 — JEV-86/87: rotación de DiffusionGemma con GT v4 y auditorías verificables en el espejo; correcciones de redacción (revisión R82 de JEV-56)
+
+- **JEV-86:** `dgemma_report.rotation` recorría P02 (retirado en GT v4) y fallaba con `KeyError` oculto,
+  así que Rot1 quedaba NO EVALUABLE al re-ejecutar. Ahora solo cuenta los casos del GT vigente, y `_try` avisa
+  por stderr. Recálculo con GT v4: 33/256 cambios, Δ acierto `choice` **−7,42 pp** [−11,93; −3,06],
+  tabla 192/7/26/31. La clasificación no cambia (REFUTADA). El −7,3 de GT v3 queda como histórico en el
+  manifiesto; la web, Límites, `modelos.md` y `resultados.md` usan ya −7,4. El +6,2 de Qwen (JEV-67) no
+  cambia: su tabla ya excluía los casos retirados.
+- **JEV-87:**
+  - El espejo reproducía las puntuaciones, pero no las auditorías confirmatorias. Las puertas leen los
+    raw, que el espejo sustituye por `raw_sha256`.
+  - Nuevo `jevbench.attest`. `freeze` (privado) ejecuta 9 analizadores (JEV-67, 68, 70, 76, 77, 78, 81, 82
+    y 84) con un audit hook que registra **todos los ficheros que leen**: resultados con sus `raw_sha256`,
+    GT, runs de puertas, logs y código importado. Congela en `docs/auditorias/*.json` la salida y el hash
+    de la versión pública de cada fichero.
+  - `freeze` aborta ante un rc ≠ 0 o un análisis vacío.
+  - `verify` exige las 9 atestaciones y comprueba que corresponden al registro. Además:
+    - **en privado**, re-ejecuta todos los analizadores (también los que leen raw) y compara su salida;
+    - **en el espejo**, comprueba los hashes de las dependencias exportadas, re-ejecuta literalmente los 4
+      que no leen raw y declara «atestados» los 5 restantes;
+    - los veredictos que imprime se extraen de la salida comprobada.
+  - `publish` exporta además `docs/auditorias/` y los pre-registros `docs/infra_runs/*.md` saneados (IPs,
+    hosts, usuario, dominios y rutas locales), con un escáner específico de rutas en esos manifiestos.
+    **Aborta** si `attest verify` falla dentro del export.
+  - En el espejo, los analizadores que leen raw avisan y salen con código 3.
+  - Revisión Codex R83.
+- **Redacción (R82):**
+  - «misma calidad» e «iguala» → «agregado próximo, sin diferencia demostrada» (Decider-4B→Jev frente a
+    Jev→Jev).
+  - La 2.ª anotación humana se describe como parcial (campos elegidos por discrepancia), no como fiabilidad
+    global (portada y Metodología).
+- **Seguimiento:** propuesta de artículo revisada (JEV-56, JEV-A-3 r2; informe en
+  `docs/articulo/revision_R82_codex.md`). Set holdout planificado en JEV-88, pendiente de decisión.
+
 ## [1.5.1] - 2026-10-08 — JEV-84: Haiku 5.5 como revisor / alerta / réplica H-adapt (pre-registro congelado y resultados)
 
 - **JEV-85 (8-oct; revisión Codex R79 CORREGIR aplicada):** OpenMed

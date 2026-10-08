@@ -33,7 +33,8 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
   con P en el 97.3 % de las decisiones. La regla pre-registrada **recomienda S1**: mismo nivel y
   2.6× más rápido.
 - **Sensibilidad al orden de las opciones** (`_rot1`, `choice` rotadas una posición): ajustado 45.
-  Cambian 33/259 etiquetas `choice` y el acierto en `choice` baja **7.3 pp** (IC95 −11.8 a −3.0),
+  Con GT v4 (sin P02, JEV-86) cambian 33/256 etiquetas `choice` y el acierto en `choice` baja **7.4 pp**
+  (IC95 −11.9 a −3.1; con GT v3 eran 33/259 y −7.3 pp [−11.8; −3.0]),
   como Qwen3.8 en JEV-67. Hay que leerlo contra el ruido entre hosts: 249/260 decisiones iguales en
   la réplica de .80. La repetición en el mismo host da 259/260.
 - **Ruta del adaptador TypeSafe** (`llm`, JSON generado por difusión, con

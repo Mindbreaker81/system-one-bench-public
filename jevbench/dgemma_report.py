@@ -17,7 +17,7 @@ import statistics
 
 from . import metrics as M
 from . import store
-from .battery import EXTRA_PHASES, PHASES, load_phase
+from .battery import ALERT_PHASES, EXTRA_PHASES, PHASES, RULES_PHASES, load_phase
 from .jev67 import (_decisions_run, agreement, choice_changes, clopper_pearson, holm,
                     newcombe_paired, poisson_binomial_sf)
 from .score import ADJ_PHASES, adjusted, score_run
@@ -219,15 +219,33 @@ def max_abs_dp(run_a, run_b):
     return (worst if n else None), over, n  # sin pares pareados → no evaluable
 
 
+def _current_choice_keys():
+    """{fase/caso: {qid choice}} del GT vigente: los casos retirados (p. ej. P02 en GT v4)
+    no entran aunque sigan en los JSON históricos (JEV-86)."""
+    out = {}
+    for ph in PHASES + EXTRA_PHASES + RULES_PHASES + ALERT_PHASES:
+        qs, cases = load_phase(ph)
+        ch = {q for q, d in qs.items() if d["type"] == "choice"}
+        for c in cases:
+            out[f"{ph}/{c.id}"] = ch
+    return out
+
+
 def rotation(base, rot):
-    changes, tot = choice_changes(base, rot)
+    valid = _current_choice_keys()
+    changes, _ = choice_changes(base, rot)
+    changes = [c for c in changes if c["pc"] in valid]
+    da, db = _decisions_run(base), _decisions_run(rot)
+    tot = sum(1 for pc in set(da) & set(db) if pc in valid
+              for qid in valid[pc] if da[pc].get(qid) is not None and db[pc].get(qid) is not None)
     lo, hi = clopper_pearson(len(changes), tot)
     probs = [1.0 / (c["k"] - 1) for c in changes if c["k"] > 2]
     obs = sum(1 for c in changes if c["conserva"] and c["k"] > 2)
     p = poisson_binomial_sf(probs, obs) if changes else float("nan")
     a = b = cc = d = 0
-    da, db = _decisions_run(base), _decisions_run(rot)
     for pc in sorted(set(da) & set(db)):
+        if pc not in valid:
+            continue
         ph, cid = pc.split("/", 1)
         qs, cases = load_phase(ph)
         gt = {c.id: c.gt for c in cases}[cid]
@@ -290,7 +308,9 @@ def _try(f, default=None):
     """Una métrica que no se puede calcular queda no evaluable; no aborta el informe."""
     try:
         return f()
-    except Exception:
+    except Exception as e:  # visible: un fallo de cálculo no debe parecer un resultado (JEV-86)
+        import sys
+        print(f"[dgemma_report] métrica no evaluable: {type(e).__name__}: {e}", file=sys.stderr)
         return default
 
 
@@ -519,7 +539,9 @@ def main():
     if args.json:
         with open(args.json, "w") as f:
             json.dump(res, f, indent=1, default=lambda o: sorted(o) if isinstance(o, set) else str(o))
+    from .attest import public_exit
+    return public_exit()
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
