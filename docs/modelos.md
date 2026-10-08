@@ -59,6 +59,38 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
   en menor grado, dentro de la misma sesión. P02/P03 duplicaban el mismo paper con GT distinto en GT v3;
   JEV-73 retiró P02 del GT v4.
 
+## MedGemma (Google Health) + Gemma 3 (control)
+
+- **Modelos:** [google/medgemma-27b-it](https://huggingface.co/google/medgemma-27b-it)
+  @ `2d3e00ea` (MedGemma 1, multimodal; aquí solo texto) y
+  [google/medgemma-1.5-4b-it](https://huggingface.co/google/medgemma-1.5-4b-it) @ `91850547`
+  (MedGemma 1.5 existe solo en 4B). Licencia HAI-DEF. Post-train de adaptación clínica sobre
+  Gemma 3; los controles son [google/gemma-3-27b-it](https://huggingface.co/google/gemma-3-27b-it)
+  @ `005ad340` y [google/gemma-3-4b-it](https://huggingface.co/google/gemma-3-4b-it) @ `093f9f38`,
+  más Qwen3.8-27B-FP8 fresco (`enable_thinking=false`) como referencia de H2.
+- **Ejecución (7–8 oct, JEV-77):** adaptador `llm` sobre SGLang en el DGX Spark GB10 de .80,
+  una imagen común para los cinco checkpoints (rama A; MedGemma/Gemma en BF16 y Qwen en FP8), `structured=true` con esquema inyectado en
+  el prompt y gramática restringida (`--constrained-json-disable-any-whitespace`, Enmienda 1),
+  temp 0 / seed 101, `discrete` y `probabilities` en los dos órdenes de `department` (d0/d1):
+  18 celdas × 194 casos, 0 errores, 3 658/12 000 peticiones, 17,98 h de 40 h. Puerta de
+  visibilidad por combo antes de cada bloque; pre-registro con dos aprobaciones y dos enmiendas
+  registradas. Manifiesto y resultados: `docs/infra_runs/medgemma_jev77.md`.
+- **Resultado (GT v4):** ajustado discrete d0 **25,87** (MedGemma-27B) frente a **16,22**
+  (Gemma3-27B) y **62,90** (Qwen FP8). **H1** (≥ +5 sobre Gemma3) **inconclusa**: +9,7
+  [IC97,5 −1,7; +21,8]. **H2** (no inferioridad −5 frente a Qwen) **refutada**: −37,0
+  [−49,8; −24,9]. Bloque 4B descriptivo: MedGemma-4B disc d0 0,96 frente a −14,68 de
+  Gemma3-4B; los runs probabilities de MedGemma-4B concentran 600 de los 633 vectores nulos normalizados
+  del encargo (fallback uniforme, no confianza informada). Cascada híbrida M-D0 → revisor Jev
+  (`jev-1.13-20260917` congelado): audit **65,43** / raw **66,59** — no demuestra que la regla
+  audit supere al raw ni constituye una solución 100 % local. **Sin superioridad ni utilidad
+  clínica demostradas.**
+- **Enmiendas y desviación:** H1/H2 se miden bajo la gramática restringida de la Enmienda 1;
+  su efecto no se aísla de la enmienda. Enmienda 2: la sonda ciega acepta JSON válido para la
+  gramática con valores fuera del contrato del SDK (Gemma3-4B, urgency=1300); el manifiesto no
+  cambia. Desviación NAS en Gemma3-4B: misma ruta interna, copia local de los mismos pesos,
+  sha256 15/15 contra `google/gemma-3-4b-it@093f9f38`; los resultados se mantienen
+  (cierra C1 de R61).
+
 ## CLM-v0.1-8B (Contrastive-LM)
 
 - **Modelo/código:** [Contrastive-LM/CLM-v0.1-8B](https://huggingface.co/Contrastive-LM/CLM-v0.1-8B),
@@ -325,6 +357,48 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
     general probado. Valoración de los pendientes: rotación d1 justificable como prueba de sensibilidad al orden
     (pendiente de aprobación y reglas fijadas antes de ejecutarla); la cascada real y su uso como revisor de Jev
     no quedan justificados por estos datos.
+  - **JEV-82 (7-oct, pre-registro congelado 28727d3, rev. R57):** rotación d1 del orden de `department`
+    (`jev_luna_decisions_d1`, 186/194 — los 6 rechazos de d0 más 2 nuevos, sin atribución causal al orden; mismo
+    modelo servido `…-20261006` en 186 pares). Resultados acotados a los éxitos pareados de esta batería: Δ
+    ajustado **0,00 [IC95 0,00–0,00]** en las 5 fases completas comunes (los puntos por caso coinciden); acuerdo
+    **918/924 = 99,35 %** [98,59–99,76] con 6 decisiones de `department` cambiadas (B01, B07, C03, D01, D09, D20)
+    y Δp máx 0,72; la **primacía ≥5 pp queda REFUTADA** por U95 < 5 en los 32 registros pareados del subconjunto
+    congelado (Δ errores d0−d1 = −12,50 pp [−25,81, −2,94]; 7 errores con d0 frente a 11 con d1; p Holm 0,125) —
+    sin demostrar ausencia de efecto de orden ni deterioro general. No entra en marcador ni web (variante de
+    sensibilidad). Resultados: `docs/infra_runs/luna_decisions_jev82.md` §RESULTADOS.
+  - **JEV-78 (8-oct, pre-registro congelado de9af7f, rev. R63 APTO):** la **Decisions API nativa de OpenAI**
+    (`POST /v1/decisions`) con el SDK oficial `openai==3.26.0` en `.venv-oai` (adaptador `openai_decisions`,
+    refusal **por pregunta**). `oai_luna_decisions` **194/194, 0 errores de caso**: los 6 casos que OpenRouter
+    rechazó enteros aquí se conservan con **8 negativas parciales** (department ×6, urgency ×2, puntúan 0) —
+    diferencia de cobertura bajo contratos distintos, sin identificar la capa causal del rechazo histórico.
+    Versión **inconclusa** (alias `gpt-6-luna` sin snapshot; same_model=false). Acuerdo **934/934**
+    [99,6–100 %], Δp media y máx 0 (2.091 componentes) y Δ ajustado **0,00 [0,00–0,00]** en las 6 fases comunes
+    — sin demostrar equivalencia general ni identidad de snapshot. Holm 53 vs `jev_v3`: **0 significativas**.
+    Ajustado propio descriptivo **38,25 [27–48]** (11 fases, refusals a 0) frente a 47,70 de OpenRouter en sus
+    6 — conjuntos distintos, sin contraste. Coste registrado $0,0205 (194 registros, 0 desconocidos: los
+    refusals internos contabilizan su gasto; `usage` guarda solo el último intento). Latencias medianas 431–505 ms
+    vs 656–708 ms de OpenRouter. Entra en marcador y web. Resultados:
+    `docs/infra_runs/openai_decisions_jev78.md` §RESULTADOS.
+- **Probado (8-oct, JEV-83): `claude-haiku-5-5` (Anthropic)** vía `system-one-adapter` 0.2.1 con structured
+  outputs nativo (`output_config.format=json_schema`) y la extensión opt-in del adaptador `llm` para Anthropic
+  (`thinking=disabled|adaptive`, `effort`, `max_tokens`, timeouts; fallos con respuesta llevan `exc.cost`).
+  **ID canónico de snapshot fijo** (desde la generación 4.6 los IDs sin fecha no son alias móviles): `resolved =
+  claude-haiku-5-5` en los 582 registros. Tarifa $0,10/$0,50 por MTok (los tokens de thinking van dentro del
+  output, sin doble conteo). Pre-registro congelado `5e8da17`, rev. R63 (CORREGIR → desviación E11 declarada
+  abajo). Tres celdas, **194/194 registros retenidos, 0 errores**:
+  - **H-off** (`llm_haiku55_off_prob`, thinking disabled — celda inferencial): ajustado **62 [54–69]**; frente a
+    `jev_v3`, Holm 53 = **0 significativas** — sin superioridad acreditada en ninguna dirección.
+  - **H-disc** (`llm_haiku55_off_disc`, discrete): **64 [57–71]**, Brier noul 0.085 (descriptivo).
+  - **H-adapt** (`llm_haiku55_adapt_prob`, thinking adaptativo effort medium): **69 [62–76]**, Brier 0.059;
+    thinking>0 en 126/194 casos (media 208, máx 689 tokens) con mayor gasto y latencia (2.639 vs 1.656 ms de mediana en el
+    resumen del scorer, 154 casos base+new) — descriptivo: no aísla una contribución causal del thinking. **Desviación de adquisición:** el
+    corte de sesión del bloque 10 dejó la primera respuesta de E11 sin persistir y la reanudación la repitió
+    (≥195 respuestas visibles para 194 ids); su coste **$0,0704 es cota inferior** de la adquisición (≥1 intento
+    pagado sin coste recuperado).
+  - Coste registrado: $0.0502 (H-off) / $0.0314 (H-disc) / $0.0704 (H-adapt, cota inferior). Comparación
+    descriptiva en las 10 fases comunes: 61,7 / 64,1 / 69,3 frente a luna-prob 61,2, nativo 38,2 y Jev 45,4 —
+    sin prueba de superioridad; el marcador redondea 61,74/64,13/69,29 a 62/64/69. Pre-registro y resultados:
+    `docs/infra_runs/claude_haiku55_jev83.md` §RESULTADOS.
 - **Probado (1-oct):** `gpt-6.1-sol` (OpenAI resuelve el alias sin fecha: `gpt-6.1-sol`)
   con `--opt reasoning_effort=low` (va como `reasoning={"effort":"low"}` en la API
   Responses). $2.00/$10.00 por Mtok — 20× luna; la página de precios de OpenAI no fue
@@ -397,8 +471,8 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
 - **Como revisor de la cascada (luna)** (`--adapter llm` en `jevbench.cascade`): sobre Decider-4B
   recupera el 77 % de la ganancia de Jev en adv3+adv5 (el mejor revisor no-Jev), pero no cumple
   el criterio JEV-32 por triaje (28 %) y alerta adv5 (6/10, < 7/10). Como D1 con revisor Jev
-  (`llm_gpt6luna_jevrev_*`): la mejor config absoluta, equivalente a Jev → Jev (ver
-  `docs/experimentos/cascada_jev.md`).
+  (`llm_gpt6luna_jevrev_*`): la mejor config absoluta, sin diferencia significativa con Jev → Jev
+  (lo que no demuestra equivalencia; ver `docs/experimentos/cascada_jev.md`).
 - **LLM local en DGX (29-sep):** el adaptador funciona igual contra los endpoints de los Sparks
   (`--opt base_url=http://127.0.0.1:PUERTO/v1 --opt api_key=none` desde la propia máquina).
   **Qwen3.8-27B** (`RadixArk/Qwen3.8-27B-NVFP4-BF16-LMHead` en SGLang, .80;

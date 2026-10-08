@@ -1138,6 +1138,175 @@ def _gate_case_fails(combo, phase, cid, rec, qs, exp_sha, hist, ref_on,
     return fails
 
 
+def _attempt_finish_reason(att):
+    """finish_reason del intento (debug_info o choice); None si ausente."""
+    if not att:
+        return None
+    fr = (att.get("debug_info") or {}).get("finish_reason")
+    if fr:
+        return fr
+    ch = ((att.get("llm_response") or {}).get("choices") or [{}])[0]
+    return ch.get("finish_reason")
+
+
+def _attempt_assistant_content(att):
+    """Texto del assistant en el intento (content del choice[0])."""
+    if not att:
+        return None
+    ch = ((att.get("llm_response") or {}).get("choices") or [{}])[0]
+    msg = ch.get("message") or {}
+    return msg.get("content")
+
+
+def _schema_resolve(schema, root):
+    """Resuelve `$ref` locales `#/$defs/...` sobre el schema raíz."""
+    if not isinstance(schema, dict):
+        return schema
+    ref = schema.get("$ref")
+    if not isinstance(ref, str) or not ref.startswith("#/$defs/"):
+        return schema
+    name = ref.rsplit("/", 1)[-1]
+    resolved = (root.get("$defs") or {}).get(name)
+    return resolved if isinstance(resolved, dict) else schema
+
+
+def _value_matches_json_schema(val, schema, root):
+    """Valida val contra un subconjunto de JSON Schema (type, required,
+    properties, additionalProperties, enum, minimum/maximum, $ref).
+    No inventa restricciones ausentes en el esquema archivado."""
+    schema = _schema_resolve(schema, root)
+    if not isinstance(schema, dict):
+        return False, "schema inválido"
+    t = schema.get("type")
+    if t == "object":
+        if not isinstance(val, dict):
+            return False, "se esperaba object"
+        req = schema.get("required") or []
+        for k in req:
+            if k not in val:
+                return False, f"falta clave requerida {k!r}"
+        props = schema.get("properties") or {}
+        if schema.get("additionalProperties") is False:
+            extra = set(val) - set(props)
+            if extra:
+                return False, f"claves ajenas {sorted(extra)}"
+        for k, v in val.items():
+            if k not in props:
+                continue
+            ok, why = _value_matches_json_schema(v, props[k], root)
+            if not ok:
+                return False, f"{k}: {why}"
+        return True, None
+    if t == "integer":
+        # bool es subclase de int en Python: excluirlo
+        if not isinstance(val, int) or isinstance(val, bool):
+            return False, "se esperaba integer"
+        if "minimum" in schema and val < schema["minimum"]:
+            return False, f"integer < minimum {schema['minimum']}"
+        if "maximum" in schema and val > schema["maximum"]:
+            return False, f"integer > maximum {schema['maximum']}"
+        return True, None
+    if t == "boolean":
+        if not isinstance(val, bool):
+            return False, "se esperaba boolean"
+        return True, None
+    if t == "string":
+        if not isinstance(val, str):
+            return False, "se esperaba string"
+        enum = schema.get("enum")
+        if enum is not None and val not in enum:
+            return False, f"string no está en enum"
+        return True, None
+    if t == "number":
+        if isinstance(val, bool) or not isinstance(val, (int, float)):
+            return False, "se esperaba number"
+        return True, None
+    if t == "array":
+        if not isinstance(val, list):
+            return False, "se esperaba array"
+        return True, None
+    if t == "null":
+        if val is not None:
+            return False, "se esperaba null"
+        return True, None
+    # sin type: solo $ref ya resuelto u objeto vacío
+    return True, None
+
+
+def _blind_response_matches_request_grammar(data, req):
+    """La respuesta cumple el response_format.json_schema de ESA petición."""
+    root = ((req.get("response_format") or {}).get("json_schema")
+            or {}).get("schema")
+    if not isinstance(root, dict):
+        return False, "sin schema en request"
+    return _value_matches_json_schema(data, root, root)
+
+
+# Errores terminales que NUNCA son rechazo de valores del SDK, aunque el
+# primer intento fuera JSON+stop (Enmienda 2 / R59).
+_BLIND_TERMINAL_NON_VALUE = re.compile(
+    r"(?i)\b(TimeoutError|timed?\s*out|ConnectionError|ConnectionReset|"
+    r"ConnectionRefused|URLError|RemoteDisconnected|BrokenPipeError|"
+    r"OSError|HTTPError|connection reset|connection refused)\b")
+
+
+def _is_sdk_answers_value_error(err):
+    """Reconocimiento positivo: TypeSafeAPIResponseValidationError por
+    datos de `answers` (rango/etiqueta), no por transporte."""
+    s = str(err or "")
+    if "TypeSafeAPIResponseValidationError" not in s:
+        return False
+    return ("answers" in s.lower()
+            or "Invalid response data at 'answers'" in s
+            or "Invalid response data" in s)
+
+
+def _blind_grammar_stop_ok(rec):
+    """Primer intento con finish=stop, usage.prompt_tokens y JSON que
+    cumple el response_format archivado de esa petición (objeto, required,
+    types, additionalProperties, enum/min/max si constan). Usado por
+    Enmienda 2 de jev77: un integer sin min/max (p. ej. urgency=1300)
+    sigue siendo gramática OK; answers=null / {} / tipos rotos no."""
+    att = j67._first_attempt(rec)
+    if att is None:
+        return False, "sin raw del primer intento"
+    fr = _attempt_finish_reason(att)
+    if fr != "stop":
+        return False, f"finish_reason={fr!r}"
+    if j67._first_prompt_tokens(rec) is None:
+        return False, "sin usage en el primer intento"
+    content = _attempt_assistant_content(att)
+    if not isinstance(content, str) or not content.strip():
+        return False, "sin content JSON"
+    try:
+        data = json.loads(content)
+    except (TypeError, json.JSONDecodeError):
+        return False, "JSON inválido"
+    req = att.get("request") or {}
+    ok, why = _blind_response_matches_request_grammar(data, req)
+    if not ok:
+        return False, f"fuera de gramática: {why}"
+    return True, None
+
+
+def _blind_error_is_value_contract(rec):
+    """Enmienda 2 (medgemma_jev77): error del SDK por valores fuera de
+    contrato (rango/etiqueta) tras un intento con gramática OK y
+    finish=stop. Solo perfil jev77. Reconoce positivamente
+    TypeSafeAPIResponseValidationError sobre answers; excluye timeout /
+    transporte y demás causas terminales aunque el primer intento fuera
+    JSON+stop."""
+    if _PROFILE != "jev77" or "error" not in rec:
+        return False
+    err = rec.get("error") or ""
+    if _BLIND_TERMINAL_NON_VALUE.search(str(err)):
+        return False
+    if not _is_sdk_answers_value_error(err):
+        return False
+    ok, _ = _blind_grammar_stop_ok(rec)
+    return ok
+
+
 def _blind_fails(combo, tag, rec, qs, exp_sha=None, state=None,
                  exp_schema=None):
     """Control negativo: el ciego no debe ver preguntas ni apéndice EN
@@ -1149,8 +1318,14 @@ def _blind_fails(combo, tag, rec, qs, exp_sha=None, state=None,
     department). Devuelve (fallos, prompt_tokens del primer intento |
     None). Con `exp_sha` (jev77 §7.3 sonda 4) el hash del prompt ciego
     precomputado debe igualar el observado — es un prompt distinto del
-    visible."""
-    if "error" in rec:
+    visible.
+
+    Enmienda 2 (perfil jev77 solamente): si el ciego responde con JSON
+    válido para la gramática y finish=stop pero el SDK rechaza valores
+    fuera de contrato (p. ej. urgency=1300), eso NO es fallo de
+    visibilidad — se acredita con hash, ausencia de inyección y margen
+    de prompt_tokens del primer intento. jev68/jev76 sin cambio."""
+    if "error" in rec and not _blind_error_is_value_contract(rec):
         return [f"ciego {tag}: error {rec['error'][:120]}"], None
     att = j67._first_attempt(rec)
     if att is None:

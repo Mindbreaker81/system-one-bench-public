@@ -4169,6 +4169,216 @@ class TestJEV77Gate(TmpStore):
         real = qs_mod.MANIFEST_AMENDMENTS["008c1cdd499b6f92"]
         self.assertIs(real["apply"], qs_mod._amend_jev77_ws_args)
         self.assertIn("constrained-json", real["motivo"])
+        # Enmienda 2 no toca el manifiesto (solo lógica de puerta)
+        self.assertNotIn("8b201bfb8b6bd5a7", qs_mod.MANIFEST_AMENDMENTS)
+
+    def _blind_rec_urgency_1300(self, *, finish="stop", content=None,
+                                usage=149, inject=False, error=True):
+        """Réplica del incidente Enmienda 2: ciego con urgency=1300.
+
+        El `response_format` se moldea como el archivado por TypeSafe
+        (`$defs/TypeSafeAnswers` + required + additionalProperties=false)
+        para ejercitar la validación estructural de Enmienda 2/R59 sin
+        mutar la gramática de producción del adaptador.
+        """
+        state = (
+            "Dr. Hernandez pulmonary nodule EBUS … lunch rush arrives "
+            "at 13:00 sharp …")
+        req = _mk_request(self.qs, inject=inject, thinking=None,
+                          mode="discrete", state=state)
+        ans_props = (req["response_format"]["json_schema"]["schema"]
+                     ["properties"]["answers"]["properties"])
+        req["response_format"]["json_schema"]["schema"] = {
+            "$defs": {
+                "TypeSafeAnswers": {
+                    "additionalProperties": False,
+                    "properties": ans_props,
+                    "required": list(ans_props),
+                    "type": "object",
+                }},
+            "additionalProperties": False,
+            "properties": {
+                "answers": {"$ref": "#/$defs/TypeSafeAnswers"}},
+            "required": ["answers"],
+            "type": "object",
+        }
+        if content is None:
+            content = json.dumps({
+                "answers": {
+                    "department": "consulta_externa",
+                    "urgency": 1300,
+                    "clinical": False,
+                    "hostile": False,
+                    "same_day": True,
+                }})
+        resp = {"choices": [{"finish_reason": finish,
+                             "message": {"role": "assistant",
+                                         "content": content}}]}
+        if usage is not None:
+            resp["usage"] = {"prompt_tokens": usage}
+        att = {"request": req, "llm_response": resp,
+               "debug_info": {"finish_reason": finish}}
+        rec = {"diag": {"raw": [att], "attempts": 1,
+                        "retry_reasons": ["malformed_structure"]}}
+        if error:
+            rec["error"] = (
+                "TypeSafeAPIResponseValidationError: 200 Invalid "
+                "response data at 'answers'.")
+        return rec, req, state
+
+    def test_enmienda2_ciego_urgency_1300_pasa_jev77(self):
+        """Enmienda 2: JSON+stop con urgency=1300 (fuera de 0–2) no es
+        fallo de visibilidad en jev77 — hash, sin inyección, usage."""
+        combo = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_gemma3_4b")
+        rec, req, state = self._blind_rec_urgency_1300()
+        schema = req["response_format"]["json_schema"]["schema"]
+        fails, t = qs_mod._blind_fails(
+            combo, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state, exp_schema=schema)
+        self.assertEqual(fails, [], fails)
+        self.assertEqual(t, 149)
+
+    def test_enmienda2_urgency_1300_sigue_fail_en_jev68(self):
+        """jev68/jev76 idénticos: el mismo rec con error sigue FAIL."""
+        rec, req, state = self._blind_rec_urgency_1300()
+        qs_mod._set_profile("jev68")
+        fails, _ = qs_mod._blind_fails(
+            {"mode": "discrete", "prompt": "typesafe",
+             "thinking": False, "order": "d0"},
+            "adv1/A01", rec, self.qs, exp_sha=_sha_of(req), state=state)
+        self.assertTrue(any("error" in f for f in fails), fails)
+        qs_mod._set_profile("jev76")
+        fails76, _ = qs_mod._blind_fails(
+            {"mode": "discrete", "prompt": "typesafe",
+             "thinking": False, "order": "d0"},
+            "adv1/A01", rec, self.qs, exp_sha=_sha_of(req), state=state)
+        self.assertTrue(any("error" in f for f in fails76), fails76)
+        qs_mod._set_profile("jev77")
+
+    def test_enmienda2_ciego_timeout_sigue_fail(self):
+        rec = {"error": "TimeoutError: timed out",
+               "diag": {"raw": []}}
+        fails, t = qs_mod._blind_fails(
+            self.combo_g, "adv1/A01", rec, self.qs)
+        self.assertTrue(any("error" in f for f in fails), fails)
+        self.assertIsNone(t)
+
+    def test_enmienda2_timeout_tras_primer_stop_sigue_fail(self):
+        """R59: raw válido del 1er intento + error terminal timeout → FAIL
+        (no se silencia por JSON+stop previo)."""
+        combo = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_gemma3_4b")
+        rec, req, state = self._blind_rec_urgency_1300()
+        rec["error"] = "TimeoutError: timed out"
+        schema = req["response_format"]["json_schema"]["schema"]
+        fails, _ = qs_mod._blind_fails(
+            combo, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state, exp_schema=schema)
+        self.assertTrue(any("error" in f and "Timeout" in f for f in fails),
+                        fails)
+        self.assertFalse(qs_mod._blind_error_is_value_contract(rec))
+
+    def test_enmienda2_transporte_tras_primer_stop_sigue_fail(self):
+        combo = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_gemma3_4b")
+        rec, req, state = self._blind_rec_urgency_1300()
+        rec["error"] = "ConnectionError: connection reset"
+        schema = req["response_format"]["json_schema"]["schema"]
+        fails, _ = qs_mod._blind_fails(
+            combo, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state, exp_schema=schema)
+        self.assertTrue(any("error" in f for f in fails), fails)
+        self.assertFalse(qs_mod._blind_error_is_value_contract(rec))
+
+    def test_enmienda2_ciego_json_invalido_sigue_fail(self):
+        rec, req, state = self._blind_rec_urgency_1300(
+            content="{no-json")
+        fails, _ = qs_mod._blind_fails(
+            self.combo_g, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state)
+        self.assertTrue(any("error" in f for f in fails), fails)
+
+    def test_enmienda2_answers_null_sigue_fail(self):
+        combo = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_gemma3_4b")
+        rec, req, state = self._blind_rec_urgency_1300(
+            content='{"answers":null}')
+        schema = req["response_format"]["json_schema"]["schema"]
+        fails, _ = qs_mod._blind_fails(
+            combo, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state, exp_schema=schema)
+        self.assertTrue(fails, fails)
+        self.assertFalse(qs_mod._blind_error_is_value_contract(rec))
+
+    def test_enmienda2_answers_vacio_sigue_fail(self):
+        combo = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_gemma3_4b")
+        rec, req, state = self._blind_rec_urgency_1300(
+            content='{"answers":{}}')
+        schema = req["response_format"]["json_schema"]["schema"]
+        fails, _ = qs_mod._blind_fails(
+            combo, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state, exp_schema=schema)
+        self.assertTrue(fails, fails)
+        self.assertFalse(qs_mod._blind_error_is_value_contract(rec))
+
+    def test_enmienda2_tipos_incorrectos_sigue_fail(self):
+        combo = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_gemma3_4b")
+        bad = json.dumps({"answers": {
+            "department": 123, "urgency": "1300",
+            "clinical": "false", "hostile": [], "same_day": None}})
+        rec, req, state = self._blind_rec_urgency_1300(content=bad)
+        schema = req["response_format"]["json_schema"]["schema"]
+        fails, _ = qs_mod._blind_fails(
+            combo, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state, exp_schema=schema)
+        self.assertTrue(fails, fails)
+        self.assertFalse(qs_mod._blind_error_is_value_contract(rec))
+
+    def test_enmienda2_clave_ajena_sigue_fail(self):
+        combo = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_gemma3_4b")
+        body = {
+            "answers": {
+                "department": "consulta_externa", "urgency": 1300,
+                "clinical": False, "hostile": False, "same_day": True,
+                "extra_field": True,
+            }}
+        rec, req, state = self._blind_rec_urgency_1300(
+            content=json.dumps(body))
+        schema = req["response_format"]["json_schema"]["schema"]
+        fails, _ = qs_mod._blind_fails(
+            combo, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state, exp_schema=schema)
+        self.assertTrue(fails, fails)
+        self.assertFalse(qs_mod._blind_error_is_value_contract(rec))
+
+    def test_enmienda2_ciego_finish_length_sigue_fail(self):
+        rec, req, state = self._blind_rec_urgency_1300(finish="length")
+        fails, _ = qs_mod._blind_fails(
+            self.combo_g, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state)
+        self.assertTrue(any("error" in f for f in fails), fails)
+
+    def test_enmienda2_ciego_sin_usage_sigue_fail(self):
+        rec, req, state = self._blind_rec_urgency_1300(usage=None)
+        fails, _ = qs_mod._blind_fails(
+            self.combo_g, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state)
+        self.assertTrue(any("error" in f for f in fails), fails)
+
+    def test_enmienda2_ciego_inyeccion_sigue_fail(self):
+        """Aunque el valor esté fuera de contrato, la inyección tumba."""
+        combo = qs_mod.parse_gate_key(
+            "disc_typesafe_off_d0_gemma3_4b")
+        rec, req, state = self._blind_rec_urgency_1300(inject=True)
+        schema = req["response_format"]["json_schema"]["schema"]
+        fails, _ = qs_mod._blind_fails(
+            combo, "adv1/A01", rec, self.qs,
+            exp_sha=_sha_of(req), state=state, exp_schema=schema)
+        self.assertTrue(any("apéndice" in f for f in fails), fails)
 
     def test_margen_ciego_por_familia(self):
         """El margen visible−ciego es el A01_MARGIN del combo congelado

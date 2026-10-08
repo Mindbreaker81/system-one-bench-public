@@ -125,7 +125,9 @@ def score_run(run, phase, null_as_error=False):
     per_case = [sum(M.point(qs[q], preds[c.id][q], c.gt[q]) for q in qs) / len(qs) for c in ok]
     hits = {q: [M.exact(qs[q], preds[c.id][q], c.gt[q]) if c.id in preds else False for c in cases] for q in qs}
     border = sum(1 for c in ok for q in qs
-                 if qs[q]["type"] == "noul" and M.BORDER[0] <= preds[c.id][q]["value"] <= M.BORDER[1])
+                 if qs[q]["type"] == "noul"
+                 and isinstance(preds[c.id][q].get("value"), (int, float))
+                 and M.BORDER[0] <= preds[c.id][q]["value"] <= M.BORDER[1])
     calib, ece = M.calibration(qs, preds, ok)
     out = {
         "run": run, "phase": phase, "meta": doc.get("meta", {}),
@@ -136,11 +138,19 @@ def score_run(run, phase, null_as_error=False):
         "missed": {q: [c.id for c in ok if M.point(qs[q], preds[c.id][q], c.gt[q]) < 1] for q in qs},
         "per_case": per_case, "null_as_error": n_null, "null_unknown": n_unknown,
     }
-    if phase == "papers32" and ok:
-        ids = [c.id for c in ok]
-        gts = {c.id: c.gt for c in ok}
-        out["spearman"] = M.spearman([preds[i]["relevance"]["value"] for i in ids], [gts[i]["relevance"] for i in ids])
-        out["cascade"] = M.cascade(ids, preds, gts)
+    # negativa por pregunta (JEV-78): lista explícita caso.pregunta; el caso
+    # se conserva y la pregunta rechazada puntúa 0 (error en su pregunta)
+    out["refusals"] = sorted(
+        f"{c.id}.{q}" for c in cases
+        for q, a in (recs.get(c.id, {}).get("answers") or {}).items()
+        if isinstance(a, dict) and a.get("type") == "refusal")
+    if phase == "papers32":
+        ids = [c.id for c in ok
+               if all(not preds[c.id][q].get("refused") for q in qs)]
+        if ids:
+            gts = {c.id: c.gt for c in ok}
+            out["spearman"] = M.spearman([preds[i]["relevance"]["value"] for i in ids], [gts[i]["relevance"] for i in ids])
+            out["cascade"] = M.cascade(ids, preds, gts)
     ms = [r["ms"] for r in recs.values() if r.get("ms") is not None]
     out["ms"] = sum(ms) / len(ms) if ms else None
     out["ms_all"] = ms
@@ -206,6 +216,13 @@ def print_phase(phase, results, ref=None):
                 b_, c_, p = M.mcnemar(ref["hits"][q], r["hits"][q])
                 parts.append(f"{q} b={b_} c={c_} p={p:.2f}")
             print(f"- {r['run']}: " + "; ".join(parts))
+    for r in results:
+        if r and r.get("refusals"):
+            print(f"> refusal por pregunta (JEV-78): {r['run']}: "
+                  f"{len(r['refusals'])} componente(s) rechazados en casos "
+                  f"conservados — puntúan 0 en su pregunta: "
+                  f"{', '.join(r['refusals'][:8])}"
+                  + (" …" if len(r["refusals"]) > 8 else ""))
     for r in results:
         if r and r.get("null_as_error"):
             print(f"> --null-as-error: {r['run']}: {r['null_as_error']} caso(s) con vector "

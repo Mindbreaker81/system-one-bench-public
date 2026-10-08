@@ -6,6 +6,7 @@ import http.server
 import importlib.util
 import json
 import socket
+import sys
 import threading
 import time
 import unittest
@@ -176,8 +177,11 @@ class TestLLMAdapter(unittest.TestCase):
 
     def test_extra_body_rejected_on_other_provider(self):
         from jevbench.adapters.llm import LLM
+        # Anthropic acepta timeout/thinking/effort; base_url/extra_body siguen
+        # siendo solo OpenAI. Gemini rechaza los límites.
         with self.assertRaises(ValueError):
-            LLM(provider="anthropic", model="claude-x", api_key="x", timeout=10)
+            LLM(provider="anthropic", model="claude-x", api_key="x",
+                base_url="http://127.0.0.1:9/v1")
         with self.assertRaises(ValueError):
             LLM(provider="gemini", model="gemini-x", case_timeout=10)
 
@@ -205,6 +209,30 @@ class TestLLMAdapter(unittest.TestCase):
         for provider in ("anthropic", "gemini"):
             with self.subTest(provider=provider), self.assertRaises(ValueError):
                 LLM(provider=provider, model="m", api_key="x", reasoning_effort="low")
+
+    def test_anthropic_thinking_effort_meta(self):
+        """thinking/effort opt-in solo Anthropic; openai/gemini los rechazan."""
+        import importlib.util
+        from jevbench.adapters.llm import LLM
+        if importlib.util.find_spec("anthropic") is None:
+            self.skipTest("anthropic no instalado")
+        a = LLM(provider="anthropic", model="claude-haiku-5-5", api_key="none",
+                thinking="disabled", max_tokens=256, timeout=30)
+        self.assertNotIsInstance(a.target, str)
+        self.assertEqual(a.meta()["thinking"], "disabled")
+        self.assertEqual(a.meta()["max_tokens"], 256)
+        self.assertEqual(a.meta()["usd_per_mtok"], [0.10, 0.50])
+        b = LLM(provider="anthropic", model="claude-haiku-5-5", api_key="none",
+                thinking="adaptive", effort="medium")
+        self.assertEqual(b.meta()["thinking"], "adaptive")
+        self.assertEqual(b.meta()["effort"], "medium")
+        with self.assertRaisesRegex(ValueError, "thinking"):
+            LLM(provider="anthropic", model="m", api_key="x", thinking="enabled")
+        with self.assertRaisesRegex(ValueError, "effort"):
+            LLM(provider="anthropic", model="m", api_key="x", effort="turbo")
+        for provider in ("openai", "gemini"):
+            with self.subTest(provider=provider), self.assertRaises(ValueError):
+                LLM(provider=provider, model="m", api_key="x", thinking="disabled")
 
     def test_nested_secrets_redacted_from_meta(self):
         from jevbench.adapters.llm import LLM
@@ -523,5 +551,191 @@ class TestOpenAIContract(unittest.TestCase):
                 a.decide("estado", TRIAGE_QS)
 
 
+HAS_ANTHROPIC = importlib.util.find_spec("anthropic") is not None
+
+
+@unittest.skipUnless(HAS_LIB and HAS_ANTHROPIC,
+                     "system_one_adapter/anthropic no instalados")
+class TestAnthropicContract(unittest.TestCase):
+    """Inyección thinking/effort y telemetría Anthropic (sin red externa)."""
+
+    def _fake_message(self, text, *, model="claude-haiku-5-5-20261007",
+                      thinking_tokens=0, input_tokens=100, output_tokens=50):
+        import anthropic
+        # Construye un Message pydantic mínimo vía model_validate.
+        payload = {
+            "id": "msg_test", "type": "message", "role": "assistant",
+            "model": model, "content": [{"type": "text", "text": text}],
+            "stop_reason": "end_turn", "stop_sequence": None,
+            "usage": {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "output_tokens_details": {"thinking_tokens": thinking_tokens},
+            },
+        }
+        return anthropic.types.Message.model_validate(payload)
+
+    def test_thinking_disabled_injected_and_cost(self):
+        from jevbench.adapters.llm import LLM
+        text = _answers_payload("probabilities")
+        seen = {}
+
+        a = LLM(provider="anthropic", model="claude-haiku-5-5", api_key="none",
+                thinking="disabled", max_tokens=512, capture_raw=True)
+        msg = self._fake_message(text, thinking_tokens=0, output_tokens=40)
+
+        def fake_create(**kwargs):
+            seen.update(kwargs)
+            return msg
+
+        a.target._client.messages.create = fake_create
+        out = a.decide("Factura duplicada, pido reembolso.", TRIAGE_QS)
+        self.assertEqual(seen.get("thinking"), {"type": "disabled"})
+        self.assertEqual(seen.get("max_tokens"), 512)
+        self.assertIn("output_config", seen)
+        self.assertEqual(seen["output_config"].get("format", {}).get("type"),
+                         "json_schema")
+        self.assertNotIn("effort", seen.get("output_config") or {})
+        self.assertEqual(out["answers"]["department"]["choice"], "admin")
+        self.assertEqual(out["model"], "claude-haiku-5-5-20261007")
+        self.assertEqual(out["usage"]["thinking_tokens"], 0)
+        self.assertAlmostEqual(out["cost"], (100 * 0.10 + 40 * 0.50) / 1e6)
+        self.assertEqual(out["raw"][0]["request"]["thinking"],
+                         {"type": "disabled"})
+
+    def test_thinking_adaptive_with_effort(self):
+        from jevbench.adapters.llm import LLM
+        text = _answers_payload("probabilities")
+        seen = {}
+        a = LLM(provider="anthropic", model="claude-haiku-5-5", api_key="none",
+                thinking="adaptive", effort="medium", structured=True)
+        msg = self._fake_message(text, thinking_tokens=12, output_tokens=60)
+
+        def fake_create(**kwargs):
+            seen.update(kwargs)
+            return msg
+
+        a.target._client.messages.create = fake_create
+        out = a.decide("estado", TRIAGE_QS)
+        self.assertEqual(seen.get("thinking"), {"type": "adaptive"})
+        self.assertEqual(seen["output_config"].get("effort"), "medium")
+        self.assertEqual(seen["output_config"].get("format", {}).get("type"),
+                         "json_schema")
+        self.assertEqual(out["usage"]["thinking_tokens"], 12)
+        # thinking cuenta dentro de output; no se suma otra vez al coste
+        self.assertAlmostEqual(out["cost"], (100 * 0.10 + 60 * 0.50) / 1e6)
+
+    def test_provider_error_surfaces(self):
+        from jevbench.adapters.llm import LLM
+        import anthropic
+        a = LLM(provider="anthropic", model="claude-haiku-5-5", api_key="none",
+                thinking="disabled", retries_malformed=0)
+
+        def boom(**kwargs):
+            raise anthropic.APIConnectionError(request=None)
+
+        a.target._client.messages.create = boom
+        with self.assertRaises(Exception) as cm:
+            a.decide("estado", TRIAGE_QS)
+        self.assertTrue(cm.exception)
+        # Timeout/transporte sin respuesta: gasto desconocido (sin exc.cost)
+        self.assertIsNone(getattr(cm.exception, "cost", None))
+
+    def _decide_failing(self, *, stop_reason, text, output_tokens=8192,
+                        input_tokens=1000, thinking_tokens=4000,
+                        retries_malformed=2):
+        from jevbench.adapters.llm import LLM
+        a = LLM(provider="anthropic", model="claude-haiku-5-5", api_key="none",
+                thinking="adaptive", effort="medium", max_tokens=8192,
+                retries_malformed=retries_malformed, capture_raw=True)
+        msg = self._fake_message(
+            text, input_tokens=input_tokens, output_tokens=output_tokens,
+            thinking_tokens=thinking_tokens)
+        msg = msg.model_copy(update={"stop_reason": stop_reason})
+        calls = []
+
+        def fake_create(**kwargs):
+            calls.append(kwargs)
+            return msg
+
+        a.target._client.messages.create = fake_create
+        with self.assertRaises(Exception) as cm:
+            a.decide("Factura duplicada, pido reembolso.", TRIAGE_QS)
+        billed = len(calls) * (input_tokens * 0.10 + output_tokens * 0.50) / 1e6
+        return cm.exception, calls, billed, a
+
+    def test_failed_max_tokens_attaches_cost(self):
+        """R60: stop_reason=max_tokens factura y llega a exc.cost."""
+        e, calls, billed, a = self._decide_failing(
+            stop_reason="max_tokens",
+            text=_answers_payload("probabilities"))
+        self.assertEqual(len(calls), 1)
+        self.assertAlmostEqual(e.cost, billed)
+        self.assertAlmostEqual(e.cost, 0.004196)
+        self.assertEqual(e.diag["usage"]["output_tokens"], 8192)
+        self.assertEqual(a.resolved, "claude-haiku-5-5-20261007")
+
+    def test_failed_refusal_attaches_cost(self):
+        e, calls, billed, a = self._decide_failing(
+            stop_reason="refusal", text="I cannot help with this.")
+        self.assertEqual(len(calls), 1)
+        self.assertAlmostEqual(e.cost, billed)
+        self.assertIn("usage", e.diag)
+
+    def test_failed_malformed_retries_sum_cost(self):
+        """JSON inválido para el contrato: cada reintento suma usage."""
+        e, calls, billed, a = self._decide_failing(
+            stop_reason="end_turn", text='{"answers":{}}',
+            retries_malformed=2)
+        self.assertEqual(len(calls), 3)  # 1 + 2 correcciones
+        self.assertAlmostEqual(e.cost, billed)
+        self.assertAlmostEqual(e.cost, 0.012588)
+        self.assertEqual(e.diag["usage"]["attempts"], 3)
+
+    def test_cost_guard_stops_on_failed_anthropic_cost(self):
+        """R60_guard_probe: truncados con coste → --max-cost 0.01 para."""
+        import contextlib
+        import io
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from jevbench import run, store
+        from jevbench.adapters.llm import LLM
+
+        a = LLM(provider="anthropic", model="claude-haiku-5-5", api_key="none",
+                thinking="adaptive", effort="medium", max_tokens=8192)
+        msg = self._fake_message(
+            _answers_payload("probabilities"), input_tokens=1000,
+            output_tokens=8192, thinking_tokens=4000)
+        msg = msg.model_copy(update={"stop_reason": "max_tokens"})
+        calls = []
+
+        def fake_create(**kwargs):
+            calls.append(1)
+            return msg
+
+        a.target._client.messages.create = fake_create
+        with tempfile.TemporaryDirectory(prefix="T21b_guard_") as tmp, \
+                patch.object(store, "ROOT", Path(tmp)), \
+                patch.object(run.adapters, "get",
+                             return_value=lambda **kw: a), \
+                patch.object(run, "git_rev", return_value="offline"), \
+                patch.object(sys, "argv", [
+                    "jevbench.run", "llm", "--run", "probe",
+                    "--phases", "ood", "--limit", "3",
+                    "--max-cost", "0.01", "--max-case-cost", "0.01"]), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            run.main()
+            d = store.load("probe", "ood")
+        costs = [r.get("cost") for r in d["cases"].values()]
+        self.assertTrue(any(isinstance(c, float) and c > 0 for c in costs),
+                        costs)
+        self.assertIsNotNone(d["meta"].get("cost_stop"), d["meta"])
+        self.assertGreaterEqual(sum(c or 0 for c in costs), 0.01)
+
+
 if __name__ == "__main__":
     unittest.main()
+
+

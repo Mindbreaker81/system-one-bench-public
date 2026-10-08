@@ -12,7 +12,12 @@ BORDER = (0.45, 0.55)
 
 # ---------------------------------------------------------------- normalize
 def normalize(ans, q):
-    """Wire-format answer -> {'label', 'value', 'probs'} (probs keyed like battery.options)."""
+    """Wire-format answer -> {'label', 'value', 'probs'} (probs keyed like battery.options).
+    Una respuesta marcada {"type": "refusal"} (negativa por pregunta de la API
+    nativa de OpenAI, JEV-78) normaliza a {'refused': True}: sin decisión ni
+    distribución — puntúa 0 en su pregunta y el caso se conserva."""
+    if isinstance(ans, dict) and ans.get("type") == "refusal":
+        return {"refused": True}
     t = q["type"]
     if t == "choice":
         probs = ans.get("probabilities")
@@ -30,7 +35,11 @@ def level(value, n):
 
 
 def point(q, pred, gt):
-    """Legacy per-question credit: choice exact, score exact=1 / off-by-one=0.5, noul thr 0.5."""
+    """Legacy per-question credit: choice exact, score exact=1 / off-by-one=0.5, noul thr 0.5.
+    Una pregunta rechazada (normalize -> {'refused': True}) puntúa 0:
+    cuenta como error en su pregunta (JEV-78)."""
+    if pred.get("refused"):
+        return 0.0
     t = q["type"]
     if t == "choice":
         return float(pred["label"] == gt)
@@ -111,7 +120,9 @@ def calibration(qs, preds, cases):
             p = preds.get(c.id)
             if p is None:
                 continue
-            pr, gt = p[name], c.gt[name]
+            pr, gt = p.get(name), c.gt[name]
+            if pr is None or pr.get("refused"):
+                continue   # pregunta rechazada: sin distribución que calibrar
             if q["type"] == "noul":
                 v = min(1.0, max(0.0, pr["value"]))
                 briers.append((v - gt) ** 2)

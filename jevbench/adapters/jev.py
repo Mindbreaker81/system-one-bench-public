@@ -4,6 +4,11 @@
                        OPENROUTER_API_KEY; cost comes back in usage.cost
   provider=typesafe    POST api.typesafe.ai/v1/systemone, model jev-latest,
                        TYPESAFE_API_KEY; cost = input tokens x $0.042/Mtok (output is free)
+  choice_order=<qid>:<orden>  JEV-82: reorders the criteria keys of the named
+                       choice question in the `questions` payload — either a
+                       frozen named order (d0..d3, jevbench.rotation.NAMED_ORDERS)
+                       or a comma-separated label list. Labels, criteria texts
+                       and GT stay intact; d0 is byte-identical to no option.
 """
 import json
 import os
@@ -13,6 +18,9 @@ import urllib.request
 
 from . import Adapter
 from ..env import load_env
+from ..rotation import (order_manifest as _order_manifest,
+                        reorder_choice as _reorder_choice,
+                        resolve_choice_order as _resolve_choice_order)
 
 PROVIDERS = {
     "openrouter": ("https://openrouter.ai/api/alpha/decisions", "OPENROUTER_API_KEY", "~typesafe/jev-latest"),
@@ -22,7 +30,8 @@ TYPESAFE_USD_PER_INPUT_TOKEN = 0.042 / 1e6
 
 
 class Jev(Adapter):
-    def __init__(self, provider="openrouter", model=None, retries=3, pause=0.3, **opts):
+    def __init__(self, provider="openrouter", model=None, retries=3, pause=0.3,
+                 choice_order=None, **opts):
         super().__init__(**opts)
         load_env()
         self.url, key_var, default_model = PROVIDERS[provider]
@@ -31,12 +40,25 @@ class Jev(Adapter):
             raise SystemExit(f"{key_var} not set (put it in .env)")
         self.provider, self.model = provider, model or default_model
         self.retries, self.pause = int(retries), float(pause)
+        self.choice_order = (_resolve_choice_order(choice_order)
+                             if choice_order else None)
         self.resolved = None
+        self._perm_sha256 = None
 
     def meta(self):
-        return {"provider": self.provider, "model": self.model, "resolved": self.resolved, "endpoint": self.url}
+        return {"provider": self.provider, "model": self.model, "resolved": self.resolved,
+                "endpoint": self.url, "choice_order": self.choice_order,
+                "perm_sha256": self._perm_sha256}
 
     def decide(self, state, questions):
+        if self.choice_order:
+            # JEV-82: reorder only the named questions' criteria keys in the
+            # wire payload (the provider renders them in that order); the
+            # literal->label mapping is untouched. Misma semántica que en el
+            # adaptador llm; con d0 el cuerpo sale byte a byte igual.
+            questions = _reorder_choice(questions, self.choice_order)
+            self._perm_sha256 = _order_manifest(
+                questions, self.choice_order)["perm_sha256"]
         body = json.dumps({"model": self.model, "state": state, "questions": questions}).encode()
         for attempt in range(self.retries):
             try:

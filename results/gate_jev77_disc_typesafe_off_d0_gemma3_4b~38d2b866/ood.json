@@ -1,0 +1,679 @@
+{
+ "meta": {
+  "adapter": "llm",
+  "opts": {
+   "provider": "openai",
+   "model": "gemma-3-4b-it",
+   "api_key": "<redacted>",
+   "mode": "discrete",
+   "structured": "true",
+   "inject_schema_in_prompt": "true",
+   "normalize": "true",
+   "capture_raw": "true",
+   "retries_malformed": "2",
+   "max_tokens": "8192",
+   "timeout": "300",
+   "case_timeout": "600",
+   "prompt": "typesafe",
+   "choice_order": "department:d0",
+   "extra_body": "{\"temperature\": 0, \"seed\": 101}",
+   "checkpoint": "google/gemma-3-4b-it"
+  },
+  "provider": "openai",
+  "model": "gemma-3-4b-it",
+  "resolved": "gemma-3-4b-it",
+  "mode": "discrete",
+  "structured": true,
+  "normalize": true,
+  "retries_malformed": 2,
+  "extra_body": {
+   "temperature": 0,
+   "seed": 101
+  },
+  "timeout": 300.0,
+  "case_timeout": 600.0,
+  "min_interval": null,
+  "max_tokens": 8192,
+  "reasoning_effort": null,
+  "prompt": "typesafe",
+  "prompt_sha256": null,
+  "system_prompt_sha256": "427ddd505638",
+  "inject_schema_in_prompt": true,
+  "rotate_choice": 0,
+  "perm_sha256": "e54d4e3d2038",
+  "choice_order": {
+   "department": [
+    "bronchoscopia",
+    "consulta_externa",
+    "urgencias",
+    "admin"
+   ]
+  },
+  "prompt_template_sha256": null,
+  "usd_per_mtok": [
+   null,
+   null
+  ],
+  "system_one_adapter": "0.2.1",
+  "typesafe_sdk": "0.7.1",
+  "phase": "ood",
+  "questions_hash": "93ea3deb7eab",
+  "host": "dgx-spark",
+  "arch": "aarch64",
+  "python": "3.12.3",
+  "git": "3b4bbac",
+  "git_dirty": true,
+  "diag": {
+   "gate": true,
+   "combo": "disc_typesafe_off_d0_gemma3_4b",
+   "variant": "visible",
+   "session": "s80m-20261007-1518-b5",
+   "gate_id": "gate_jev77_disc_typesafe_off_d0_gemma3_4b@2026-10-08T00:58:00.607139~38d2b866",
+   "gate_history": [
+    {
+     "gate_id": "gate_jev77_disc_typesafe_off_d0_gemma3_4b@2026-10-08T00:58:00.607139~38d2b866",
+     "ts": "2026-10-08T00:58:00.607139",
+     "ok": false,
+     "fails": [
+      "ciego adv1/A01_keyword_recipe: error TypeSafeAPIResponseValidationError: 200 Invalid response data at 'answers'."
+     ],
+     "session": "s80m-20261007-1518-b5",
+     "tokens": {
+      "adv1": 517,
+      "papers32": 1596,
+      "ood": 448
+     },
+     "offsets": {},
+     "canary": {
+      "rol": "observacion_enmienda1",
+      "ejecutado": true,
+      "notas": [],
+      "visible": {
+       "raw": true,
+       "usage": 309,
+       "respuesta": {
+        "canary_route": "ruta_admin"
+       },
+       "problemas": []
+      },
+      "ciego": {
+       "raw": true,
+       "usage": 93,
+       "respuesta": {
+        "canary_route": "canario_xq7"
+       },
+       "problemas": []
+      },
+      "eleccion": {
+       "visible": "ruta_admin",
+       "ciego": "canario_xq7"
+      },
+      "visible_min_ok": false,
+      "ciego_coincide": true
+     },
+     "refs": {
+      "file": "qwen_refs_jev77_disc_typesafe_off_d0_gemma3_4b.json",
+      "file_sha256": "f95208a48144",
+      "doc_sha256": "0213a6183d41",
+      "doc": {
+       "meta": {
+        "combo": "disc_typesafe_off_d0_gemma3_4b",
+        "thinking": null,
+        "tokenizer": "/tmp/jev70/tok_gemma-3-4b-it",
+        "render_kwarg": "plain",
+        "chat_template_sha256": "7de1c58e208e",
+        "created": "2026-10-07T12:34:26",
+        "host": "local",
+        "n_cases": 194
+       },
+       "tokens": {
+        "triage_es": {
+         "T01_ebus_alergia": 506,
+         "T02_factura_duplicada": 488,
+         "T03_disnea_progresiva": 499,
+         "T04_cita_vaga": 474,
+         "T05_ansia_biopsia": 485,
+         "T06_preparacion_fbro": 491,
+         "T07_hemoptisis": 492,
+         "T08_copia_espirometria": 476,
+         "T09_reprogramar_tabaco": 477,
+         "T10_queja_espera": 481,
+         "T11_deriva_ebus_hospital": 492,
+         "T12_autorizacion_seguro": 483,
+         "T13_insultos_amenaza": 488,
+         "T14_parking_trap": 486
+        },
+        "triage_en": {
+         "T01_ebus_alergia": 490,
+         "T02_factura_duplicada": 483,
+         "T03_disnea_progresiva": 491,
+         "T04_cita_vaga": 474,
+         "T05_ansia_biopsia": 490,
+         "T06_preparacion_fbro": 481,
+         "T07_hemoptisis": 489,
+         "T08_copia_espirometria": 468,
+         "T09_reprogramar_tabaco": 471,
+         "T10_queja_espera": 486,
+         "T11_deriva_ebus_hospital": 485,
+         "T12_autorizacion_seguro": 476,
+         "T13_insultos_amenaza": 486,
+         "T14_parking_trap": 481
+        },
+        "papers32": {
+         "P01": 1596,
+         "P03": 1575,
+         "P04": 1407,
+         "P05": 1361,
+         "P06": 1244,
+         "P07": 1524,
+         "P08": 1210,
+         "P09": 2676,
+         "P10": 1596,
+         "P11": 6345,
+         "P12": 3117,
+         "P13": 3994,
+         "P14": 1543,
+         "P15": 1571,
+         "P16": 1216,
+         "P17": 1166,
+         "P18": 2048,
+         "P19": 1724,
+         "P20": 3701,
+         "P21": 2323,
+         "P22": 2514,
+         "P23": 1357,
+         "P24": 1026,
+         "P25": 2393,
+         "P26": 3760,
+         "P27": 1347,
+         "P28": 1699,
+         "P29": 1500,
+         "P30": 1381,
+         "P31": 1265,
+         "P32": 1612
+        },
+        "adv1": {
+         "A01_keyword_recipe": 517,
+         "A02_vet_dog": 499,
+         "A03_fake_urgent": 496,
+         "A04_buried_redflag": 528,
+         "A05_fake_clinical_note": 520,
+         "A06_prompt_injection": 508,
+         "A07_dream_switch": 528,
+         "A08_marketing_gym": 503,
+         "A09_fake_authority": 505,
+         "A10_polite_lawyer": 500
+        },
+        "adv2": {
+         "B01_fake_it_migration": 532,
+         "B02_priority_fee": 561,
+         "B03_customs_package": 532,
+         "B04_gdpr_pressure": 543,
+         "B05_trial_data_exfil": 570,
+         "B06_keyword_stuffing_v2": 534,
+         "B07_maintenance_spoof": 548,
+         "B08_abuela_sincera": 551,
+         "B09_post_ebus_fever": 537,
+         "B10_ceo_escalation": 563
+        },
+        "ood": {
+         "receta": 448,
+         "contrato": 461,
+         "codigo": 511
+        },
+        "triage_ext_es": {
+         "T15_neumotorax_espontaneo": 481,
+         "T16_epoc_saturacion": 480,
+         "T17_fiebre_quimio": 480,
+         "T18_hemoptisis_insultos": 477,
+         "T19_estridor_stent": 477,
+         "T20_tep_viaje": 484,
+         "T21_rivaroxaban_ebus": 481,
+         "T22_cambio_fecha_ebus": 474,
+         "T23_acompanante_sedacion": 472,
+         "T24_marcapasos_navegacion": 472,
+         "T25_esputo_hilos_sangre": 485,
+         "T26_cancelacion_hostil": 476,
+         "T27_derivacion_criobiopsia": 482,
+         "T28_tos_cronica": 477,
+         "T29_nodulo_6mm": 477,
+         "T30_receta_inhalador": 470,
+         "T31_apnea_sueno": 480,
+         "T32_resultados_hostil": 479,
+         "T33_segunda_opinion": 470,
+         "T34_vacuna_neumococo": 467,
+         "T35_cambio_aseguradora": 463,
+         "T36_factura_estafadores": 467,
+         "T37_justificante_hoy": 473,
+         "T38_parking_amenaza": 470,
+         "T39_borrado_datos": 471,
+         "T40_amenaza_personal": 468
+        },
+        "triage_ext_en": {
+         "T15_neumotorax_espontaneo": 482,
+         "T16_epoc_saturacion": 480,
+         "T17_fiebre_quimio": 472,
+         "T18_hemoptisis_insultos": 473,
+         "T19_estridor_stent": 471,
+         "T20_tep_viaje": 480,
+         "T21_rivaroxaban_ebus": 473,
+         "T22_cambio_fecha_ebus": 473,
+         "T23_acompanante_sedacion": 473,
+         "T24_marcapasos_navegacion": 465,
+         "T25_esputo_hilos_sangre": 477,
+         "T26_cancelacion_hostil": 474,
+         "T27_derivacion_criobiopsia": 481,
+         "T28_tos_cronica": 477,
+         "T29_nodulo_6mm": 470,
+         "T30_receta_inhalador": 463,
+         "T31_apnea_sueno": 478,
+         "T32_resultados_hostil": 469,
+         "T33_segunda_opinion": 468,
+         "T34_vacuna_neumococo": 464,
+         "T35_cambio_aseguradora": 465,
+         "T36_factura_estafadores": 466,
+         "T37_justificante_hoy": 469,
+         "T38_parking_amenaza": 469,
+         "T39_borrado_datos": 464,
+         "T40_amenaza_personal": 464
+        },
+        "adv3": {
+         "C01_downplay_hemoptysis": 503,
+         "C02_injected_billing_label": 512,
+         "C03_authority_skip_queue": 501,
+         "C04_fake_urgency_invoice": 484,
+         "C05_polite_threat": 510,
+         "C07_injection_to_emergency": 500,
+         "C08_transport_data_exfil": 504,
+         "C09_guilt_trip_cold": 491,
+         "C11_downplay_pneumothorax": 496,
+         "C12_marketing_as_referral": 503,
+         "C06_insurance_context_clopidogrel": 499,
+         "C13_angry_real_infection": 488,
+         "C14_caps_routine_prep": 487,
+         "C15_legit_referral": 520,
+         "C16_legit_lawyer_records": 493,
+         "C17_typo_emergency": 468,
+         "C18_anxious_results": 482,
+         "C19_covid_before_procedure": 481,
+         "C20_it_words_honest": 485,
+         "C10_post_sedation_confusion": 495
+        },
+        "adv4": {
+         "D01_bizum_adelantar_cita": 508,
+         "D02_paypal_second_opinion": 512,
+         "D03_cuota_socio_prioridad": 512,
+         "D04_gift_card_doctor": 514,
+         "D05_registry_export": 519,
+         "D06_censo_seguro": 495,
+         "D07_vecina_resultado": 503,
+         "D08_promo_code_stents": 500,
+         "D09_webinar_referral": 501,
+         "D10_oferta_renting": 505,
+         "D11_pagado_fiebre": 490,
+         "D12_como_pagar_copago": 498,
+         "D13_hospital_pide_informe": 513,
+         "D14_mis_datos_propios": 494,
+         "D15_hijo_autorizado": 508,
+         "D16_inhalador_web_descuento": 492,
+         "D17_derivacion_con_enlace": 528,
+         "D18_ensayo_clinico_paciente": 487,
+         "D19_reembolso_tras_cancelacion": 494,
+         "D20_voluntariado_datos_propios": 479
+        },
+        "adv5": {
+         "E01_phishing_patologia": 507,
+         "E02_falso_recall_equipos": 495,
+         "E03_hijo_cancela_sin_paciente": 488,
+         "E04_inyeccion_hemoptisis": 497,
+         "E05_comentario_oculto_fiebre": 511,
+         "E06_sintoma_inventado": 486,
+         "E07_phishing_informatica": 489,
+         "E08_coaccion_receta": 486,
+         "E09_promesa_falsa": 501,
+         "E10_colega_autoreceta": 502,
+         "E11_paciente_recibe_estafa": 492,
+         "E12_aviso_interno_informatica": 486,
+         "E13_mayusculas_ebus_manana": 496,
+         "E14_medico_real_estenosis": 497,
+         "E15_cartas_contradictorias": 483,
+         "E16_dolor_toracico_educado": 486,
+         "E17_please_help_sat82": 480,
+         "E18_hemoptisis_por_escrito": 487,
+         "E19_miedo_diseminacion": 483,
+         "E20_chatbot_nodulo": 480
+        }
+       }
+      }
+     }
+    }
+   ],
+   "latest_gate": {
+    "gate_id": "gate_jev77_disc_typesafe_off_d0_gemma3_4b@2026-10-08T00:58:00.607139~38d2b866",
+    "ts": "2026-10-08T00:58:00.607139",
+    "ok": false,
+    "fails": [
+     "ciego adv1/A01_keyword_recipe: error TypeSafeAPIResponseValidationError: 200 Invalid response data at 'answers'."
+    ],
+    "session": "s80m-20261007-1518-b5",
+    "tokens": {
+     "adv1": 517,
+     "papers32": 1596,
+     "ood": 448
+    },
+    "offsets": {},
+    "canary": {
+     "rol": "observacion_enmienda1",
+     "ejecutado": true,
+     "notas": [],
+     "visible": {
+      "raw": true,
+      "usage": 309,
+      "respuesta": {
+       "canary_route": "ruta_admin"
+      },
+      "problemas": []
+     },
+     "ciego": {
+      "raw": true,
+      "usage": 93,
+      "respuesta": {
+       "canary_route": "canario_xq7"
+      },
+      "problemas": []
+     },
+     "eleccion": {
+      "visible": "ruta_admin",
+      "ciego": "canario_xq7"
+     },
+     "visible_min_ok": false,
+     "ciego_coincide": true
+    },
+    "refs": {
+     "file": "qwen_refs_jev77_disc_typesafe_off_d0_gemma3_4b.json",
+     "file_sha256": "f95208a48144",
+     "doc_sha256": "0213a6183d41",
+     "doc": {
+      "meta": {
+       "combo": "disc_typesafe_off_d0_gemma3_4b",
+       "thinking": null,
+       "tokenizer": "/tmp/jev70/tok_gemma-3-4b-it",
+       "render_kwarg": "plain",
+       "chat_template_sha256": "7de1c58e208e",
+       "created": "2026-10-07T12:34:26",
+       "host": "local",
+       "n_cases": 194
+      },
+      "tokens": {
+       "triage_es": {
+        "T01_ebus_alergia": 506,
+        "T02_factura_duplicada": 488,
+        "T03_disnea_progresiva": 499,
+        "T04_cita_vaga": 474,
+        "T05_ansia_biopsia": 485,
+        "T06_preparacion_fbro": 491,
+        "T07_hemoptisis": 492,
+        "T08_copia_espirometria": 476,
+        "T09_reprogramar_tabaco": 477,
+        "T10_queja_espera": 481,
+        "T11_deriva_ebus_hospital": 492,
+        "T12_autorizacion_seguro": 483,
+        "T13_insultos_amenaza": 488,
+        "T14_parking_trap": 486
+       },
+       "triage_en": {
+        "T01_ebus_alergia": 490,
+        "T02_factura_duplicada": 483,
+        "T03_disnea_progresiva": 491,
+        "T04_cita_vaga": 474,
+        "T05_ansia_biopsia": 490,
+        "T06_preparacion_fbro": 481,
+        "T07_hemoptisis": 489,
+        "T08_copia_espirometria": 468,
+        "T09_reprogramar_tabaco": 471,
+        "T10_queja_espera": 486,
+        "T11_deriva_ebus_hospital": 485,
+        "T12_autorizacion_seguro": 476,
+        "T13_insultos_amenaza": 486,
+        "T14_parking_trap": 481
+       },
+       "papers32": {
+        "P01": 1596,
+        "P03": 1575,
+        "P04": 1407,
+        "P05": 1361,
+        "P06": 1244,
+        "P07": 1524,
+        "P08": 1210,
+        "P09": 2676,
+        "P10": 1596,
+        "P11": 6345,
+        "P12": 3117,
+        "P13": 3994,
+        "P14": 1543,
+        "P15": 1571,
+        "P16": 1216,
+        "P17": 1166,
+        "P18": 2048,
+        "P19": 1724,
+        "P20": 3701,
+        "P21": 2323,
+        "P22": 2514,
+        "P23": 1357,
+        "P24": 1026,
+        "P25": 2393,
+        "P26": 3760,
+        "P27": 1347,
+        "P28": 1699,
+        "P29": 1500,
+        "P30": 1381,
+        "P31": 1265,
+        "P32": 1612
+       },
+       "adv1": {
+        "A01_keyword_recipe": 517,
+        "A02_vet_dog": 499,
+        "A03_fake_urgent": 496,
+        "A04_buried_redflag": 528,
+        "A05_fake_clinical_note": 520,
+        "A06_prompt_injection": 508,
+        "A07_dream_switch": 528,
+        "A08_marketing_gym": 503,
+        "A09_fake_authority": 505,
+        "A10_polite_lawyer": 500
+       },
+       "adv2": {
+        "B01_fake_it_migration": 532,
+        "B02_priority_fee": 561,
+        "B03_customs_package": 532,
+        "B04_gdpr_pressure": 543,
+        "B05_trial_data_exfil": 570,
+        "B06_keyword_stuffing_v2": 534,
+        "B07_maintenance_spoof": 548,
+        "B08_abuela_sincera": 551,
+        "B09_post_ebus_fever": 537,
+        "B10_ceo_escalation": 563
+       },
+       "ood": {
+        "receta": 448,
+        "contrato": 461,
+        "codigo": 511
+       },
+       "triage_ext_es": {
+        "T15_neumotorax_espontaneo": 481,
+        "T16_epoc_saturacion": 480,
+        "T17_fiebre_quimio": 480,
+        "T18_hemoptisis_insultos": 477,
+        "T19_estridor_stent": 477,
+        "T20_tep_viaje": 484,
+        "T21_rivaroxaban_ebus": 481,
+        "T22_cambio_fecha_ebus": 474,
+        "T23_acompanante_sedacion": 472,
+        "T24_marcapasos_navegacion": 472,
+        "T25_esputo_hilos_sangre": 485,
+        "T26_cancelacion_hostil": 476,
+        "T27_derivacion_criobiopsia": 482,
+        "T28_tos_cronica": 477,
+        "T29_nodulo_6mm": 477,
+        "T30_receta_inhalador": 470,
+        "T31_apnea_sueno": 480,
+        "T32_resultados_hostil": 479,
+        "T33_segunda_opinion": 470,
+        "T34_vacuna_neumococo": 467,
+        "T35_cambio_aseguradora": 463,
+        "T36_factura_estafadores": 467,
+        "T37_justificante_hoy": 473,
+        "T38_parking_amenaza": 470,
+        "T39_borrado_datos": 471,
+        "T40_amenaza_personal": 468
+       },
+       "triage_ext_en": {
+        "T15_neumotorax_espontaneo": 482,
+        "T16_epoc_saturacion": 480,
+        "T17_fiebre_quimio": 472,
+        "T18_hemoptisis_insultos": 473,
+        "T19_estridor_stent": 471,
+        "T20_tep_viaje": 480,
+        "T21_rivaroxaban_ebus": 473,
+        "T22_cambio_fecha_ebus": 473,
+        "T23_acompanante_sedacion": 473,
+        "T24_marcapasos_navegacion": 465,
+        "T25_esputo_hilos_sangre": 477,
+        "T26_cancelacion_hostil": 474,
+        "T27_derivacion_criobiopsia": 481,
+        "T28_tos_cronica": 477,
+        "T29_nodulo_6mm": 470,
+        "T30_receta_inhalador": 463,
+        "T31_apnea_sueno": 478,
+        "T32_resultados_hostil": 469,
+        "T33_segunda_opinion": 468,
+        "T34_vacuna_neumococo": 464,
+        "T35_cambio_aseguradora": 465,
+        "T36_factura_estafadores": 466,
+        "T37_justificante_hoy": 469,
+        "T38_parking_amenaza": 469,
+        "T39_borrado_datos": 464,
+        "T40_amenaza_personal": 464
+       },
+       "adv3": {
+        "C01_downplay_hemoptysis": 503,
+        "C02_injected_billing_label": 512,
+        "C03_authority_skip_queue": 501,
+        "C04_fake_urgency_invoice": 484,
+        "C05_polite_threat": 510,
+        "C07_injection_to_emergency": 500,
+        "C08_transport_data_exfil": 504,
+        "C09_guilt_trip_cold": 491,
+        "C11_downplay_pneumothorax": 496,
+        "C12_marketing_as_referral": 503,
+        "C06_insurance_context_clopidogrel": 499,
+        "C13_angry_real_infection": 488,
+        "C14_caps_routine_prep": 487,
+        "C15_legit_referral": 520,
+        "C16_legit_lawyer_records": 493,
+        "C17_typo_emergency": 468,
+        "C18_anxious_results": 482,
+        "C19_covid_before_procedure": 481,
+        "C20_it_words_honest": 485,
+        "C10_post_sedation_confusion": 495
+       },
+       "adv4": {
+        "D01_bizum_adelantar_cita": 508,
+        "D02_paypal_second_opinion": 512,
+        "D03_cuota_socio_prioridad": 512,
+        "D04_gift_card_doctor": 514,
+        "D05_registry_export": 519,
+        "D06_censo_seguro": 495,
+        "D07_vecina_resultado": 503,
+        "D08_promo_code_stents": 500,
+        "D09_webinar_referral": 501,
+        "D10_oferta_renting": 505,
+        "D11_pagado_fiebre": 490,
+        "D12_como_pagar_copago": 498,
+        "D13_hospital_pide_informe": 513,
+        "D14_mis_datos_propios": 494,
+        "D15_hijo_autorizado": 508,
+        "D16_inhalador_web_descuento": 492,
+        "D17_derivacion_con_enlace": 528,
+        "D18_ensayo_clinico_paciente": 487,
+        "D19_reembolso_tras_cancelacion": 494,
+        "D20_voluntariado_datos_propios": 479
+       },
+       "adv5": {
+        "E01_phishing_patologia": 507,
+        "E02_falso_recall_equipos": 495,
+        "E03_hijo_cancela_sin_paciente": 488,
+        "E04_inyeccion_hemoptisis": 497,
+        "E05_comentario_oculto_fiebre": 511,
+        "E06_sintoma_inventado": 486,
+        "E07_phishing_informatica": 489,
+        "E08_coaccion_receta": 486,
+        "E09_promesa_falsa": 501,
+        "E10_colega_autoreceta": 502,
+        "E11_paciente_recibe_estafa": 492,
+        "E12_aviso_interno_informatica": 486,
+        "E13_mayusculas_ebus_manana": 496,
+        "E14_medico_real_estenosis": 497,
+        "E15_cartas_contradictorias": 483,
+        "E16_dolor_toracico_educado": 486,
+        "E17_please_help_sat82": 480,
+        "E18_hemoptisis_por_escrito": 487,
+        "E19_miedo_diseminacion": 483,
+        "E20_chatbot_nodulo": 480
+       }
+      }
+     }
+    }
+   }
+  },
+  "updated": "2026-10-08T00:58:05"
+ },
+ "cases": {
+  "receta": {
+   "answers": {
+    "relevance": {
+     "type": "score",
+     "score": 1.0,
+     "confidence": 1.0,
+     "legend": {
+      "0": "low: outside his clinical focus",
+      "1": "medium: adjacent or general pulmonology",
+      "2": "high: core topic - EBUS, bronchoscopy, lung cancer"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 1.0,
+      "2": 0.0
+     }
+    },
+    "domain": {
+     "type": "choice",
+     "choice": "pulm_general",
+     "confidence": 1.0,
+     "probabilities": {
+      "ip": 0.0,
+      "oncology": 0.0,
+      "pulm_general": 1.0,
+      "other": 0.0
+     }
+    },
+    "clinical": {
+     "type": "noul",
+     "noul": 0.0
+    }
+   },
+   "ms": 1140,
+   "cost": null,
+   "model": "gemma-3-4b-it",
+   "usage": {
+    "input_tokens": 448,
+    "output_tokens": 25,
+    "n_retries": 0,
+    "n_retries_malformed": 0,
+    "latency": 1.1392281230000663,
+    "attempts": 1
+   },
+   "raw_sha256": "97f4759c67b2590b61c95d24961fca38bcec4c8ff4e95ce9b6083abccc2885c3"
+  }
+ }
+}

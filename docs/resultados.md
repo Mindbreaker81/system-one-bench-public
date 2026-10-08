@@ -23,7 +23,9 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
     tev1_4b tev1_0.8b decider_4b_clefrev_review decider_4b_clefrev_audit clef_27b \
     clef_flash_9b_xpu decider_4b_clefflashrev_review decider_4b_clefflashrev_audit clm_v0.1_8b strands_2b_hobson_v19_xpu \
     strands_2b_hobson_v19_xpu_trunc dgemma_26b_a4b_nvfp4 dgemma_26b_a4b_nvfp4_s1 dgemma_26b_a4b_nvfp4_s1_jevrev_review dgemma_26b_a4b_nvfp4_s1_jevrev_audit \
-    llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc
+    llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc \
+    llm_medgemma_27b_it_bf16_jev77_d0_disc llm_gemma3_27b_it_bf16_jev77_d0_disc medgemma_27b_jev77_jevrev_audit oai_luna_decisions llm_haiku55_off_prob \
+    llm_haiku55_off_disc llm_haiku55_adapt_prob
 ```
 <!-- /AUTO:comando -->
 
@@ -117,6 +119,13 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | llm_qwen38_27b_fp8_jev71_off_d0_disc | 62 | 90.7 | 92.1 | 26/28 | 79.0 | 0.82 | 9/10 | 17/20 | 85.5 | 95.0 / 95.0 | 15/20 | 87.5 | 0.079 | 2634 | 0/216 |
 | llm_qwen38_27b_fp8_jev76_on_d0_disc | 60 | 91.4 | 92.9 | 26/28 | 82.3 | 0.84 | 7/10 | 16/20 | 84.0 | 95.0 / 95.4 | 14/20 | 86.0 | 0.063 | 26660 | 0/216 |
 | llm_qwen38_27b_fp8_jev76_on_d1_disc | 55 | 90.0 | 92.1 | 25/28 | 82.3 | 0.84 | 7/10 | 16/20 | 82.5 | 93.5 / 95.8 | 14/20 | 84.5 | 0.069 | 26633 | 0/216 |
+| llm_medgemma_27b_it_bf16_jev77_d0_disc | 26 | 87.9 | 84.3 | 21/28 | 80.3 | 0.85 | 8/10 | 8/20 | 63.0 | 92.7 / 92.3 | 11/20 | 77.5 | 0.143 | 9384 | 0/216 |
+| llm_gemma3_27b_it_bf16_jev77_d0_disc | 16 | 82.9 | 85.7 | 22/28 | 73.2 | 0.91 | 8/10 | 4/20 | 55.0 | 95.0 / 95.0 | 11/20 | 75.5 | 0.154 | 9417 | 0/216 |
+| medgemma_27b_jev77_jevrev_audit | 65 | 95.0 | 95.7 | 26/28 | 77.7 | 0.66 | 7/10 | 19/20 | 86.5 | 94.2 / 93.1 | 18/20 | 92.5 | 0.069 | — | 0/216 |
+| oai_luna_decisions | 38 | 91.4 | 89.3 | 26/28 | 73.5 | 0.76 | 7/10 | 16/20 | 72.0 | 89.6 / 89.6 | 18/20 | 87.5 | 0.099 | 441 | 0/214 |
+| llm_haiku55_off_prob | 62 | 93.6 | 95.0 | 26/28 | 73.9 | 0.87 | 5/10 | 17/20 | 88.0 | 91.5 / 91.2 | 16/20 | 87.5 | 0.061 | 1656 | 0/216 |
+| llm_haiku55_off_disc | 64 | 93.6 | 92.9 | 27/28 | 77.4 | 0.88 | 6/10 | 18/20 | 86.0 | 93.5 / 93.5 | 19/20 | 90.5 | 0.085 | 1285 | 0/216 |
+| llm_haiku55_adapt_prob | 69 | 93.6 | 94.3 | 26/28 | 75.5 | 0.79 | 7/10 | 18/20 | 90.5 | 91.9 / 92.7 | 18/20 | 93.0 | 0.059 | 2639 | 0/216 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.3 | — | 0/10 | 17/20 | 79.0 | 57.7 / 57.7 | 5/20 | 59.0 | — | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
@@ -246,7 +255,31 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   importe); réplica r2 $0,0194 en éxitos. Pendientes: rotación d1 justificable como prueba de sensibilidad al
   orden (pendiente de aprobación y reglas); cascada real y uso como revisor de Jev no justificados por estos
   datos. Pre-registro y resultados: `docs/infra_runs/luna_decisions_jev81.md` §RESULTADOS.
-  Ficha: `docs/modelos.md` §LLM generalista.
+  Ficha: `docs/modelos.md` §LLM generalista. **JEV-82 (7-oct, pre-registro 28727d3, rev. R57):** la rotación d1
+  del orden de `department` (`jev_luna_decisions_d1`, 186/194; no entra en el marcador) deja los puntos
+  coincidentes y Δ ajustado **0,00 [0,00; 0,00]** en las 5 fases completas comunes — lo que no demuestra
+  estabilidad ni equivalencia general —; acuerdo **918/924 = 99,35 %** [98,59–99,76], seis cambios de
+  `department`, Δp máx 0,72. La **primacía ≥5 pp queda refutada** por U95 < 5 en 32 registros pareados
+  (Δ errores d0−d1 = −12,50 pp [−25,81; −2,94]; 7 frente a 11; p Holm 0,125): no demuestra ausencia de efecto
+  de orden ni deterioro general. Dos rechazos nuevos (adv3/C05_polite_threat y
+  triage_ext_es/T40_amenaza_personal) sin atribución causal al orden. Coste d1 $0,0192, cota inferior. No
+  comparar 47,70 (d0, 6 fases) con 42,15 (d1, 5 fases). Resultados:
+  `docs/infra_runs/luna_decisions_jev82.md` §RESULTADOS. **JEV-78 (8-oct, pre-registro de9af7f, rev. R63):** la
+  misma batería por la **Decisions API nativa de OpenAI** (`oai_luna_decisions`, SDK oficial) completa **194/194**
+  conservando los 6 casos que OpenRouter rechazó enteros como 8 negativas parciales por pregunta — diferencia de
+  cobertura bajo contratos distintos, sin identificar la capa causal; versión inconclusa (alias sin snapshot),
+  acuerdo 934/934, Δp 0, Δ ajustado 0,00 en 6 fases comunes — sin equivalencia demostrada — y Holm 53 vs Jev =
+  0 significativas; ajustado propio 38,25 [27–48] (refusals a 0). Resultados:
+  `docs/infra_runs/openai_decisions_jev78.md` §RESULTADOS.
+- **claude-haiku-5-5 (8-oct, JEV-83):** Anthropic vía `system-one-adapter` (ID canónico de snapshot fijo).
+  Tres celdas, 194/194 registros retenidos, 0 errores: **H-off (thinking off) 62 [54–69]** — frente a Jev, Holm
+  53 = **0 significativas**, sin superioridad en ninguna dirección —, **H-disc 64 [57–71]** y **H-adapt
+  (thinking adaptive) 69 [62–76]** (thinking en 126/194 casos; descriptivo, sin causalidad aislada). En las 10
+  fases comunes: 61,7/64,1/69,3 vs luna-prob 61,2 y Jev 45,4 (el marcador redondea 61,74/64,13/69,29 a
+  62/64/69). **Desviación declarada:** la primera respuesta de
+  E11 (adv5) se perdió por un corte y se repitió (≥195 respuestas); el coste de H-adapt ($0,0704) es **cota
+  inferior**. Costes: $0.0502/$0.0314/$0.0704. Pre-registro y resultados:
+  `docs/infra_runs/claude_haiku55_jev83.md` §RESULTADOS. Ficha: `docs/modelos.md` §LLM generalista.
 - **gpt-6.1-sol (1-oct, `reasoning_effort=low`):** modelo de OpenAI ~20× más caro por token que
   luna, medido con el mismo protocolo. **Ajustado 65** (Cerebras probabilities sin esquema llega a 66 con GT v4, sin superioridad demostrada), por encima de
   luna (61) y a la par de la cascada `jev_cascade_audit` (64), aunque por debajo de la mejor
@@ -276,7 +309,8 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   `docs/experimentos/alerta_manipulacion.md`.
 - **Cascadas con LLM (29-sep):** `llm_gpt6luna_jevrev_audit` (LLM → revisor Jev) es la
   mejor configuración medida (adv total 92.0, adv5 88.5, Brier 0.045, alerta 9/10 con 1 FP),
-  estadísticamente equivalente a `jev_cascade_audit` pero a ~3× el coste y la latencia.
+  sin diferencia significativa con `jev_cascade_audit` — lo que no demuestra equivalencia — a
+  ~3× el coste y la latencia.
   `decider_4b_llmrev_audit` (revisor LLM) recupera el 77 % de la ganancia de Jev en adv3+adv5
   — el primer revisor no-Jev que supera el 50 % ahí — pero falla el criterio JEV-32 por triaje
   (28 %) y por la alerta (6/10). Detalle: `docs/experimentos/cascada_jev.md`.
@@ -437,6 +471,21 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   segundo mejor revisor local y el más barato. **Su alerta de una pasada sí cumple**
   (7/10 TP · 0 FP por set; 21/30 TP, p=0.18 vs el 27B). Ficha: `docs/modelos.md`
   §Clef-Flash.
+- **MedGemma (Google Health, 8-oct, JEV-77):** post-train clínico de Gemma 3, servido por la
+  ruta del adaptador `llm` (SGLang BF16 en .80, gramática restringida común, temp 0). En
+  `discrete` d0 saca ajustado **25,87** frente a 16,22 del control Gemma3-27B — la mejora
+  pre-registrada de ≥ +5 queda **inconclusa** (IC97,5 [−1,7; +21,8]) — y muy por debajo del
+  Qwen3.8-27B FP8 fresco (62,90; **no inferioridad refutada**: −37,0 [−49,8; −24,9]). H1/H2 se
+  miden bajo la gramática restringida de la Enmienda 1; su efecto no se aísla de la enmienda.
+  Enmienda 2: la sonda ciega acepta JSON válido para la gramática con valores fuera del contrato
+  del SDK (Gemma3-4B, urgency=1300); el manifiesto no cambia. Desviación NAS en Gemma3-4B:
+  copia local de los mismos pesos, sha256 15/15; los resultados se mantienen. El bloque
+  4B es descriptivo y dominado por vectores nulos en probabilities. Como D1 con revisor Jev,
+  la cascada llega a 65,43 (audit) frente a raw 66,59: la diferencia de punto no demuestra que
+  audit supere a raw y no es una solución 100 % local. Sin afirmar superioridad ni utilidad clínica.
+  Runs `llm_medgemma_27b_it_bf16_jev77_d0_disc`, `llm_gemma3_27b_it_bf16_jev77_d0_disc`,
+  `medgemma_27b_jev77_jevrev_audit`. Ficha: `docs/modelos.md` §MedGemma; detalle:
+  `docs/infra_runs/medgemma_jev77.md` §RESULTADOS.
 
 **Experimentos** (`docs/experimentos/`):
 - `cascada_jev.md`: revisor-auditor (Jev→Jev, Decider→Decider, Decider→Jev y revisores 100%
@@ -524,7 +573,7 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
       p = 0.009.
     - **Discrete en FP8:** +12.9, inconcluso para ≥ +10.
     - **Frases anti-inyección visibles:** refutado que mejoren ≥ 10 pp.
-    - **Pendiente opcional:** el factorial `discrete` con thinking y una réplica en otro backend o host.
+    - **Pendiente opcional:** una réplica en otro backend o host.
   - **JEV-69:** issue upstream abierta (system-one-adapter#50).
   - **JEV-70:** DiffusionGemma medido el 6-oct (ver arriba).
   - **JEV-73:** resuelta el 6-oct (GT v4).
@@ -554,6 +603,36 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
     Holm 53 celdas: 0 significativas. Thinking multiplica la latencia media ×13,8/×13,2 sobre
     discrete y ×6,8/×7,1 sobre prob. Sin afirmar superioridad ni deterioro entre tratamientos.
     Detalle: `docs/infra_runs/qwen38_jev76.md` §RESULTADOS.
+- **JEV-77 (8-oct), MedGemma-27B-IT frente a Gemma3-27B-IT y Qwen3.8-27B FP8 (18 celdas × 194,
+  GT v4):** sesión pre-registrada en .80 (rama A: una imagen SGLang común para los cinco checkpoints;
+  MedGemma/Gemma BF16 y Qwen FP8, `discrete`/`probabilities` × d0/d1), 3 492/3 492 casos, 0 errores, 3 658 peticiones de
+  12 000, 17,98 h de 40 h, 2/4 reinicios extraordinarios; manifiesto `8b201bfb8b6bd5a7` con la
+  Enmienda 1 (gramática JSON restringida común) y la Enmienda 2 (la sonda ciega admite valores
+  fuera del contrato SDK). Revisión Codex R61: cálculo y análisis reproducidos; su corrección C1
+  (trazabilidad de los pesos de Gemma3-4B tras la desviación del NAS) quedó cerrada con la
+  verificación SHA256 de `docs/infra_runs/medgemma_jev77/a6/weights_gemma3_4b/`.
+
+  | Celda | Config | Ajustado |
+  |---|---|---:|
+  | *Mayoría trivial* | — | 0,00 |
+  | MD0 | MedGemma-27B · discrete · d0 | 25,87 |
+  | GD0 | Gemma3-27B · discrete · d0 | 16,22 |
+  | QD0′ | Qwen3.8-27B FP8 · discrete · d0 | 62,90 |
+  | MD1 | MedGemma-27B · discrete · d1 | 28,99 |
+  | GD1 | Gemma3-27B · discrete · d1 | 21,10 |
+  | QD1′ | Qwen3.8-27B FP8 · discrete · d1 | 60,43 |
+
+  Clasificación pre-registrada (IC 97,5 %, Bonferroni ×2): **H1 inconclusa** (MD0−GD0 ≥ +5:
+  +9,7 [−1,7; +21,8]) y **H2 refutada** (MD0−QD0′ ≥ −5: −37,0 [−49,8; −24,9]). Los descriptivos
+  (d1, probabilities, bloque 4B) no sostienen una ventaja uniforme de MedGemma sobre Gemma3; los
+  subgrupos solo sugieren ganancia frente a Gemma3 en papers32 (+7,1 [1,0; 13,2] IC95 nominal).
+  Holm53 (diez familias): solo tres celdas significativas, todas en el bloque 4B.
+  **Cautela:** 633 vectores crudos nulos normalizados a uniforme, 600 de ellos en los runs
+  probabilities de MedGemma-4B — su ajustado probabilities no es confianza informada.
+  **Cascada híbrida** M-D0 → revisor Jev (`typesafe/jev-1.13-20260917` congelado, 194/194):
+  audit **65,43**, raw **66,59** — descriptiva, no demuestra que audit supere a raw ni una
+  solución 100 % local. Sin afirmar superioridad ni utilidad clínica.
+  Detalle: `docs/infra_runs/medgemma_jev77.md` §RESULTADOS.
 - Repetir `python3 -m jevbench.check_versions --log` periódicamente. Si aparece una versión
   nueva de Jev, repetir `jev_v3` y la cascada.
 

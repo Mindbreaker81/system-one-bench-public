@@ -13,6 +13,78 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [1.5.0] - 2026-10-07 — JEV-77: resultados MedGemma/Gemma 3/Qwen en .80; JEV-82: rotación d1 de gpt-6-luna-decisions (pre-registro 28727d3); JEV-78/83: Decisions API nativa de OpenAI y Claude Haiku 5.5
+
+- **`check_versions`:** sondea también `openai/gpt-6-luna-decisions` (OpenRouter) con conjunto
+  de versiones conocido aparte (`openai/gpt-6-luna-decisions-20261006`); el aviso de versión
+  nueva nombra la familia y qué repetir (JEV-80 batería / JEV-82 rotación). Punto de extensión
+  reservado para la API nativa de OpenAI Decisions (JEV-78). Registro en
+  `docs/versiones_jev.md` por sección.
+- **JEV-82 (resultados, rev. Codex R57 APTO; `git show 28727d3`):** pre-registro congelado
+  `docs/infra_runs/luna_decisions_jev82.md` — rotación d1 del orden de `department` en
+  `gpt-6-luna-decisions`, con dos piezas de harness: opción `choice_order` opt-in en el
+  adaptador `jev` (d0 byte a byte intacto; la rotación solo se aplica si se pide) y guardas de
+  coste en `jevbench.run` (`--max-case-cost 0.01 --max-cost 0.05`, con `cost_stop` que también
+  opera al reanudar). Ejecución sin desviaciones: 4 comandos exactos, 202 llamadas lógicas a
+  `decide`, sin parada de coste. `jev_luna_decisions_d1` **186/194** (los 6 rechazos de d0 más
+  2 nuevos: adv3/C05_polite_threat y triage_ext_es/T40_amenaza_personal); mismo modelo servido
+  (`…-20261006`) en los 186 pares. En las 5 fases completas comunes, Δ ajustado **0,00
+  [0,00–0,00]** (puntos por caso idénticos); acuerdo **918/924 = 99,35 %** con 6 decisiones de
+  `department` cambiadas y Δp máx 0,72. **Primacía ≥5 pp REFUTADA** por U95 < 5 en los 32
+  registros pareados del subconjunto congelado (Δ errores d0−d1 = −12,50 pp [−25,81, −2,94];
+  7 errores d0 frente a 11 d1; p Holm 0,125) — sin demostrar ausencia de efecto de orden,
+  equivalencia ni estabilidad general. Coste registrado d1 $0,0192 (cota inferior). El run d1
+  **no entra en marcador ni web** (variante de sensibilidad). Resultados:
+  `docs/infra_runs/luna_decisions_jev82.md` §RESULTADOS.
+- **JEV-78/83 (resultados, rev. Codex R63 — JEV-78 APTO; pre-registros congelados `de9af7f` y `5e8da17`):**
+  - **JEV-78 — `openai_decisions`:** adaptador nuevo sobre el SDK oficial `openai==3.26.0`
+    (venv aparte `.venv-oai`) para la **Decisions API nativa de OpenAI** (`client.decisions.create`,
+    `max_retries=0`), con **refusal por pregunta** (negativa parcial = caso conservado con la pregunta a 0;
+    negativa total = `ProviderRefusal`) y coste informado contabilizado también en los intentos rechazados;
+    análisis offline `python3 -m jevbench.jev78 analyze`. `oai_luna_decisions` **194/194, 0 errores de caso**:
+    los 6 casos que OpenRouter rechazó enteros se conservan con **8 negativas parciales** (department ×6,
+    urgency ×2) — diferencia de cobertura bajo contratos distintos, sin identificar la capa causal del rechazo
+    histórico. Versión **inconclusa** (alias `gpt-6-luna` sin snapshot; same_model=false); acuerdo **934/934**
+    y Δp 0 (2.091 componentes), Δ ajustado **0,00 [0,00–0,00]** en las 6 fases comunes — sin equivalencia
+    demostrada; Holm 53 vs `jev_v3`: **0 significativas**; ajustado propio **38,25 [27–48]** (refusals a 0);
+    coste registrado **$0,0205** con el ledger durable. `docs/infra_runs/openai_decisions_jev78.md`
+    §RESULTADOS.
+  - **JEV-83 — Claude Haiku 5.5 (`claude-haiku-5-5`, Anthropic):** extensión opt-in del adaptador `llm`
+    (`thinking=disabled|adaptive`, `effort`, `max_tokens`, timeouts; `exc.cost` en fallos con respuesta) vía
+    `system-one-adapter[anthropic]==0.2.1` en `.venv-anth`; ID canónico de snapshot fijo (no alias móvil).
+    Tres celdas, **194/194 registros retenidos, 0 errores**: H-off **62 [54–69]** (Holm 53 vs Jev: **0
+    significativas** — sin superioridad), H-disc **64 [57–71]**, H-adapt **69 [62–76]** (thinking en 126/194
+    casos; descriptivo, sin causalidad aislada). **Desviación declarada:** un corte de sesión dejó la primera
+    respuesta de E11 (adv5) sin persistir y la reanudación la repitió (≥195 respuestas para 194 ids); el coste
+    de H-adapt **$0,0704 es cota inferior** (≥1 intento pagado sin coste recuperado). Costes: $0.0502 /
+    $0.0314 / $0.0704. Los 4 runs (`oai_luna_decisions` y las 3 celdas Haiku) entran en marcador y web.
+    `docs/infra_runs/claude_haiku55_jev83.md` §RESULTADOS.
+- **JEV-77 (resultados, rev. Codex R61; commits `0fc8fd4`/`3b4bbac`/`b687f8a`):** MedGemma-27B-IT
+  frente a Gemma3-27B-IT y Qwen3.8-27B FP8 — ensayo pre-registrado
+  (`docs/infra_runs/medgemma_jev77.md`) con dos aprobaciones: 18 celdas × 194 casos
+  (3 492/3 492, 0 errores, 3 658/12 000 peticiones, 17,98 h de 40 h, 2/4 reinicios
+  extraordinarios) en .80, rama A (una imagen SGLang común para los cinco checkpoints; MedGemma/Gemma BF16 y Qwen FP8,
+  temp 0, `discrete`/`probabilities` × d0/d1). **H1 inconclusa** (MD0−GD0 ≥ +5: +9,7
+  [−1,7; +21,8] IC97,5) y **H2 refutada** (no inferioridad −5 frente a Qwen fresco: −37,0
+  [−49,8; −24,9]). Enmienda 1 (gramática JSON restringida
+  `--constrained-json-disable-any-whitespace`, manifiesto `008c1cdd… → 8b201bfb…`) y Enmienda 2
+  (la sonda ciega admite valores fuera del contrato SDK) aplicadas; desviación operativa NAS en
+  el bloque Gemma3-4B acreditada con SHA256 15/15 (`a6/weights_gemma3_4b/`, cierre de la
+  corrección C1 de R61). Holm53: solo tres celdas significativas, todas en el bloque 4B;
+  **633 vectores nulos normalizados** a uniforme (600 en probabilities de MedGemma-4B).
+  Cascada híbrida M-D0 → revisor Jev (`jev-1.13-20260917` congelado): audit **65,43** / raw
+  **66,59**, sin demostrar audit > raw ni una solución 100 % local. Marcador: MD0, GD0 y
+  `medgemma_27b_jev77_jevrev_audit` (familia nueva «MedGemma» en web y sitio). Sin afirmar
+  superioridad ni utilidad clínica.
+- **Revisión editorial R65 (8-oct):** JEV-78/82/83 incorporados al relato público (párrafo de
+  decisiones, tarjeta de una pasada, «Las pruebas», historia y filas de metodología del sitio) con
+  el grado de afirmación del pre-registro: Holm 53 es solo de H-off (H-disc/H-adapt descriptivas),
+  el 38 nativo no es la cifra comparable y JEV-82 sigue sin barra; «equivalente» sustituido por
+  «sin diferencia significativa (no demuestra equivalencia)» en resultados y modelos; Enmienda 2 y
+  desviación NAS en ficha, tarjeta y lectura; latencias discrete 27B ~9.4 s (26–28 s son medias);
+  hashes de Gemma 3 en la tabla de modelos; E11 y universo de medianas en la nota de coste;
+  millares «3 658/12 000» unificados. Regenerados marcador, web y sitio.
+
 ## [1.4.0] - 2026-10-07 — JEV-76: resultados del factorial discrete × thinking de Qwen3.8-27B FP8
 
 - **JEV-76 (resultados, rev. Codex R53 APTO):** sesión `s81f-20261007-0800` en .81, manifiesto
