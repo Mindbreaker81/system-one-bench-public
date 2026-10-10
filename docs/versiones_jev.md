@@ -28,8 +28,15 @@ Notas (Jev):
 |---|---|---|
 | 2026-09-27 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.13-20260917` · `typesafe:jev-latest` → `jev-1.13.0` · `typesafe:jev-preview` → `jev-1.13.0` | sin cambios |
 | 2026-10-01 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.13-20260917` · `typesafe:jev-latest` → `jev-1.13.0` · `typesafe:jev-preview` → `jev-1.13.0` | sin cambios |
-
+| 2026-10-10 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.13-20260917` · `typesafe:jev-latest` → `jev-1.13.0` · `typesafe:jev-preview` → `jev-1.13.0` | sin cambios |
 ## gpt-6-luna-decisions (OpenRouter)
 
 | fecha | alias → versión resuelta | resultado |
 |---|---|---|
+| 2026-10-10 | `openrouter:openai/gpt-6-luna-decisions` → `openai/gpt-6-luna-decisions-20261006` | sin cambios |
+
+## Microsoft-Decision-1 (OpenRouter)
+
+| fecha | alias → versión resuelta | resultado |
+|---|---|---|
+| 2026-10-10 | `openrouter:microsoft/microsoft-decision-1` → `microsoft/microsoft-decision-1-20261009` | sin cambios |

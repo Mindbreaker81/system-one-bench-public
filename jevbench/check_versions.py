@@ -71,6 +71,24 @@ FAMILIES = (
 OPENAI_DECISIONS_FAMILY = None
 
 
+# Modelos anunciados pero aún no accesibles: se vigila su aparición en el catálogo de OpenRouter
+# (sin llamadas de pago). Una aparición no listada en `known` se avisa (rc=1 → ntfy del cron).
+# Modelos anunciados aún no accesibles, vigilados por su aparición en el catálogo /models de
+# OpenRouter (sin llamadas de pago). Ojo: los modelos servidos solo por el endpoint de decisiones
+# (luna-decisions, Microsoft-Decision-1) NO salen en /models; para ellos, una familia con sonda.
+# Entradas: {"id", "label", "match": callable(id)->bool, "known": set(), "on_new": str}.
+CATALOG_WATCH = ()
+
+
+def catalog_hits(listed):
+    """{watch_id: ids nuevos} de los modelos vigilados presentes en el catálogo de OpenRouter."""
+    ids = (listed or {}).get("openrouter_all") or []
+    out = {}
+    for w in CATALOG_WATCH:
+        out[w["id"]] = sorted(m for m in ids if w["match"](m) and m not in w["known"])
+    return out
+
+
 def active_families():
     """Families currently probed (excludes the JEV-78 stub until wired)."""
     out = list(FAMILIES)
@@ -100,6 +118,7 @@ def listed_models():
         headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"})
     with urllib.request.urlopen(req, timeout=30) as r:
         ids = [m["id"] for m in json.loads(r.read())["data"]]
+        out["openrouter_all"] = ids
         out["openrouter"] = [
             mid for mid in ids
             if "typesafe" in mid or "jev" in mid.lower()
@@ -204,12 +223,20 @@ def main(argv=None, probe_fn=probe, list_fn=listed_models):
     args = ap.parse_args(argv)
     resolved_by, new_by = check_families(probe_fn=probe_fn)
     listed = list_fn()
-    for line in format_lines(resolved_by, new_by, listed=listed):
+    hits = catalog_hits(listed)
+    shown = {k: v for k, v in (listed or {}).items() if k != "openrouter_all"}
+    for line in format_lines(resolved_by, new_by, listed=shown):
         print(line)
+    for w in CATALOG_WATCH:
+        if hits.get(w["id"]):
+            print(f"DISPONIBLE ({w['label']}): " + ", ".join(hits[w["id"]]))
+            print("→ " + w["on_new"])
+        else:
+            print(f"aún no disponible en OpenRouter ({w['label']})")
     if args.log:
         path = append_log(resolved_by, new_by)
         print(f"registrado en {path}")
-    return 0 if not any(new_by.values()) else 1
+    return 0 if not any(new_by.values()) and not any(hits.values()) else 1
 
 
 if __name__ == "__main__":

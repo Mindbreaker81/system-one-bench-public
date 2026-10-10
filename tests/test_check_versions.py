@@ -1,4 +1,6 @@
 """Offline tests for jevbench.check_versions (Jev + gpt-6-luna-decisions)."""
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -138,3 +140,31 @@ class CheckVersions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CatalogWatch(unittest.TestCase):
+    """Vigilancia por catálogo (/models) de modelos aún no accesibles: mecanismo genérico."""
+
+    WATCH = ({"id": "x", "label": "Modelo-X", "match": lambda mid: mid == "acme/model-x",
+              "known": set(), "on_new": "preparar su evaluación"},)
+
+    def _main(self, ids):
+        listed = lambda: {"openrouter_all": ids, "openrouter": [], "typesafe": []}
+        known = {"openrouter:~typesafe/jev-latest": "typesafe/jev-1.13-20260917",
+                 "typesafe:jev-latest": "jev-1.13.0", "typesafe:jev-preview": "jev-1.13.0",
+                 "openrouter:openai/gpt-6-luna-decisions": "openai/gpt-6-luna-decisions-20261006"}
+        probe = lambda provider, model: known[f"{provider}:{model}"]
+        out = io.StringIO()
+        with mock.patch.object(cv, "CATALOG_WATCH", self.WATCH), contextlib.redirect_stdout(out):
+            rc = cv.main([], probe_fn=probe, list_fn=listed)
+        return rc, out.getvalue()
+
+    def test_ausente(self):
+        rc, text = self._main(["openai/gpt-6-luna"])
+        self.assertEqual(rc, 0)
+        self.assertIn("aún no disponible en OpenRouter (Modelo-X)", text)
+
+    def test_aparece(self):
+        rc, text = self._main(["acme/model-x"])
+        self.assertEqual(rc, 1)
+        self.assertIn("DISPONIBLE (Modelo-X): acme/model-x", text)

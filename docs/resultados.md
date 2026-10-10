@@ -26,7 +26,7 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
     llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc \
     llm_medgemma_27b_it_bf16_jev77_d0_disc llm_gemma3_27b_it_bf16_jev77_d0_disc medgemma_27b_jev77_jevrev_audit oai_luna_decisions llm_haiku55_off_prob \
     llm_haiku55_off_disc llm_haiku55_adapt_prob decider_4b_haiku55rev_audit jev_haiku55rev_audit llm_haiku55_adapt_prob_r2 \
-    llm_ministral3b_med_prob llm_ministral3b_med_disc
+    llm_ministral3b_med_prob llm_ministral3b_med_disc jev_ms_decision1
 ```
 <!-- /AUTO:comando -->
 
@@ -132,6 +132,7 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | llm_haiku55_adapt_prob_r2 | 67 | 94.3 | 95.0 | 26/28 | 74.8 | 0.82 | 5/10 | 18/20 | 89.5 | 91.2 / 90.8 | 17/20 | 90.0 | 0.059 | 2533 | 0/216 |
 | llm_ministral3b_med_prob | -7* | 76.4 | 83.3 | 12/28 | 71.8 | 0.64 | 7/8 | 7/19 | 63.1 | 76.2 / 80.8 | 11/20 | 71.0 | 0.138 | 4780 | 1/181 |
 | llm_ministral3b_med_disc | 45* | 76.2 | 80.0 | 16/28 | 78.3 | 0.88 | 9/10 | 6/18 | 63.3 | 83.8 / 84.6 | 9/19 | 67.4 | 0.160 | 1913 | 0/206 |
+| jev_ms_decision1 | 44 | 91.4 | 86.4 | 28/28 | 73.9 | 0.85 | 6/10 | 16/20 | 78.5 | 92.3 / 88.1 | 16/20 | 84.0 | 0.090 | 693 | 0/216 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.3 | — | 0/10 | 17/20 | 79.0 | 57.7 / 57.7 | 5/20 | 59.0 | — | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
@@ -521,6 +522,19 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   (p_Holm 0,34). Coste API no registrado; licencia del checkpoint no documentada.
   Ficha: `docs/modelos.md` §OpenMed Ministral-3B-Medical-v1; detalle:
   `docs/infra_runs/ministral3b_med_jev85.md` §RESULTADOS.
+- **Microsoft-Decision-1 (10-oct, JEV-90):** API cerrada vía OpenRouter
+  (`microsoft/microsoft-decision-1-20261009`, adaptador `jev`). Run D0
+  `jev_ms_decision1`: **194/194**, ajustado **44 [IC95 34–53]** frente a 45 de Jev
+  y 0 de la mayoría (**44 no es % de acierto**). Holm53 confirmatorio (sin IDs
+  expuestos del humo): **0 significativas** — sin superioridad, inferioridad ni
+  equivalencia. Département triaje 28/28; papers 73,9; depth 7/31 (mayoría 17/31);
+  Brier noul del resumen 0,090; latencia de cliente 693 ms; coste registrado
+  **$0,004120914**/pasada. Réplica R y rotación D1 **solo como análisis** (sin
+  filas competitivas): acuerdo 959/964 (99,5 %) y 956/964 (99,2 %); primacía ≥5 pp
+  **REFUTADA** (10→10); «0 cambios» **COMPATIBLE/INCONCLUSA** (0/158). Anuncios del
+  fabricante (36 benches, 35×, seguridad) **no evaluables** aquí. **No cambia** la
+  recomendación vigente. Ficha: `docs/modelos.md` §Microsoft-Decision-1; detalle:
+  `docs/infra_runs/ms_decision1_jev90.md` §RESULTADOS.
 
 **Experimentos** (`docs/experimentos/`):
 - `cascada_jev.md`: revisor-auditor (Jev→Jev, Decider→Decider, Decider→Jev y revisores 100%

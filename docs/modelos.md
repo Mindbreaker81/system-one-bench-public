@@ -176,6 +176,39 @@ Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los rec
   - Circuito recomendado: **decisor Jev → revisor Jev (framing auditor) → reglas
     duras** (ver [legacy/jev_vs_laya.md](../legacy/jev_vs_laya.md) §3–5).
 
+## Microsoft-Decision-1 (Microsoft, vía OpenRouter)
+
+- **Proveedor:** Microsoft. API cerrada; en este banco solo la ruta **OpenRouter**
+  (`microsoft/microsoft-decision-1` → snapshot `microsoft/microsoft-decision-1-20261009`).
+  No sale en `/models` (igual que luna-decisions). Adaptador existente `jev`
+  (`provider=openrouter`). Azure Foundry quedó sin cuota de despliegue (JEV-90): no
+  se midió aquí.
+- **Qué es:** decisor tipado por el endpoint de decisiones (`choice` / `score` /
+  `noul` con probabilidades). No se infiere arquitectura, pesos ni disponibilidad
+  Foundry desde estas respuestas.
+- **Anuncios del fabricante (9-oct-2026) — NO son resultados de este banco:** mayor
+  acierto en 36 benchmarks ajenos; ~35× más rápido (P50) que GPT-6 Sol; 0 cambios
+  al barajar/invertir opciones (y 1,3 % ante otras perturbaciones); seguridad en
+  5.250 peticiones. Solo se contrastan, con operacionalizaciones acotadas, las que
+  este banco puede medir.
+- **Resultados en nuestra batería (10-oct, JEV-90; run D0 `jev_ms_decision1`):**
+  194/194, 11 fases, 0 errores. Ajustado **44 [IC95 34–53]** frente a 45 de Jev y
+  0 de la mayoría (**44 no es % de acierto**). Holm53 confirmatorio (sin los 4 IDs
+  expuestos del humo): **0 significativas** — sin superioridad, inferioridad ni
+  equivalencia con Jev. Département triaje 28/28; papers 73,9; depth 7/31 frente a
+  mayoría 17/31. Brier noul del resumen 0,090; latencia de cliente del resumen
+  693 ms; coste registrado **$0,004120914** por pasada completa.
+  - **Réplica** `jev_ms_decision1_r2` (análisis, sin fila en el marcador): 959/964
+    decisiones (99,5 %; IC95 98,8–99,8); Δ ajustado −1,0. Repetibilidad observada,
+    no determinismo.
+  - **Rotación d1** `jev_ms_decision1_d1` (análisis): 956/964 (99,2 %); primacía
+    ≥5 pp **REFUTADA** en el subconjunto fijado (10→10 errores); «0 cambios» del
+    fabricante **COMPATIBLE/INCONCLUSA** (0/158 `department` no expuestos; una
+    sola rotación).
+  - Pre-registro y detalle: `docs/infra_runs/ms_decision1_jev90.md` §RESULTADOS.
+  - **No cambia** la recomendación vigente del banco (cascada/revisor/alerta fuera
+    de alcance).
+
 ## Laya
 
 - **Proveedor:** ConvAI Innovations. HF: `convaiinnovations/laya`. Apache-2.0.

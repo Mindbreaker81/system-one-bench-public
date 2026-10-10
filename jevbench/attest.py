@@ -43,6 +43,12 @@ EXPERIMENTS = {
     "jev81": (["-m", "jevbench.jev81", "repeat"], False),
     "jev82": (["-m", "jevbench.jev82", "analyze"], False),
     "jev84": (["scripts/jev84_analyze.py"], False),
+    # JEV-90: confirmatorios Microsoft-Decision-1 (lean scores/decisiones; no lean raw)
+    "jev90_holm53": (["-m", "jevbench.jev90", "holm53"], False),
+    "jev90_primacy": (["-m", "jevbench.jev90", "primacy"], False),
+    "jev90_department_discords": (
+        ["-m", "jevbench.jev90", "department-discords", "--r2", "jev_ms_decision1_r2"],
+        False),
 }
 
 VERDICT = re.compile(r"CONFIRMAD|REFUTAD|INCONCLUS|NO EVALUABLE|CUMPLE|ESTABLE|significativ", re.I)
@@ -205,7 +211,7 @@ def _check(name, doc, public):
 
 
 def verify(names=None, printer=print):
-    """Devuelve el número de discrepancias (0 = todo cuadra). Sin nombres exige los 9 experimentos."""
+    """Devuelve el número de discrepancias (0 = todo cuadra). Sin nombres exige todos los de EXPERIMENTS."""
     wanted = list(names) if names else list(EXPERIMENTS)
     unknown = [n for n in wanted if n not in EXPERIMENTS]
     if unknown:

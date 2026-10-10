@@ -13,8 +13,73 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [1.6.0] - 2026-10-10 — JEV-90: Microsoft-Decision-1 en el marcador (D0); web bilingüe y auditorías confirmatorias
+
+- **JEV-90 (resultados e integración):** Microsoft-Decision-1 por OpenRouter
+  (`microsoft/microsoft-decision-1-20261009`, adaptador `jev`). D0 `jev_ms_decision1`:
+  194/194, ajustado **44 [34–53]** frente a 45 de Jev y 0 de la mayoría; Holm53 = 0
+  (sin superioridad ni equivalencia). Réplica 959/964 (99,5 %); rotación d1: primacía
+  ≥5 pp REFUTADA; «0 cambios» COMPATIBLE/INCONCLUSA (0/158). Coste $0,004120914/pasada;
+  latencia de cliente del resumen 693 ms. R y D1 solo análisis (sin filas competitivas).
+  Pre-registro §RESULTADOS, ficha en `docs/modelos.md`, marcador, web/sitio ES+EN
+  (familia `Microsoft`, tarjeta, hito 10-oct, metodología), atestaciones
+  `jev90_holm53` / `jev90_primacy` / `jev90_department_discords`. Revisión R101 APTO.
+  **No cambia** la recomendación vigente. Evidencia:
+  `docs/infra_runs/ms_decision1_jev90/`.
+- **Incluye lo acumulado desde 1.5.2 sin publicar como minor:** web y sitio bilingües
+  (JEV-91); alcance Qwen en Límites; vigilancia de Microsoft-Decision-1 en
+  `check_versions`; nota de tarea futura JEV-89; pre-registro congelado JEV-90 y
+  módulo `jev90`.
+- **Nota de integración (R102):** el cuerpo EN de la tarjeta de Microsoft-Decision-1 dice «preserves 158/158 unexposed paired decisions» en lugar de la redacción literal de R101 («all 158»), para mantener la paridad numérica ES/EN que exigen los tests; el sentido es idéntico. `tests/test_i18n_paridad.py` no se exporta al espejo (importa `site`/`web`, privados).
+- **JEV-94 (ficha de modelo, sin cambio de datos):** nueva página por configuración,
+  `site/modelo.html` y `site/en/model.html` (en inglés el fichero es `model.html`) más
+  los companions `docs/web/modelo.html` y `docs/web/en/model.html` del artifact.
+  Reúne todo lo que ya medía el scorer —ajustado global con IC95 y cobertura, acierto
+  por set con IC y por pregunta, Brier/ECE y binarios en 0,45–0,55, coste y latencia
+  con su universo, papel en cascadas, alerta de manipulación, versión resuelta,
+  entorno local/API y enlace al manifiesto público (`web.RUN_MANIFEST`)— incrustado
+  como `__PROFILE__` generado por `web.profile_payload` (el scorer saneado).
+  Selector con ancla simple `#<run_id>` (sin query string); el nav y cada fila
+  del marcador (tabla y barras)
+  enlazan la ficha. Refactor compartido: los `extra` de `site.RUNS` pasan a
+  `web.RUN_EXTRA` (misma fuente para sitio y artifact) y el cálculo de
+  entorno/coste/latencia/meta público a `web.profile_meta` + `web.run_cost_stats`;
+  `web._adjusted_fields` replica `adjusted`+`adjusted_ci` del scorer reutilizando
+  los `score_run` ya calculados (score.py permanece congelado por `jevbench.attest`,
+  y un test vigila que la réplica no derive). `tests/test_modelo.py`
+  verifica cifra a cifra contra el scorer, cobertura de `RUNS`, paridad ES/EN,
+  saneado, anclas y maquetado a 360 px; no se exporta al espejo.
+  **Correcciones de la revisión R103:** `web.main()` genera ahora
+  `docs/web/assets/common.en.js` (la ficha EN del artifact quedaba en
+  «Loading…» por un 404 del recurso); el render filtra hijos nulos
+  (`put()`) — las fichas de API imprimían un `null` literal—; la región de
+  identificación nombra su `h2` (`id="h-ident"`, aria-labelledby resuelto);
+  el universo de coste/latencia se publica también sin override
+  (`cost_n`/`ms_n`/`cost_phases` derivados de `run_cost_stats`) y la fila
+  «Global» de calibración se agrega en Python sobre los valores del scorer
+  sin redondear (`brier_global`/`ece_global`/`cal_n`/`cal_ph`), con su
+  universo explicitado en la nota; cada fila de la tabla editorial
+  «Modelos» enlaza la ficha de su configuración (`modelo.html#id` /
+  `model.html#id`, solo ids de `web.RUNS`). Los tests nuevos contrastan las
+  cuatro fichas realmente servidas: PROFILE incrustado == payload fresco ==
+  scorer, assets EN presentes y alcanzables, tabla «Modelos» por fila y un
+  smoke DOM con node (`tests/profile_dom.js`, se salta sin node) que exige
+  selector poblado, render completo, sin «null», h-ident resuelto y
+  universo explícito; mutar una cifra o borrar una ficha rompe la
+  comparación.
+- **Vigilancia retirada (petición del usuario, 10-oct):** Microsoft-Decision-1 ya está disponible en OpenRouter y evaluado (JEV-90); `check_versions` deja de sondearlo. El historial de su versión queda en `docs/versiones_jev.md`.
+
 ## [1.5.2] - 2026-10-08 — JEV-86/87: rotación de DiffusionGemma con GT v4 y auditorías verificables en el espejo; correcciones de redacción (revisión R82 de JEV-56)
 
+- **JEV-90 (pre-registro congelado, sin cambio de versión hasta publicar):** `docs/infra_runs/ms_decision1_jev90.md`
+  y el módulo opt-in `jevbench/jev90.py` (con `tests/test_jev90.py`) para Microsoft-Decision-1 vía el endpoint de
+  decisiones de OpenRouter: celdas D0 (batería de 194 casos), R (réplica) y D1 (rotación de `department`);
+  Holm 53 frente a Jev y primacía confirmatoria **sin los 4 IDs expuestos en el humo**; puerta de snapshot único
+  (`microsoft/microsoft-decision-1-20261009`, drift → NO EVALUABLE); negativa por pregunta = 0; el contador
+  «0 cambios» del fabricante solo con réplica válida y rotación acreditada; tope ≤ 0,15 USD por construcción
+  (3 runs × `--max-cost 0.05`, un retry, sin reanudación tras tope); inventario de costes desconocidos
+  capturados frente a reemplazos comprobados. Redacción Cursor (T31–T31e); revisión Codex R94–R100 (APTO);
+  aprobado por el usuario el 10-oct antes de adquirir D0/R/D1.
 - **JEV-86:** `dgemma_report.rotation` recorría P02 (retirado en GT v4) y fallaba con `KeyError` oculto,
   así que Rot1 quedaba NO EVALUABLE al re-ejecutar. Ahora solo cuenta los casos del GT vigente, y `_try` avisa
   por stderr. Recálculo con GT v4: 33/256 cambios, Δ acierto `choice` **−7,42 pp** [−11,93; −3,06],
@@ -44,8 +109,32 @@ Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los co
     Jev→Jev).
   - La 2.ª anotación humana se describe como parcial (campos elegidos por discrepancia), no como fiabilidad
     global (portada y Metodología).
+- **JEV-91: web y sitio bilingües ES/EN.** `python3 -m jevbench.web` y `python3 -m jevbench.site`
+  emiten en una sola invocación el español y el inglés: `docs/web/en/` (artifact EN con
+  `template.en.html`, `_limites.en.html`) y `site/en/` (las 7 vistas + portada), con selector de
+  idioma en todas las páginas, `hreflang` es/en/x-default y `lang` correcto. Las etiquetas
+  generadas (labels de runs, entornos, modos de salida, notas de cobertura, fechas, etiquetas de
+  fase) se traducen en el nuevo `jevbench/i18n.py`; las páginas EN comparten `site/data/` y usan
+  `meta.en.json` + `assets/common.en.js` (generado de `common.js` con `i18n.translate_js`).
+  Los cuerpos de Límites siguen siendo una sola fuente compartida por web y sitio
+  (`site_src/_limites_body.html` y `site_src/en/_limites_body.html`). `tests/test_i18n_paridad.py`
+  fija la paridad estructural y numérica entre idiomas (edita solo uno → el test falla), y
+  `tests/test_site.py` extiende el saneado al árbol EN. Contenido y cifras idénticos en ambos
+  idiomas; no cambia el scoring ni los datos publicados.
 - **Seguimiento:** propuesta de artículo revisada (JEV-56, JEV-A-3 r2; informe en
   `docs/articulo/revision_R82_codex.md`). Set holdout planificado en JEV-88, pendiente de decisión.
+- **Límites / resumen (ES+EN, sin cambio de versión):** la página «Límites» presenta su sujeto —casi toda la
+  evidencia es de **Qwen3.8-27B**, LLM generalista vía el adaptador `llm` (sesión confirmatoria FP8/SGLang; NVFP4,
+  GGUF y Cerebras como variantes del mismo modelo; DiffusionGemma solo en la rotación)— con un recuadro y frases de
+  alcance en lede, glosario y §§3/6/7; la tarjeta «Prompt × esquema» del resumen nombra el modelo. Sin cifras nuevas.
+  Revisión Cursor R91/T30; Codex R92 APTO.
+- **JEV-90 (vigilancia):** Microsoft-Decision-1 es accesible desde el 10-oct por el endpoint de decisiones
+  de OpenRouter (`microsoft/microsoft-decision-1` → `microsoft/microsoft-decision-1-20261009`; no sale en
+  `/models`, igual que luna-decisions). `check_versions` lo vigila como familia con sonda (aviso ntfy si
+  cambia la versión); `CATALOG_WATCH` queda como mecanismo genérico vacío. Batería completa planificada en JEV-90.
+- **Tarea futura JEV-89:** evaluar un decisor propio con Unsloth (candidato Qwen3.5-2B,
+  LoRA + cabeza tipo Clef), entrenado y calibrado solo con datos externos sin solapamiento con
+  la batería. Pendiente de ejecución; no se han iniciado instalaciones ni entrenamientos.
 
 ## [1.5.1] - 2026-10-08 — JEV-84: Haiku 5.5 como revisor / alerta / réplica H-adapt (pre-registro congelado y resultados)
 
