@@ -297,6 +297,11 @@ class RotationCurrentGT(unittest.TestCase):
     def setUp(self):
         if not (store.ROOT / dgemma_report.RUNS["Rot1"]).exists():
             self.skipTest("runs DiffusionGemma no disponibles")
+        # El cierre histórico se midió con el GT v4; fijarlo para que el GT vigente
+        # (v5) no cambie la tabla esperada.
+        self.gt_cut = mock.patch.dict("os.environ", {"JEVBENCH_GT": "v4"})
+        self.gt_cut.start()
+        self.addCleanup(self.gt_cut.stop)
 
     def test_recalculo_gt_v4(self):
         r = dgemma_report.rotation(dgemma_report.RUNS["P"], dgemma_report.RUNS["Rot1"])

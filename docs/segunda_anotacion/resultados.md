@@ -65,3 +65,13 @@ clinical → 1; T37 urgency → 2. El detalle y los no aplicados están en `data
 Decidir qué desacuerdos del usuario pasan al GT oficial (`data/GT_CHANGELOG.md`, conservando
 `*.v2.json`). Recomendación: adjudicar primero department (4) y los hostile/same_day
 evidentes, y dejar la urgencia 0↔1 como ruido documentado, sin cambiarla caso a caso.
+
+## Seguimiento del 11-oct-2026
+
+El usuario revisó los 88 campos vigentes antes completados por Codex
+(83 principales y cinco adicionales). Hubo 51 acuerdos iniciales con GT v4
+y 37 discrepancias; la adjudicación humana asistida aplica 23 cambios y
+mantiene 14 etiquetas en GT v5. Los registros anteriores de este documento
+y `procedencia.json` se conservan como histórico; no se reetiquetan como
+si la revisión humana se hubiera realizado el 27-sep. Procedencia final
+en `data/gt_v5_procedencia.json` y detalle en `docs/validacion_gt_v5.md`.

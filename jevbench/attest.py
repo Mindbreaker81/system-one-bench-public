@@ -31,6 +31,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "auditorias"
 PUBLIC_EXIT = 3
+# Estos experimentos se cerraron antes de la adjudicación humana del 11-oct.
+# Sus veredictos confirmatorios se reproducen con el GT de ese cierre; el
+# marcador descriptivo usa el GT actual, independientemente de estas auditorías.
+FROZEN_GT = "v4"
 
 # nombre → (comando, ¿lee raw?)
 EXPERIMENTS = {
@@ -103,7 +107,7 @@ def public_exit(printer=print):
 
 def _run(cmd, trace=False):
     """(rc, stdout, deps). deps = ficheros del repo leídos (solo si trace)."""
-    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "JEVBENCH_GT": FROZEN_GT}
     if not trace:
         p = subprocess.run([sys.executable, *cmd], cwd=ROOT, capture_output=True, text=True, env=env)
         return p.returncode, p.stdout, None
@@ -170,6 +174,7 @@ def freeze(names=None):
             h, exported = _dep_hash(d)
             files[d] = {"sha256": h, "exported": exported}
         doc = {"experiment": name, "command": "python3 " + " ".join(cmd), "needs_raw": needs_raw,
+               "gt_version": FROZEN_GT,
                "returncode": rc, "output": text, "runs": runs, "files": files}
         (OUT / f"{name}.json").write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n")
         priv = sum(not f["exported"] for f in files.values())
@@ -181,6 +186,8 @@ def _check(name, doc, public):
     """Lista de problemas de una atestación (vacía = cuadra)."""
     cmd, needs_raw = EXPERIMENTS[name]
     problems = []
+    if doc.get("gt_version", FROZEN_GT) != FROZEN_GT:
+        problems.append("la versión del GT no corresponde al cierre confirmatorio")
     if doc.get("experiment") != name or doc.get("command") != "python3 " + " ".join(cmd) \
             or doc.get("needs_raw") != needs_raw:
         problems.append("la atestación no corresponde al registro EXPERIMENTS")

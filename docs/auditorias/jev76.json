@@ -2,6 +2,7 @@
  "experiment": "jev76",
  "command": "python3 -m jevbench.qwen_session analyze --profile jev76",
  "needs_raw": true,
+ "gt_version": "v4",
  "returncode": 0,
  "output": "F0p llm_qwen38_27b_fp8_jev76_off_d0_prob: ajustado 50.08, n_ok 194/194, evaluable=True \nT0p llm_qwen38_27b_fp8_jev76_on_d0_prob: ajustado 58.71, n_ok 194/194, evaluable=True \nD0p llm_qwen38_27b_fp8_jev76_off_d0_disc: ajustado 63.04, n_ok 194/194, evaluable=True \nDT0 llm_qwen38_27b_fp8_jev76_on_d0_disc: ajustado 59.56, n_ok 194/194, evaluable=True \nF1p llm_qwen38_27b_fp8_jev76_off_d1_prob: ajustado 57.56, n_ok 194/194, evaluable=True \nT1p llm_qwen38_27b_fp8_jev76_on_d1_prob: ajustado 64.12, n_ok 194/194, evaluable=True \nD1 llm_qwen38_27b_fp8_jev76_off_d1_disc: ajustado 61.05, n_ok 194/194, evaluable=True \nDT1 llm_qwen38_27b_fp8_jev76_on_d1_disc: ajustado 55.48, n_ok 194/194, evaluable=True \n\n## Clasificación pre-registrada (factorial JEV-76, IC98.75 por contraste; I descriptiva con IC95 conjunto)\n- H1 d0: DT−D >=+5: REFUTADA (Δ=-3.5 [-11.4,+3.6] IC98.75)\n- H1 d1: DT−D >=+5: REFUTADA (Δ=-5.6 [-14.8,+2.6] IC98.75)\n- H2 d0: DT−T >=+5: INCONCLUSA (Δ=+0.9 [-5.2,+6.7] IC98.75)\n- H2 d1: DT−T >=+5: REFUTADA (Δ=-8.6 [-18.1,-1.9] IC98.75)\n- I d0 (descriptiva): -12.1 [-26.2,-0.7] IC95 conjunto\n- I d1 (descriptiva): -12.1 [-24.9,-1.3] IC95 conjunto\n\n## Holm 53 celdas (aparte, descriptivo)\n- D0p_vs_DT0: 0 celdas significativas tras Holm de 53\n- D1_vs_DT1: 0 celdas significativas tras Holm de 53\n- T0p_vs_DT0: 0 celdas significativas tras Holm de 53\n- T1p_vs_DT1: 0 celdas significativas tras Holm de 53\n\n## Latencia y tokens por celda (coste API = 0: ejecución local sin facturación)\n| celda | n | ms media | ms mediana | tokens prompt | tokens completion | tokens razonamiento |\n|---|---:|---:|---:|---:|---:|---:|\n| F0p | 194 | 7119 | 6426 | 201178 | 29720 | 0 |\n| T0p | 194 | 48176 | 43606 | 208162 | 164627 | 138909 |\n| D0p | 194 | 2771 | 2708 | 143430 | 10352 | 0 |\n| DT0 | 194 | 38150 | 26737 | 150414 | 120497 | 114953 |\n| F1p | 194 | 7072 | 6422 | 201178 | 29589 | 0 |\n| T1p | 194 | 50041 | 44872 | 208162 | 170315 | 143809 |\n| D1 | 194 | 2773 | 2712 | 143430 | 10352 | 0 |\n| DT1 | 194 | 36475 | 27222 | 150414 | 116355 | 110745 |\n- on/off prob_d0 (T0p vs F0p): ms media 7119 → 48176 (×6.77), mediana 6426 → 43606; completion 29720 → 164627 (Δ +134907; razonamiento on = 138909), prompt 201178 → 208162\n- on/off prob_d1 (T1p vs F1p): ms media 7072 → 50041 (×7.08), mediana 6422 → 44872; completion 29589 → 170315 (Δ +140726; razonamiento on = 143809), prompt 201178 → 208162\n- on/off disc_d0 (DT0 vs D0p): ms media 2771 → 38150 (×13.77), mediana 2708 → 26737; completion 10352 → 120497 (Δ +110145; razonamiento on = 114953), prompt 143430 → 150414\n- on/off disc_d1 (DT1 vs D1): ms media 2773 → 36475 (×13.15), mediana 2712 → 27222; completion 10352 → 116355 (Δ +106003; razonamiento on = 110745), prompt 143430 → 150414\n\n## Referencia descriptiva JEV-68/71 (nunca control)\n- d0/F llm_qwen38_27b_fp8_jev68_off_d0_prob: ajustado 49.57\n- d0/T llm_qwen38_27b_fp8_jev68_on_d0_prob: ajustado 61.26\n- d0/D llm_qwen38_27b_fp8_jev71_off_d0_disc: ajustado 62.42\n- d1/F llm_qwen38_27b_fp8_jev68_off_d1_prob: ajustado 58.41\n- d1/T llm_qwen38_27b_fp8_jev68_on_d1_prob: ajustado 64.92\n\n## Baselines de mayoría por fase (GT v4; ood excluida del agregado por baseline saturada)\n| fase | n | mayoría % | respuestas mayoritarias |\n|---|---:|---:|---|\n| triage_es | 14 | 66.4 | department=admin, urgency=1, clinical=1, hostile=0, same_day=0 |\n| triage_en | 14 | 66.4 | department=admin, urgency=1, clinical=1, hostile=0, same_day=0 |\n| papers32 | 31 | 51.3 | relevance=2, domain=ip, design=rct, depth=abstract, practice=0 |\n| adv1 | 10 | 83.0 | department=admin, urgency=0, clinical=0, hostile=0, same_day=0 |\n| adv2 | 10 | 75.0 | department=admin, urgency=1, clinical=0, hostile=0, same_day=1 |\n| ood | 3 | 100.0 | relevance=0, domain=other, clinical=0 |\n| triage_ext_es | 26 | 57.7 | department=bronchoscopia, urgency=1, clinical=1, hostile=0, same_day=1 |\n| triage_ext_en | 26 | 57.7 | department=bronchoscopia, urgency=1, clinical=1, hostile=0, same_day=1 |\n| adv3 | 20 | 59.0 | department=urgencias, urgency=2, clinical=1, hostile=0, same_day=0 |\n| adv4 | 20 | 76.5 | department=admin, urgency=1, clinical=0, hostile=0, same_day=0 |\n| adv5 | 20 | 63.0 | department=admin, urgency=1, clinical=1, hostile=0, same_day=0 |\n",
  "runs": [
@@ -30,31 +31,31 @@
   "logs"
  ],
  "files": {
-  "data/adversarial2_cases.json": {
+  "data/adversarial2_cases.v4.json": {
    "sha256": "76fdf2824a07d0ea6a1a68229a21733d23e2d23fdc6c6e384e3b37dfa1ddb2bc",
    "exported": true
   },
-  "data/adversarial3_cases.json": {
+  "data/adversarial3_cases.v4.json": {
    "sha256": "d400136812d7ecb4a19bef872c1fbc6d6b462bd5b598baeeac8a23a28c66d9ef",
    "exported": true
   },
-  "data/adversarial4_cases.json": {
+  "data/adversarial4_cases.v4.json": {
    "sha256": "0bb4a5ccf3a41155c465781dd07204c9f2cc94d16bb9fb7da65ff32faf32be44",
    "exported": true
   },
-  "data/adversarial5_cases.json": {
+  "data/adversarial5_cases.v4.json": {
    "sha256": "6895fa05dbf5ccb243818f2b53998fd758221e31a2ab38fc70e8dd6444d306cc",
    "exported": true
   },
-  "data/adversarial_cases.json": {
+  "data/adversarial_cases.v4.json": {
    "sha256": "05ab30aed4a863e281f15c14ac0193356061a229171dd2f2569770dbe2a65762",
    "exported": true
   },
-  "data/bench_cases.json": {
+  "data/bench_cases.v4.json": {
    "sha256": "e5622360d7f840a9738fd861c80dbce597929587d7b86a9a8e753913d71b3d99",
    "exported": true
   },
-  "data/paper_gt32.json": {
+  "data/paper_gt32.v4.json": {
    "sha256": "279cb2961a7f6676728d0ca69863d9eda209992844bb05a415fe4663b207cc1c",
    "exported": true
   },
@@ -62,12 +63,16 @@
    "sha256": "ba9661597c7c3fa655e26d5140389a489e64bfda332197dacf8726365e606aa8",
    "exported": true
   },
-  "data/triage_ext_cases.json": {
+  "data/papers32.v4.json": {
+   "sha256": "ba9661597c7c3fa655e26d5140389a489e64bfda332197dacf8726365e606aa8",
+   "exported": true
+  },
+  "data/triage_ext_cases.v4.json": {
    "sha256": "ecf5bed8589bd8b31361149ceed47cce560591305e33b2414f9d6a406166c621",
    "exported": true
   },
   "jevbench/__init__.py": {
-   "sha256": "bf14e736a5c663d396ba32f7d21e2aaa1eec2bfdbb276275efa374d9af7b191c",
+   "sha256": "074630bca180a1f0b1e5e23eed1dec4a6aabdaf765cf4c8408c63114aa8b3bfc",
    "exported": true
   },
   "jevbench/adapters/__init__.py": {
@@ -79,7 +84,7 @@
    "exported": true
   },
   "jevbench/attest.py": {
-   "sha256": "36e91454766a407de3b7404d71811908455163e7e95fd0099d59ce56b6b0b892",
+   "sha256": "6fcb2dba2535c3746e9b664cc1e30d659d879b2e9aa1988256dc790ca1c1c2ca",
    "exported": true
   },
   "jevbench/battery.py": {

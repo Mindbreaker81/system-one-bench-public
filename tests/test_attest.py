@@ -83,6 +83,18 @@ class Attest(unittest.TestCase):
         self._doc()
         self.assertGreater(self._verify_public(["no_existe"])[0], 0)
 
+    def test_version_gt_distinta_no_vale(self):
+        self._doc(gt_version="v5")
+        self.assertGreater(self._verify_public()[0], 0)
+
+    def test_reproduccion_fija_gt_del_cierre(self):
+        with mock.patch.dict("os.environ", {"JEVBENCH_GT": "current"}), \
+                mock.patch.object(attest.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            run.return_value.stdout = OUTPUT
+            attest._run(["-c", "pass"])
+        self.assertEqual(run.call_args.kwargs["env"]["JEVBENCH_GT"], "v4")
+
     def test_freeze_aborta_si_el_analizador_falla(self):
         with mock.patch.object(attest, "_run", lambda cmd, trace=False: (1, "fallo", [])), \
                 mock.patch.object(attest, "in_public_export", lambda: False):

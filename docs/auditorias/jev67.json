@@ -2,6 +2,7 @@
  "experiment": "jev67",
  "command": "python3 -m jevbench.jev67 report",
  "needs_raw": true,
+ "gt_version": "v4",
  "returncode": 0,
  "output": "# jev67 report\n\n## a1: llm_qwen38_27b_fp8_inject_prob\najustado 51, n_ok 194/194, errores 0, nulos crudos 2, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%\nfallos papers32 (timeout/length): 0\n\n## a2: llm_qwen38_27b_fp8_nostruct_t0_prob\najustado 51, n_ok 194/194, errores 0, nulos crudos 2, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%\nacuerdo pareado con A1: 967/969 p=0.998 IC95 [0.993,1.000]\nfallos papers32 (timeout/length): 0\n\n## a3: llm_qwen38_27b_fp8_inject_rot1_prob\najustado 59, n_ok 194/194, errores 0, nulos crudos 2, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%\nrotación: 24 cambios de etiqueta choice en 259 pareadas; conserva posición 3; p Poisson-binomial 0.9991; Newcombe (0.0625, 0.026731766299030582, 0.10066660665825579)\nfallos papers32 (timeout/length): 0\n\n## a4: llm_qwen38_27b_fp8_inject_prob_s202\najustado 56, n_ok 51/51, errores 0, nulos crudos 0, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%\nacuerdo pareado con A1: 258/260 p=0.992 IC95 [0.972,0.999]\nfallos papers32 (timeout/length): 0\n\n## b1: llm_qwen38_27b_nvfp4_inject_prob\najustado 50, n_ok 194/194, errores 0, nulos crudos 0, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%\nfallos papers32 (timeout/length): 0\n\n## b2: llm_qwen38_27b_nvfp4_inject_disc\najustado 63, n_ok 194/194, errores 0, nulos crudos 0, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%\nfallos papers32 (timeout/length): 0\n\n## c1: llm_qwen38_27b_arcgguf_inject_prob\najustado 48, n_ok 194/194, errores 0, nulos crudos 2, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%\nfallos papers32 (timeout/length): 0\n\n## c2: llm_qwen38_27b_arcgguf_inject_disc\najustado 63, n_ok 194/194, errores 0, nulos crudos 0, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%\nfallos papers32 (timeout/length): 0\n\n## Clasificación §8.2\n- A1.a ajustado: CONFIRMADA (51, n_ok=194)\n- A1.b nulos crudos: REFUTADA (2)\n- A1.c errores: CONFIRMADA (0)\n- A2.a acuerdo A1↔A2: CONFIRMADA (967/969 p=0.998 L=0.993)\n- A2.b Δ ajustado A2−A1: CONFIRMADA (-0)\n- A2.c reintentos malformados: CONFIRMADA (A2=0, A1=0)\n- A2.d vs 49 histórico: descriptivo (A2=51)\n- A4 acuerdo A1↔A4 (ruido): CONFIRMADA (258/260 p=0.992)\n- A3.a cambios de etiqueta: INCONCLUSA (24/259 U=0.135)\n- A3.b dirección posición: CONFIRMADA (exceso no significativo) [p=0.9991]\n- A3.c Δ acierto choice A3−A1: REFUTADA (IC excluye 0) (+0.062 [+0.027,+0.101] pp*100)\n- P+fix: CONFIRMADA\n- P+live: CONFIRMADA (14/14 eligen 1ª clave)\n- B1.a ajustado vs A1: CONFIRMADA (-1)\n- B1.b nulos crudos: CONFIRMADA (0)\n- C1.a ajustado vs A1: CONFIRMADA (-3)\n- C1.b nulos crudos: REFUTADA (2)\n- B2.a fallos papers32: CONFIRMADA (0)\n- B2.b ajustado disc vs prob: REFUTADA (+12)\n- B2.c errores totales: CONFIRMADA (0)\n- C2.a fallos papers32: CONFIRMADA (0)\n- C2.b ajustado disc vs prob: REFUTADA (+15)\n- C2.c errores totales: CONFIRMADA (0)\n\n## §8.5 normalize (auditoría offline)\n- llm_qwen38_27b_fp8_inject_prob: nulos 2, decisiones que cambian 0, score_mismatch 0, Brier 0.2268, NLL 0.7785, ECE 0.09920470262793925, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}\n- llm_qwen38_27b_fp8_nostruct_t0_prob: nulos 2, decisiones que cambian 0, score_mismatch 0, Brier 0.2293, NLL 0.8028, ECE 0.10078146611341626, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}\n- llm_qwen38_27b_fp8_inject_rot1_prob: nulos 2, decisiones que cambian 0, score_mismatch 0, Brier 0.2126, NLL 0.8723, ECE 0.07905947441217148, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}\n- llm_qwen38_27b_nvfp4_inject_prob: nulos 0, decisiones que cambian 0, score_mismatch 0, Brier 0.2296, NLL 0.8170, ECE 0.10679460580912864, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}\n- llm_qwen38_27b_arcgguf_inject_prob: nulos 2, decisiones que cambian 0, score_mismatch 0, Brier 0.2383, NLL 0.8523, ECE 0.10689142461964041, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}\n",
  "runs": [
@@ -20,44 +21,44 @@
   "llm_qwen38_27b_nvfp4_inject_prob"
  ],
  "files": {
-  "data/adversarial2_cases.json": {
+  "data/adversarial2_cases.v4.json": {
    "sha256": "76fdf2824a07d0ea6a1a68229a21733d23e2d23fdc6c6e384e3b37dfa1ddb2bc",
    "exported": true
   },
-  "data/adversarial3_cases.json": {
+  "data/adversarial3_cases.v4.json": {
    "sha256": "d400136812d7ecb4a19bef872c1fbc6d6b462bd5b598baeeac8a23a28c66d9ef",
    "exported": true
   },
-  "data/adversarial4_cases.json": {
+  "data/adversarial4_cases.v4.json": {
    "sha256": "0bb4a5ccf3a41155c465781dd07204c9f2cc94d16bb9fb7da65ff32faf32be44",
    "exported": true
   },
-  "data/adversarial5_cases.json": {
+  "data/adversarial5_cases.v4.json": {
    "sha256": "6895fa05dbf5ccb243818f2b53998fd758221e31a2ab38fc70e8dd6444d306cc",
    "exported": true
   },
-  "data/adversarial_cases.json": {
+  "data/adversarial_cases.v4.json": {
    "sha256": "05ab30aed4a863e281f15c14ac0193356061a229171dd2f2569770dbe2a65762",
    "exported": true
   },
-  "data/bench_cases.json": {
+  "data/bench_cases.v4.json": {
    "sha256": "e5622360d7f840a9738fd861c80dbce597929587d7b86a9a8e753913d71b3d99",
    "exported": true
   },
-  "data/paper_gt32.json": {
+  "data/paper_gt32.v4.json": {
    "sha256": "279cb2961a7f6676728d0ca69863d9eda209992844bb05a415fe4663b207cc1c",
    "exported": true
   },
-  "data/papers32.json": {
+  "data/papers32.v4.json": {
    "sha256": "ba9661597c7c3fa655e26d5140389a489e64bfda332197dacf8726365e606aa8",
    "exported": true
   },
-  "data/triage_ext_cases.json": {
+  "data/triage_ext_cases.v4.json": {
    "sha256": "ecf5bed8589bd8b31361149ceed47cce560591305e33b2414f9d6a406166c621",
    "exported": true
   },
   "jevbench/__init__.py": {
-   "sha256": "bf14e736a5c663d396ba32f7d21e2aaa1eec2bfdbb276275efa374d9af7b191c",
+   "sha256": "074630bca180a1f0b1e5e23eed1dec4a6aabdaf765cf4c8408c63114aa8b3bfc",
    "exported": true
   },
   "jevbench/adapters/__init__.py": {
@@ -65,7 +66,7 @@
    "exported": true
   },
   "jevbench/attest.py": {
-   "sha256": "36e91454766a407de3b7404d71811908455163e7e95fd0099d59ce56b6b0b892",
+   "sha256": "6fcb2dba2535c3746e9b664cc1e30d659d879b2e9aa1988256dc790ca1c1c2ca",
    "exported": true
   },
   "jevbench/battery.py": {

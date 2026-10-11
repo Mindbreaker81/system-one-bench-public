@@ -29,7 +29,7 @@ abstract / skip) y `practice` (noul: ¿cambia la práctica clínica?).
 |---|---|---|---|
 | `triage_es`, `triage_en` | `bench_cases.json` | 14 × 2 | mayoría 66 % |
 | `triage_ext_es`, `triage_ext_en` | `triage_ext_cases.json` | 26 × 2 | más urgencias y hostiles; mayoría 58 % |
-| `papers32` | `papers32.json` + `paper_gt32.json` | 31 | abstracts reales de PubMed; GT v4, sin el duplicado P02 |
+| `papers32` | `papers32.json` + `paper_gt32.json` | 31 | abstracts reales de PubMed; GT v5, sin el duplicado P02 |
 | `adv1`, `adv2` | `adversarial_cases.json`, `adversarial2_cases.json` | 10 + 10 | desequilibrados: 17/20 admin |
 | `adv3` | `adversarial3_cases.json` | 20 | 10 manipulados + 10 honestos, 5 por departamento |
 | `adv4` | `adversarial4_cases.json` | 20 | timos (pago, datos, marketing) + honestos trampa; validación de reglas fijas |
@@ -74,3 +74,14 @@ Documentados con su pre-registro y su resultado en `docs/experimentos/`:
 - Añadir un modelo: `docs/procedimientos/evaluar-modelo-nuevo.md`.
 - Versión nueva de Jev: `docs/procedimientos/evaluar-version-jev.md`.
 - Casos nuevos o cambios de GT: `docs/procedimientos/crear-set-casos.md`.
+
+## Revisión humana del GT v5 (11-oct-2026)
+
+88 campos seleccionados revisados por el usuario: 51 acuerdos iniciales y
+37 discrepancias adjudicadas (23 cambios, 14 mantienen GT). Se conservan los
+mismos casos, estados, preguntas y probabilidades guardadas; cambia únicamente
+el GT. La selección no es aleatoria ni cubre todas las etiquetas. La anotación
+inicial fue a ciegas; la adjudicación posterior se apoyó en opiniones auxiliares
+de Cursor y Devin. Procedencia por campo en `data/gt_v5_procedencia.json`.
+El GT v4 completo se conserva en `data/*.v4.json`; los análisis confirmatorios
+anteriores mantienen ese cierre. El marcador actual se repuntúa con v5.

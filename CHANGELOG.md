@@ -13,6 +13,166 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.0.0] - 2026-10-11 — GT v5: adjudicación humana y repuntuación
+
+- Revisión humana de 88 campos: 51 acuerdos iniciales y 37 discrepancias adjudicadas;
+  23 cambios aplicados y 14 campos mantienen el GT anterior. Se conservan anotaciones
+  iniciales, justificaciones y consultas auxiliares de Cursor y Devin (JEV-97;
+  evidencia privada, no exportada al espejo).
+- GT v5 conserva los 194 casos, los estados y las preguntas; el GT v4 completo
+  queda en `data/*.v4.json`; adv1/adv3 conservan también la selección v3. Procedencia de los 88 campos revisados en
+  `data/gt_v5_procedencia.json`. Es revisión parcial, no validación humana exhaustiva.
+- Repuntuación de todos los runs de decisión almacenados con el mismo scorer,
+  sin inferencia nueva ni cambios en sus respuestas. Comparación v4/v5 (JEV-98;
+  evidencia privada, no exportada al espejo) resumida en `docs/validacion_gt_v5.md`.
+- Los análisis confirmatorios ya cerrados se reproducen con GT v4; las auditorías
+  registran explícitamente esa versión. El marcador actual usa GT v5 y las
+  conclusiones editoriales históricas se identifican como tales.
+- Revisiones técnicas delegadas mediante Herdr: Cursor (GT/procedencia), Devin
+  (documentación), Droid (regresión histórica) y Grok (exportación). La excepción
+  de emails inventados se aplica a snapshots de datasets ya autorizados, sin
+  extenderla a otros documentos.
+- Verificación: 834 comprobaciones iniciales; los dos fallos encontrados se
+  corrigieron y sus bloques pasan (67 + 17). Pasan GT v5, auditorías, paridad,
+  sitio y versión; 12/12 auditorías verificadas también en snapshot público.
+- Web y sitio bilingües regenerados y publicados con esta versión: push del privado
+  con tag y snapshot al espejo; Netlify redespliega el sitio público solo.
+  El artifact de Claude no se republica.
+
+## [1.7.0] - 2026-10-11 — JEV-95: revisión humana del GT en web privada
+
+- Formulario local a ciegas (`python3 -m jevbench.review`, módulo privado no
+  exportado al espejo) para los 83 campos vigentes
+  completados por Codex y un bloque separado de cinco revisiones adicionales. Mantiene
+  ocultas las etiquetas y las predicciones; conserva las preguntas originales.
+- Adjudicación individual iniciada: C09 `hostile` → 1 por amenaza reputacional,
+  y `same_day` → 1 por contacto administrativo hoy, justificados por el usuario;
+  decisiones registradas para aplicación posterior en
+  `docs/segunda_anotacion/revision_humana_20261011_adjudicacion.json` (evidencia
+  privada, no exportada al espejo). Las 37 discrepancias están adjudicadas (23 cambios y 14 mantienen GT); aplicación al GT pendiente.
+- Consulta auxiliar solicitada por el usuario vía Herdr, con contextos reiniciados:
+  Cursor y Devin proponen C09 `urgency=1`; el usuario lo confirma por prioridad
+  de gestión ante la amenaza, sin urgencia médica.
+  Prompt y respuestas conservados aparte en `revision_humana_20261011_consultas.json`
+  (evidencia privada, no exportada al espejo).
+- Consulta C18 `clinical`: Cursor propone 0 y Devin 1; ambigüedad entre agendar
+  la visita y valorar sus resultados. El usuario adjudica `clinical=0` porque
+  gestionar la visita no requiere juicio médico; aplicación al GT pendiente.
+- Consulta C20 `same_day`: ambos agentes proponen 1 por confirmar la cita;
+  reconocen falta de fecha del mensaje. El usuario confirma resolver hoy
+  la incertidumbre, sin elevar la urgencia. Aplicación al GT pendiente.
+- Consulta P01 `design`: ambos agentes proponen meta; el título, los tipos de
+  publicación y los métodos lo identifican como revisión sistemática con
+  metaanálisis. El usuario confirma `design=meta`; aplicación al GT pendiente.
+- Consulta P01 `depth`: ambos proponen full para el perfil especializado,
+  admitiendo abstract según objetivo de lectura. El usuario confirma full por
+  relación directa con su práctica; aplicación al GT pendiente.
+- Consulta P03 `depth`: Cursor propone full y Devin abstract; ambos señalan
+  dependencia del objetivo de lectura. El usuario confirma full para revisar
+  grupos, subgrupos y poblaciones; aplicación al GT pendiente.
+- Consulta P03 `practice`: Cursor propone 0 y Devin 1; distinguen cambio del
+  estándar y potencial para influir en técnicas. El usuario adjudica 0 y mantiene
+  el GT anterior; respuesta humana inicial conservada.
+- Consulta P04 `relevance`: ambos proponen 1 por foco intersticial; admiten
+  2 por técnica broncoscópica, incluida en el criterio original de relevancia
+  alta. El usuario confirma media por foco intersticial; aplicación al GT
+  pendiente.
+- Consulta P04 `practice`: ambos proponen 0 por indicación intersticial, frente
+  a la pregunta específica sobre cáncer. El usuario confirma 0; aplicación
+  al GT pendiente.
+- Consulta P05 `design`: ambos proponen cohort por estudio prospectivo
+  diagnóstico, incluido en esa opción. El usuario confirma cohort; aplicación
+  al GT pendiente.
+- Consulta P05 `practice`: ambos proponen 0 por evidencia exploratoria y
+  tamaño pequeño; el usuario corrige su respuesta inicial a 0 por pocos casos.
+  Se mantiene el GT anterior y la anotación inicial se conserva.
+- Consulta P10 `depth`: ambos proponen full por ctDNA/MRD y propuesta TNMB
+  para estadificación y precisión; el usuario adjudica abstract pensando en
+  procedimientos. Se mantiene el GT y la anotación inicial se conserva.
+- Consulta P11 `depth`: Cursor propone abstract y Devin full; ambos señalan
+  dependencia del papel del lector. El usuario adjudica abstract pensando
+  en procedimientos; se mantiene GT y se conserva anotación inicial.
+- Consulta P11 `practice`: ambos proponen 0 por impacto terapéutico frente a
+  pregunta de diagnóstico/estadificación; el usuario confirma 0. Aplicación
+  al GT pendiente.
+- Consulta P12 `depth`: ambos proponen abstract para el perfil intervencionista,
+  con full si se evalúa tratamiento. El usuario adjudica abstract; se mantiene
+  el GT y la anotación inicial se conserva.
+- Consulta P13 `relevance`: ambos proponen 2 por cáncer de pulmón, incluido
+  en el criterio original; admiten 1 con foco estrictamente procedimental.
+  El usuario adjudica alta, compatible con leer resumen; se mantiene GT y se
+  conserva la respuesta inicial.
+- Consulta P13 `practice`: ambos proponen 0 por impacto terapéutico frente a
+  pregunta de diagnóstico/estadificación; el usuario confirma 0. Aplicación
+  al GT pendiente.
+- Consulta P15 `depth`: Cursor propone skip y Devin abstract por diferente
+  interés en radiómica aplicada a nódulos; el usuario adjudica skip por escasa
+  aportación a procedimientos. Se mantiene GT y anotación inicial.
+- Consulta P15 `practice`: ambos proponen 0 por distinguir potencial
+  metodológico e impacto clínico; el usuario adjudica 0. Se mantiene GT y
+  se conserva anotación inicial.
+- Consulta P18 `depth`: ambos proponen abstract para perfil intervencionista,
+  con full para manejo habitual de EPOC o interés metodológico.
+  El usuario adjudica abstract; se mantiene GT y se conserva anotación inicial.
+- Consulta P20 `depth`: Cursor propone skip y Devin abstract por diferente
+  peso de cultura neumológica general; el usuario adjudica skip al centrarse
+  en procedimientos. Se mantiene GT y anotación inicial.
+- Consulta P21 `depth`: ambos proponen abstract por interés general en
+  cesación tabáquica; admiten skip para foco solo procedimental.
+  El usuario adjudica skip para procedimientos; se mantiene GT y anotación inicial.
+- Consulta P23 `relevance`: ambos proponen 1 por biología del cáncer
+  pulmonar adyacente al foco clínico; el usuario confirma media por relación
+  temática. Aplicación al GT pendiente.
+- El usuario ratifica las decisiones previas con foco en neumología
+  intervencionista: EPOC/CPAP fuera de su foco. Preguntas originales intactas.
+- Consulta P23 `domain`: ambos proponen other por ciencia básica, incluida
+  explícitamente en esa opción. El usuario adjudica other; se mantiene GT
+  y anotación inicial.
+- Consulta P23 `depth`: Cursor propone skip y Devin abstract por distinto
+  interés en biología preclínica; el usuario adjudica skip. Se mantiene GT
+  y anotación inicial.
+- Consulta P28 `relevance`: ambos proponen 2 por sedación en broncoscopia,
+  incluida en high. El usuario adjudica alta; se mantiene GT y anotación inicial.
+- Consulta P29 `domain`: ambos proponen ai_radiology por screening CT,
+  aunque estudia ayudas de decisión compartida; usuario confirma ai_radiology.
+  Aplicación al GT pendiente.
+- Consulta P29 `design`: ambos proponen meta por revisión sistemática,
+  incluida expresamente en esa opción; respuesta eta interpretada como
+  confirmación de meta. Aplicación al GT pendiente.
+- Consulta P30 `domain`: ambos proponen ai_radiology por manejo de nódulos
+  en screening CT; usuario confirma ai_radiology. Aplicación al GT pendiente.
+- Consulta P30 `depth`: ambos proponen abstract; full si participa en
+  cribado o evalúa derivación a procedimientos. Usuario confirma full por
+  condicionar derivaciones; aplicación al GT pendiente.
+- Consulta P30 `practice`: ambos proponen 0 por síntesis de resultados
+  previos; se conserva que el criterio no exige datos primarios nuevos.
+  El usuario confirma 0; aplicación al GT pendiente.
+- Consulta independiente P31.practice: Cursor y Devin proponen no; el usuario confirma no, sin cambiar la pregunta ni exigir datos primarios nuevos.
+- Consulta independiente P32.design: Cursor y Devin proponen basic por el objetivo molecular/celular; el usuario confirma basic.
+- Consulta independiente A04.department: Cursor y Devin proponen urgencias por el síntoma de alarma incluido en el mensaje; el usuario confirma urgencias.
+- Consulta independiente A10.same_day: Cursor y Devin proponen no por ausencia de petición o plazo para hoy; el usuario confirma no.
+- Revisión humana completada: 88/88 campos (83 principales y 5 adicionales), 51
+  acuerdos y 37 discrepancias en 23 casos con el GT vigente. Corte y concordancia
+  `docs/segunda_anotacion/revision_humana_20261011_final*.json`/`*_concordancia.md`
+  (evidencia privada, no exportada al espejo);
+  adjudicación individual pendiente, sin aplicar cambios al GT.
+- Revisión humana: conservado el corte de las 83 respuestas principales del usuario
+  (48 acuerdos y 35 desacuerdos con GT v4); cinco revisiones adicionales pendientes.
+  Concordancia en `docs/segunda_anotacion/revision_humana_20261011_concordancia.md`
+  (evidencia privada, no exportada al espejo).
+  No se modificó el GT ni se repuntuaron los modelos; discrepancias por adjudicar.
+- El formulario usa el puerto 8776 para evitar el servidor del sitio en 8765;
+  comprobada la página servida y la API de los 83 + 5 campos.
+- Guardado atómico en disco, reanudación tras reiniciar, notas por campo, historial,
+  descarga JSON y detección de conflictos entre pestañas. Acceso con clave persistente.
+- Sincronizadas las páginas generadas y las atestaciones con la versión del paquete;
+  las salidas confirmatorias, los runs y las dependencias numéricas se conservan.
+- El borrador del artículo conserva su corte congelado 1.6.0; sus tests usan la hoja
+  de hechos del corte declarado, independiente de la versión de las herramientas.
+- No modifica el GT ni las respuestas históricas. Instrucciones en
+  `docs/segunda_anotacion/revision_web.md` (documento privado, no exportado al
+  espejo); pruebas de cobertura, persistencia y HTTP.
+
 ## [1.6.0] - 2026-10-10 — JEV-90: Microsoft-Decision-1 en el marcador (D0); web bilingüe y auditorías confirmatorias
 
 - **JEV-90 (resultados e integración):** Microsoft-Decision-1 por OpenRouter

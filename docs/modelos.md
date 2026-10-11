@@ -3,7 +3,11 @@
 Todos implementan (o imitan) el contrato "System One": estado + preguntas tipadas
 (`choice` / `score` / `noul`) → distribuciones de probabilidad, sin generar texto.
 
-Las puntuaciones vigentes usan **GT v4 (6-oct): 31 papers y 194 casos**. Los recuentos de ejecución de 195 casos, costes y acuerdos sobre 969 decisiones o 259 etiquetas corresponden al histórico **GT v3**; no se vuelven a ejecutar los modelos. P02 se retiró y P03 conserva su GT. La línea base de mayoría es ajustado 0 y 51.3 % en papers.
+El marcador vigente usa **GT v5 (11-oct): 31 papers y 194 casos**, tras 23 cambios
+adjudicados por el usuario en una revisión parcial de 88 campos. Las cifras y
+conclusiones editoriales de esta ficha conservan su cierre histórico con **GT v4**;
+las puntuaciones actuales están en `docs/resultados.md` y en las fichas generadas. Los recuentos de ejecución de 195 casos, costes y acuerdos sobre 969 decisiones o 259 etiquetas corresponden al histórico **GT v3**; no se vuelven a ejecutar los modelos. P02 se retiró y P03 conserva su GT. La línea base de mayoría es ajustado 0; en papers era 51.3 % con GT v4
+y es 51.9 % con GT v5.
 
 ---
 

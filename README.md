@@ -2,7 +2,7 @@
 
 # system-one-bench: banco de pruebas de decisores "System One"
 
-**Versión 1.6.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
+**Versión 2.0.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
 
 Banco de pruebas para comparar **Jev** (TypeSafe), un modelo cerrado que no genera texto sino
 que responde preguntas tipadas con probabilidades, con las alternativas abiertas que prometen lo
@@ -42,6 +42,21 @@ y, entre los abiertos, Clef-27B como decisor dedicado y **Qwen3.8-27B servido po
 
 Detalle en [`docs/resultados.md`](docs/resultados.md) y [`docs/experimentos/`](docs/experimentos/).
 
+## Revisión humana y GT v5 (11-oct-2026)
+
+El usuario revisó 88 campos previamente completados por Codex (83 principales
+vigentes y cinco revisiones adicionales). Hubo 51 acuerdos iniciales y 37
+discrepancias adjudicadas: 23 cambios y 14 mantienen GT. Se conserva la
+anotación inicial a ciegas; la adjudicación se hizo con opiniones auxiliares
+de Cursor y Devin. Esto acredita revisión humana de esos campos, no de todas
+las etiquetas ni de todos los sets. Procedencia: `data/gt_v5_procedencia.json`.
+
+El [marcador generado](docs/resultados.md) y las fichas usan GT v5. Las cifras
+y conclusiones editoriales de experimentos anteriores describen su cierre
+con GT v4; se conservan sus auditorías con ese GT. No son una nueva confirmación
+con las etiquetas revisadas. Los mismos resultados se repuntúan sin repetir
+inferencia; no se comparan directamente cifras de versiones distintas del GT.
+
 ## ⚠️ Aviso sobre el ground truth
 
 Lee esto antes de citar ninguna cifra:
@@ -53,8 +68,8 @@ Lee esto antes de citar ninguna cifra:
 
   | Set | Casos | Quién redactó el GT | Quién lo validó |
   |---|---|---|---|
-  | Triaje ES/EN, papers, adversarial 1–2 | 14 (×2 idiomas), 31, 10+10 | Un agente LLM (Lyra), 20–23 sep 2026 | Sin revisión sistemática; 11 cambios de campo posteriores (2 en P04 y 9 de la adjudicación de la 2ª anotación); GT v4 elimina el duplicado P02 |
-  | Triaje ampliado ES/EN, adversarial 3–4 | 26 (×2), 20, 20 | Claude | El responsable del proyecto, antes de ejecutar ningún modelo |
+  | Triaje ES/EN, papers, adversarial 1–2 | 14 (×2 idiomas), 31, 10+10 | Un agente LLM (Lyra), 20–23 sep 2026 | Revisión parcial histórica y revisión humana de campos seleccionados el 11-oct; GT v5 incorpora la adjudicación. No revisión exhaustiva |
+  | Triaje ampliado ES/EN, adversarial 3–4 | 26 (×2), 20, 20 | Claude | El responsable del proyecto, antes de ejecutar ningún modelo; revisión humana adicional de campos de adv3 el 11-oct |
   | Adversarial 5 | 20 | Claude | Claude, por delegación (sin revisión humana) |
 
 - **El GT tiene ruido medido.** En una segunda anotación humana sobre campos en disputa, el acuerdo
@@ -71,8 +86,8 @@ Lee esto antes de citar ninguna cifra:
   decidir sobre pacientes.
 
 Todos los cambios del GT están en [`data/GT_CHANGELOG.md`](data/GT_CHANGELOG.md), con las
-versiones anteriores conservadas (`*.v1.json`, `*.v2.json` y los papers `*.v3.json`).
-El GT actual es v4: 194 casos en 11 fases (191 sin OOD); la fase `papers32` mantiene
+versiones anteriores conservadas (`*.v1.json`, `*.v2.json`, los papers `*.v3.json` y el GT completo `*.v4.json`).
+El GT actual es v5: 194 casos en 11 fases (191 sin OOD); la fase `papers32` mantiene
 su nombre, con 31 papers tras retirar P02 y conservar P03 sin cambios.
 
 ## Cómo repetir las pruebas
