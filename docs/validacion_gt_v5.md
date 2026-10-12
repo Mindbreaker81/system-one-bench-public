@@ -45,8 +45,13 @@ con v4 y otra con v5 como si fueran evaluaciones sobre las mismas etiquetas.
 | Mayoría (oráculo) | 0.00 | 0.00 | 0.00 |
 
 Los análisis confirmatorios cerrados antes de esta adjudicación conservan GT
-v4 y sus auditorías declaran esa versión; no se presentan como confirmaciones
-con GT v5. Las comparaciones de v5 son descriptivas después de adjudicar.
+v4 y sus auditorías declaran esa versión; son hechos históricos ligados a ese
+cierre. Una réplica pre-registrada con GT v5
+(`docs/experimentos/gt_v5_confirmatorio.md`, JEV-100) re-evalúa las mismas
+hipótesis con criterios verbatim y es el veredicto confirmatorio vigente bajo
+el GT actual: solo cambian dos ítems no primarios (P72 rango d0–d3, Holm
+M4P1_vs_G4P1) y las discordancias de 4 celdas de jev90_holm53, sin cambio de
+significación.
 
 Publicación: la versión 2.0.0 se publica siguiendo
 `docs/procedimientos/publicar-version.md` — commit y tag `v2.0.0` en el repo

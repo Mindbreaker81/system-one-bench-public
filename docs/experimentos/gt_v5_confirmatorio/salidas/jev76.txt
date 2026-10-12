@@ -1,0 +1,60 @@
+F0p llm_qwen38_27b_fp8_jev76_off_d0_prob: ajustado 50.53, n_ok 194/194, evaluable=True 
+T0p llm_qwen38_27b_fp8_jev76_on_d0_prob: ajustado 62.74, n_ok 194/194, evaluable=True 
+D0p llm_qwen38_27b_fp8_jev76_off_d0_disc: ajustado 67.25, n_ok 194/194, evaluable=True 
+DT0 llm_qwen38_27b_fp8_jev76_on_d0_disc: ajustado 63.04, n_ok 194/194, evaluable=True 
+F1p llm_qwen38_27b_fp8_jev76_off_d1_prob: ajustado 58.22, n_ok 194/194, evaluable=True 
+T1p llm_qwen38_27b_fp8_jev76_on_d1_prob: ajustado 67.59, n_ok 194/194, evaluable=True 
+D1 llm_qwen38_27b_fp8_jev76_off_d1_disc: ajustado 64.82, n_ok 194/194, evaluable=True 
+DT1 llm_qwen38_27b_fp8_jev76_on_d1_disc: ajustado 58.75, n_ok 194/194, evaluable=True 
+
+## Clasificación pre-registrada (factorial JEV-76, IC98.75 por contraste; I descriptiva con IC95 conjunto)
+- H1 d0: DT−D >=+5: REFUTADA (Δ=-4.2 [-12.6,+3.3] IC98.75)
+- H1 d1: DT−D >=+5: REFUTADA (Δ=-6.1 [-16.1,+2.5] IC98.75)
+- H2 d0: DT−T >=+5: INCONCLUSA (Δ=+0.3 [-5.9,+6.3] IC98.75)
+- H2 d1: DT−T >=+5: REFUTADA (Δ=-8.8 [-19.2,-1.6] IC98.75)
+- I d0 (descriptiva): -16.4 [-31.3,-4.5] IC95 conjunto
+- I d1 (descriptiva): -15.4 [-28.6,-4.7] IC95 conjunto
+
+## Holm 53 celdas (aparte, descriptivo)
+- D0p_vs_DT0: 0 celdas significativas tras Holm de 53
+- D1_vs_DT1: 0 celdas significativas tras Holm de 53
+- T0p_vs_DT0: 0 celdas significativas tras Holm de 53
+- T1p_vs_DT1: 0 celdas significativas tras Holm de 53
+
+## Latencia y tokens por celda (coste API = 0: ejecución local sin facturación)
+| celda | n | ms media | ms mediana | tokens prompt | tokens completion | tokens razonamiento |
+|---|---:|---:|---:|---:|---:|---:|
+| F0p | 194 | 7119 | 6426 | 201178 | 29720 | 0 |
+| T0p | 194 | 48176 | 43606 | 208162 | 164627 | 138909 |
+| D0p | 194 | 2771 | 2708 | 143430 | 10352 | 0 |
+| DT0 | 194 | 38150 | 26737 | 150414 | 120497 | 114953 |
+| F1p | 194 | 7072 | 6422 | 201178 | 29589 | 0 |
+| T1p | 194 | 50041 | 44872 | 208162 | 170315 | 143809 |
+| D1 | 194 | 2773 | 2712 | 143430 | 10352 | 0 |
+| DT1 | 194 | 36475 | 27222 | 150414 | 116355 | 110745 |
+- on/off prob_d0 (T0p vs F0p): ms media 7119 → 48176 (×6.77), mediana 6426 → 43606; completion 29720 → 164627 (Δ +134907; razonamiento on = 138909), prompt 201178 → 208162
+- on/off prob_d1 (T1p vs F1p): ms media 7072 → 50041 (×7.08), mediana 6422 → 44872; completion 29589 → 170315 (Δ +140726; razonamiento on = 143809), prompt 201178 → 208162
+- on/off disc_d0 (DT0 vs D0p): ms media 2771 → 38150 (×13.77), mediana 2708 → 26737; completion 10352 → 120497 (Δ +110145; razonamiento on = 114953), prompt 143430 → 150414
+- on/off disc_d1 (DT1 vs D1): ms media 2773 → 36475 (×13.15), mediana 2712 → 27222; completion 10352 → 116355 (Δ +106003; razonamiento on = 110745), prompt 143430 → 150414
+
+## Referencia descriptiva JEV-68/71 (nunca control)
+- d0/F llm_qwen38_27b_fp8_jev68_off_d0_prob: ajustado 50.01
+- d0/T llm_qwen38_27b_fp8_jev68_on_d0_prob: ajustado 62.87
+- d0/D llm_qwen38_27b_fp8_jev71_off_d0_disc: ajustado 66.63
+- d1/F llm_qwen38_27b_fp8_jev68_off_d1_prob: ajustado 59.1
+- d1/T llm_qwen38_27b_fp8_jev68_on_d1_prob: ajustado 68.39
+
+## Baselines de mayoría por fase (GT vigente; ood excluida del agregado por baseline saturada)
+| fase | n | mayoría % | respuestas mayoritarias |
+|---|---:|---:|---|
+| triage_es | 14 | 66.4 | department=admin, urgency=1, clinical=1, hostile=0, same_day=0 |
+| triage_en | 14 | 66.4 | department=admin, urgency=1, clinical=1, hostile=0, same_day=0 |
+| papers32 | 31 | 51.9 | relevance=2, domain=ip, design=rct, depth=abstract, practice=0 |
+| adv1 | 10 | 85.0 | department=admin, urgency=0, clinical=0, hostile=0, same_day=0 |
+| adv2 | 10 | 75.0 | department=admin, urgency=1, clinical=0, hostile=0, same_day=1 |
+| ood | 3 | 100.0 | relevance=0, domain=other, clinical=0 |
+| triage_ext_es | 26 | 57.7 | department=bronchoscopia, urgency=1, clinical=1, hostile=0, same_day=1 |
+| triage_ext_en | 26 | 57.7 | department=bronchoscopia, urgency=1, clinical=1, hostile=0, same_day=1 |
+| adv3 | 20 | 55.5 | department=urgencias, urgency=2, clinical=1, hostile=0, same_day=1 |
+| adv4 | 20 | 76.5 | department=admin, urgency=1, clinical=0, hostile=0, same_day=0 |
+| adv5 | 20 | 63.0 | department=admin, urgency=1, clinical=1, hostile=0, same_day=0 |

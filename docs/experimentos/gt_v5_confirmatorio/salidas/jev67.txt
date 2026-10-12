@@ -1,0 +1,68 @@
+# jev67 report
+
+## a1: llm_qwen38_27b_fp8_inject_prob
+ajustado 52, n_ok 194/194, errores 0, nulos crudos 2, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%
+fallos papers32 (timeout/length): 0
+
+## a2: llm_qwen38_27b_fp8_nostruct_t0_prob
+ajustado 52, n_ok 194/194, errores 0, nulos crudos 2, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%
+acuerdo pareado con A1: 967/969 p=0.998 IC95 [0.993,1.000]
+fallos papers32 (timeout/length): 0
+
+## a3: llm_qwen38_27b_fp8_inject_rot1_prob
+ajustado 60, n_ok 194/194, errores 0, nulos crudos 2, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%
+rotación: 24 cambios de etiqueta choice en 259 pareadas; conserva posición 3; p Poisson-binomial 0.9991; Newcombe (0.0703125, 0.035047139204326054, 0.10883209805783309)
+fallos papers32 (timeout/length): 0
+
+## a4: llm_qwen38_27b_fp8_inject_prob_s202
+ajustado 64, n_ok 51/51, errores 0, nulos crudos 0, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%
+acuerdo pareado con A1: 258/260 p=0.992 IC95 [0.972,0.999]
+fallos papers32 (timeout/length): 0
+
+## b1: llm_qwen38_27b_nvfp4_inject_prob
+ajustado 51, n_ok 194/194, errores 0, nulos crudos 0, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%
+fallos papers32 (timeout/length): 0
+
+## b2: llm_qwen38_27b_nvfp4_inject_disc
+ajustado 67, n_ok 194/194, errores 0, nulos crudos 0, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%
+fallos papers32 (timeout/length): 0
+
+## c1: llm_qwen38_27b_arcgguf_inject_prob
+ajustado 49, n_ok 194/194, errores 0, nulos crudos 2, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%
+fallos papers32 (timeout/length): 0
+
+## c2: llm_qwen38_27b_arcgguf_inject_disc
+ajustado 67, n_ok 194/194, errores 0, nulos crudos 0, uniformes 0, sin usage 0, violaciones token 0, cobertura raw 100%
+fallos papers32 (timeout/length): 0
+
+## Clasificación §8.2
+- A1.a ajustado: CONFIRMADA (52, n_ok=194)
+- A1.b nulos crudos: REFUTADA (2)
+- A1.c errores: CONFIRMADA (0)
+- A2.a acuerdo A1↔A2: CONFIRMADA (967/969 p=0.998 L=0.993)
+- A2.b Δ ajustado A2−A1: CONFIRMADA (-0)
+- A2.c reintentos malformados: CONFIRMADA (A2=0, A1=0)
+- A2.d vs 49 histórico: descriptivo (A2=52)
+- A4 acuerdo A1↔A4 (ruido): CONFIRMADA (258/260 p=0.992)
+- A3.a cambios de etiqueta: INCONCLUSA (24/259 U=0.135)
+- A3.b dirección posición: CONFIRMADA (exceso no significativo) [p=0.9991]
+- A3.c Δ acierto choice A3−A1: REFUTADA (IC excluye 0) (+0.070 [+0.035,+0.109] pp*100)
+- P+fix: CONFIRMADA
+- P+live: CONFIRMADA (14/14 eligen 1ª clave)
+- B1.a ajustado vs A1: CONFIRMADA (-1)
+- B1.b nulos crudos: CONFIRMADA (0)
+- C1.a ajustado vs A1: CONFIRMADA (-3)
+- C1.b nulos crudos: REFUTADA (2)
+- B2.a fallos papers32: CONFIRMADA (0)
+- B2.b ajustado disc vs prob: REFUTADA (+16)
+- B2.c errores totales: CONFIRMADA (0)
+- C2.a fallos papers32: CONFIRMADA (0)
+- C2.b ajustado disc vs prob: REFUTADA (+18)
+- C2.c errores totales: CONFIRMADA (0)
+
+## §8.5 normalize (auditoría offline)
+- llm_qwen38_27b_fp8_inject_prob: nulos 2, decisiones que cambian 0, score_mismatch 0, Brier 0.2204, NLL 0.7333, ECE 0.09298063623789776, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}
+- llm_qwen38_27b_fp8_nostruct_t0_prob: nulos 2, decisiones que cambian 0, score_mismatch 0, Brier 0.2220, NLL 0.7447, ECE 0.09455739972337483, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}
+- llm_qwen38_27b_fp8_inject_rot1_prob: nulos 2, decisiones que cambian 0, score_mismatch 0, Brier 0.2027, NLL 0.8207, ECE 0.076984785615491, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}
+- llm_qwen38_27b_nvfp4_inject_prob: nulos 0, decisiones que cambian 0, score_mismatch 0, Brier 0.2221, NLL 0.7591, ECE 0.09953319502074691, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}
+- llm_qwen38_27b_arcgguf_inject_prob: nulos 2, decisiones que cambian 0, score_mismatch 0, Brier 0.2309, NLL 0.7941, ECE 0.10066735822959888, desv. {'choice': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'score': {'med': 0.0, 'p95': 0.0, 'max': 1.0, 'n>0.05': 1}, 'noul': {'med': 0.0, 'p95': 0.0, 'max': 0.0, 'n>0.05': 0}}

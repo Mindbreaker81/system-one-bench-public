@@ -13,6 +13,23 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.1.0] - 2026-10-12 — Réplica confirmatoria GT v5, enmienda de atestaciones y web alineada
+
+- Réplica confirmatoria con GT v5 (JEV-100/101): las 12 familias de hipótesis de los cierres v4
+  re-evaluadas con criterios verbatim y sin inferencia (`docs/experimentos/gt_v5_confirmatorio/`).
+  Cambian dos ítems no primarios: P72 rango d0–d3 (INCONCLUSA→REFUTADA) y Holm M4P1_vs_G4P1
+  (1→2 celdas); 4 celdas de jev90_holm53 cambian discordancias sin cambiar la significación.
+  Los cierres v4 originales no se tocan.
+- `qwen_session`: el encabezado de baselines muestra el GT realmente cargado (antes «GT v4» fijo).
+  Ese cambio, solo de impresión, alteraba el hash de código ligado en 8 de las 12 auditorías.
+  Enmienda editorial R109 (`docs/experimentos/enmienda_atestaciones_r109.md`): se re-congela
+  únicamente el sha256 de `jevbench/qwen_session.py` en jev68, jev76, jev77, jev78, jev82 y
+  las tres jev90; las 12 salidas reejecutadas con GT v4 coinciden literalmente con los cierres
+  y `attest verify` vuelve a dar 12/12. Revisión de Codex; aprobada por el usuario.
+- Web y sitio: cifras de prosa que dependían del GT (catálogo de modelos: CLM, Strands,
+  Microsoft-Decision-1, LLM generalistas) pasadas a GT v5; las conclusiones históricas quedan
+  rotuladas como GT v4. El artifact de la web se republica con esta versión.
+
 ## [2.0.0] - 2026-10-11 — GT v5: adjudicación humana y repuntuación
 
 - Revisión humana de 88 campos: 51 acuerdos iniciales y 37 discrepancias adjudicadas;
@@ -22,7 +39,7 @@ Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los co
 - GT v5 conserva los 194 casos, los estados y las preguntas; el GT v4 completo
   queda en `data/*.v4.json`; adv1/adv3 conservan también la selección v3. Procedencia de los 88 campos revisados en
   `data/gt_v5_procedencia.json`. Es revisión parcial, no validación humana exhaustiva.
-- Repuntuación de todos los runs de decisión almacenados con el mismo scorer,
+- Repuntuación de los 536 runs de decisión almacenados con el mismo scorer,
   sin inferencia nueva ni cambios en sus respuestas. Comparación v4/v5 (JEV-98;
   evidencia privada, no exportada al espejo) resumida en `docs/validacion_gt_v5.md`.
 - Los análisis confirmatorios ya cerrados se reproducen con GT v4; las auditorías
@@ -33,11 +50,20 @@ Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los co
   de emails inventados se aplica a snapshots de datasets ya autorizados, sin
   extenderla a otros documentos.
 - Verificación: 834 comprobaciones iniciales; los dos fallos encontrados se
-  corrigieron y sus bloques pasan (67 + 17). Pasan GT v5, auditorías, paridad,
-  sitio y versión; 12/12 auditorías verificadas también en snapshot público.
+  corrigieron y sus bloques pasan (67 + 17). Suite completa final: 822
+  comprobaciones, exit 0 (la corrida de 836 con un error ambiental puntual
+  queda registrada aparte). Pasan GT v5, auditorías, paridad, sitio y versión;
+  12/12 auditorías verificadas también en snapshot público.
 - Web y sitio bilingües regenerados y publicados con esta versión: push del privado
   con tag y snapshot al espejo; Netlify redespliega el sitio público solo.
   El artifact de Claude no se republica.
+- Réplica confirmatoria con GT v5 pre-registrada y ejecutada (JEV-100,
+  `docs/experimentos/gt_v5_confirmatorio.md`): las 12 familias de hipótesis con
+  criterios verbatim y sin inferencia. Solo cambian dos ítems no primarios
+  (P72 rango d0–d3 INCONCLUSA→REFUTADA; Holm M4P1_vs_G4P1 1→2 celdas) y las
+  discordancias de 4 celdas de jev90_holm53 (todas p_holm=1); control
+  GT-invariante sin cambios. Es el veredicto confirmatorio vigente bajo v5;
+  los cierres v4 quedan históricos.
 
 ## [1.7.0] - 2026-10-11 — JEV-95: revisión humana del GT en web privada
 
@@ -155,12 +181,14 @@ Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los co
   acuerdos y 37 discrepancias en 23 casos con el GT vigente. Corte y concordancia
   `docs/segunda_anotacion/revision_humana_20261011_final*.json`/`*_concordancia.md`
   (evidencia privada, no exportada al espejo);
-  adjudicación individual pendiente, sin aplicar cambios al GT.
-- Revisión humana: conservado el corte de las 83 respuestas principales del usuario
-  (48 acuerdos y 35 desacuerdos con GT v4); cinco revisiones adicionales pendientes.
-  Concordancia en `docs/segunda_anotacion/revision_humana_20261011_concordancia.md`
-  (evidencia privada, no exportada al espejo).
-  No se modificó el GT ni se repuntuaron los modelos; discrepancias por adjudicar.
+  adjudicación individual en curso en ese momento, aún sin aplicar cambios al GT
+  (quedó resuelta en 2.0.0).
+- Corte intermedio de la revisión humana: conservado el corte de las 83 respuestas
+  principales del usuario (48 acuerdos y 35 desacuerdos con GT v4); las cinco
+  revisiones adicionales pendientes en ese momento. Concordancia en
+  `docs/segunda_anotacion/revision_humana_20261011_concordancia.md` (evidencia
+  privada, no exportada al espejo). No se modificó el GT ni se repuntuaron los
+  modelos; discrepancias aún por adjudicar.
 - El formulario usa el puerto 8776 para evitar el servidor del sitio en 8765;
   comprobada la página servida y la API de los 83 + 5 campos.
 - Guardado atómico en disco, reanudación tras reiniciar, notas por campo, historial,

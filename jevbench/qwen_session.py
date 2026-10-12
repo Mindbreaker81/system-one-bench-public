@@ -4311,6 +4311,10 @@ def _p711_breakdown(run_f0, run_d0):
     return acc
 
 
+def _gt_label():
+    return os.environ.get("JEVBENCH_GT") or "vigente"
+
+
 def _baseline_table(used=None):
     """Baselines de mayoría por fase sobre el GT vigente (oráculo ajustado
     sobre el propio set): pct, n y respuesta mayoritaria por pregunta.
@@ -4701,7 +4705,7 @@ def analyze(out_json=None, iters=BOOT_ITERS, seed=BOOT_SEED, printer=print):
                      if "prob_media_F0" in e else "")
             printer(f"- {qid} ({e['tipo']}, n={e['n']}): "
                     + " | ".join(parts) + extra)
-    printer("\n## Baselines de mayoría por fase (GT v4; ood excluida del "
+    printer(f"\n## Baselines de mayoría por fase (GT {_gt_label()}; ood excluida del "
             "agregado por baseline saturada)")
     printer("| fase | n | mayoría % | respuestas mayoritarias |")
     printer("|---|---:|---:|---|")
@@ -4904,7 +4908,7 @@ def analyze_factorial(out_json=None, iters=BOOT_ITERS, seed=BOOT_SEED,
         for k, v in jev68_ref.items():
             printer(f"- {k} {v['run']}: ajustado "
                     f"{v['adjusted'] and round(v['adjusted'], 2)}")
-    printer("\n## Baselines de mayoría por fase (GT v4; ood excluida del "
+    printer(f"\n## Baselines de mayoría por fase (GT {_gt_label()}; ood excluida del "
             "agregado por baseline saturada)")
     printer("| fase | n | mayoría % | respuestas mayoritarias |")
     printer("|---|---:|---:|---|")
@@ -5315,7 +5319,7 @@ def analyze_medgemma(out_json=None, iters=BOOT_ITERS, seed=BOOT_SEED,
             if d:
                 printer(f"- cascada−M-D0: {d['delta']:+.1f} "
                         f"[{d['lo']:+.1f},{d['hi']:+.1f}] IC95")
-    printer("\n## Baselines de mayoría por fase (GT v4; ood excluida del "
+    printer(f"\n## Baselines de mayoría por fase (GT {_gt_label()}; ood excluida del "
             "agregado por baseline saturada)")
     printer("| fase | n | mayoría % | respuestas mayoritarias |")
     printer("|---|---:|---:|---|")
