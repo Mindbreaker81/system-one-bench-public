@@ -13,3 +13,5 @@ La réplica GT v5 de JEV-100 conserva sus resultados separados.
 Revisión: Codex R109; aprobada por el usuario el 12-oct-2026.
 
 Con la versión 2.1.0 (bump de jevbench.__version__) se actualiza también el sha256 de jevbench/__init__.py en las auditorías que lo ligan; es el único cambio de esos documentos. Aprobado por el usuario el 12-oct-2026.
+
+Con la versión 2.2.0 (JEV-101, integración de drex_v15_9b) se repite la misma operación: se re-congela únicamente el sha256 de jevbench/__init__.py (nuevo valor 502ccde436d43430e29736a2130ba87fee1b601824b7b960e57693c7b613df03) en las 12 auditorías que lo ligan; ningún otro campo de esos documentos cambia (comprobado por comparación estructural en la edición). attest verify vuelve a dar 12/12.

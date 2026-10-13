@@ -32,7 +32,7 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
     llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc \
     llm_medgemma_27b_it_bf16_jev77_d0_disc llm_gemma3_27b_it_bf16_jev77_d0_disc medgemma_27b_jev77_jevrev_audit oai_luna_decisions llm_haiku55_off_prob \
     llm_haiku55_off_disc llm_haiku55_adapt_prob decider_4b_haiku55rev_audit jev_haiku55rev_audit llm_haiku55_adapt_prob_r2 \
-    llm_ministral3b_med_prob llm_ministral3b_med_disc jev_ms_decision1
+    llm_ministral3b_med_prob llm_ministral3b_med_disc jev_ms_decision1 drex_v15_9b
 ```
 <!-- /AUTO:comando -->
 
@@ -139,6 +139,7 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | llm_ministral3b_med_prob | -10* | 76.4 | 83.3 | 12/28 | 73.6 | 0.58 | 7/8 | 7/19 | 64.1 | 76.2 / 80.8 | 11/20 | 71.5 | 0.128 | 4780 | 1/181 |
 | llm_ministral3b_med_disc | 45* | 76.2 | 80.0 | 16/28 | 79.7 | 0.83 | 9/10 | 6/18 | 64.4 | 83.8 / 84.6 | 9/19 | 70.0 | 0.150 | 1913 | 0/206 |
 | jev_ms_decision1 | 47 | 91.4 | 86.4 | 28/28 | 79.7 | 0.90 | 6/10 | 17/20 | 80.5 | 92.3 / 88.1 | 16/20 | 88.5 | 0.079 | 693 | 0/216 |
+| drex_v15_9b | 44 | 85.0 | 81.4 | 24/28 | 75.8 | 0.86 | 5/10 | 14/20 | 79.5 | 91.5 / 90.4 | 15/20 | 86.5 | 0.083 | 360 | 0/216 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.9 | — | 0/10 | 17/20 | 80.0 | 57.7 / 57.7 | 5/20 | 55.5 | — | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
@@ -541,6 +542,22 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   fabricante (36 benches, 35×, seguridad) **no evaluables** aquí. **No cambia** la
   recomendación vigente. Ficha: `docs/modelos.md` §Microsoft-Decision-1; detalle:
   `docs/infra_runs/ms_decision1_jev90.md` §RESULTADOS.
+- **Drex v1.5 (Nace.AI, 13-oct, JEV-101; cifras GT v5):** decisor dedicado
+  open-weight (`nace-ai/drex-v1.5` @ `328ee227`, ~9B; licencia Open RAIL-M
+  modificada, sin aval del proveedor): backbone híbrido MiMo/Qwen3.5 + cabeza
+  pointer (una fila por pregunta, opciones sin aislamiento, temperatura 1.0),
+  servido por su `serve.py` en el DGX (adaptador `systemone_http` por túnel
+  SSH). Run `drex_v15_9b`: **194/194**, ajustado **44** [IC95 30–56] frente a
+  49 de Jev, 47 de Nimble-9B y 0 de la mayoría (**44 no es % de acierto**).
+  McNemar: **ninguna celda p<0,05 frente a `jev_v3`** (mínima p=0,06,
+  `urgency` de adv4 a favor de Drex); frente a `nimble_9b` solo `relevance`
+  de papers32 con p=0,02 sin corregir (b=1, c=9) — no concluyente con
+  corrección por comparaciones múltiples. Brier noul 0,083; latencia de
+  cliente por túnel ~0,38 s/caso. Contaminación: sin solapamiento encontrado
+  en los materiales públicos inspeccionados; corpus de entrenamiento no
+  disponible para verificarlo (R111); las cifras de los autores (otros
+  bancos/scorers) no se incorporan. No cambia la recomendación. Ficha:
+  `docs/modelos.md` §Drex v1.5; manifiesto: `docs/infra_runs/drex_v15_9b.md`.
 
 **Experimentos** (`docs/experimentos/`):
 - `cascada_jev.md`: revisor-auditor (Jev→Jev, Decider→Decider, Decider→Jev y revisores 100%

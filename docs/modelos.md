@@ -950,6 +950,70 @@ y es 51.9 % con GT v5.
   el 27B sacó 27/30 con 1 FP. McNemar pareado: p=0.18, sin diferencia
   significativa.
 
+## Drex v1.5 (Nace.AI)
+
+- **Proveedor:** Nace.AI. HF: `nace-ai/drex-v1.5`. Repo:
+  <https://github.com/nace-ai/drex-decision-models>. **Open RAIL-M modificada
+  (v1.0, oct-2026), no OSI:** publicar métricas y salidas propias parece
+  permitido sujeto a las restricciones de uso (las probabilidades y decisiones
+  son Output del usuario; §6 cubre «evaluating»; no se halló prohibición de
+  benchmarking), pero el Attachment A restringe a quien supere ~1 M USD de
+  ingresos/financiación —§2(a–b), con excepción de uso
+  personal/investigación— y a quien ofrezca productos o servicios
+  competidores —§2(c), **sin** excepción expresa de investigación—. §9 prohíbe
+  logos o apariencia de aval: **este banco no tiene aval del proveedor**.
+- **Qué es:** backbone `Qwen3_5ForCausalLM` de ~8,95 B parámetros bf16
+  (32 capas híbridas: 3 de atención lineal Gated DeltaNet por cada capa de
+  atención completa, hidden 4096; la ficha declara como base
+  `XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B`, un SFT sobre Qwen3.5-9B) más una
+  **cabeza pointer** (`head.pt`, `head_dim=256`): logits por producto escalar
+  escalado entre la proyección del token de decisión y los finales de cada
+  opción, softmax con **`temperature=1.0`** del checkpoint (no presupone
+  calibración eficaz en esta batería). Ejecuta **una fila causal por
+  pregunta**: las preguntas son independientes entre sí, pero las opciones de
+  una misma pregunta van sucesivas en la fila (`option_isolation=False`,
+  `state_bidir=False`; el loader rechaza activarlas): no garantiza
+  invariancia al orden de las opciones. No es una pasada conjunta por estado
+  como Clef ni lectura de codebook como Nimble.
+- **Contrato:** API SystemOne nativa: el repo trae `serve.py`
+  (`POST /v1/systemone`): `choice` devuelve argmax + distribución, `noul`
+  p[1] de [no, yes], `score` la esperanza sobre los niveles; `confidence` es
+  un margen derivado de la distribución, no otra probabilidad para Brier/ECE.
+  Ventana operativa 16 384 tokens por defecto (`KEV_CONTEXT`, ampliable a
+  131 072): codifica `strict=True` y **rechaza** (HTTP 400) estados o filas
+  que la superen — no hay truncado silencioso.
+- **Revisión evaluada:** `328ee227c0425669d9f37fa82d400aa52c22139c`
+  (23 ficheros, ~17,9 GB + `head.pt` + `code/kev` + `serve.py`), bf16, CUDA
+  en GB10 (aarch64). `.venv-drex` (Python 3.12.14): `transformers==5.19.0`,
+  `pydantic==2.14.1` y **torch 2.14.1+cu130 fuera del rango declarado
+  `>=2.6,<2.9`** — el índice cu130 no ofrece wheel aarch64 anterior (GB10
+  exige CUDA 13); misma desviación que `nimble_9b`/`clef_27b`, sin efectos
+  observados. Sin `causal_conv1d`/`flash-linear-attention`: las capas
+  lineales van por la implementación PyTorch de referencia (correcta, más
+  lenta). Manifiesto: `docs/infra_runs/drex_v15_9b.md`.
+- **Ejecución:** `serve.py --model … --host 127.0.0.1 --port 8010` en el
+  DGX .80, consumido con el adaptador `systemone_http` a través de un túnel
+  SSH desde el portátil (`meta.host` es el cliente; el hardware real está en
+  el manifiesto). Latencia **de cliente por túnel**: mediana ~0,38 s/caso.
+- **Contaminación (revisión documental, R111):** «Sin solapamiento encontrado
+  en los materiales públicos inspeccionados; corpus de entrenamiento no
+  disponible para verificarlo». La tabla «JevBench» de su README es **otro
+  banco** (Benchmark Heaven, 231 ítems públicos; ninguno coincide con los
+  casos de este). Las cifras de los autores (Decision Index 58,08;
+  comparativas con Jev) usan casos y scorers distintos: **no se incorporan**
+  a este banco.
+- **Resultados (13-oct, GT v5; run `drex_v15_9b`; 194/194 casos, 0 errores):**
+  ajustado **44** [IC95 30–56] — frente a 49 de Jev, 47 de Nimble-9B y 0 de
+  la mayoría. Triaje 85,0/81,4, ext 91,5/90,4, papers 75,8 (ρ relevancia
+  0,86), adv3 86,5, adv4 81,5, adv5 82,0, ood 100 %, Brier noul 0,083.
+  McNemar: **ninguna celda p<0,05 frente a `jev_v3`** (mínima p=0,06,
+  `urgency` de adv4 a favor de Drex); frente a `nimble_9b` solo `relevance`
+  de papers32 con p=0,02 sin corregir (b=1, c=9, a favor de Drex; ρ 0,86
+  frente a 0,57) — no concluyente con corrección por comparaciones
+  múltiples. Ventana pre-comprobada con el tokenizer del checkpoint: **0
+  desbordes** en los 194 casos (máx. empaquetado 6 578 tokens, papers32/P11),
+  así que no hizo falta variante `_trunc`.
+
 ## OpenMed Ministral-3B-Medical-v1
 
 - **HF:** [OpenMed/Ministral-3B-Medical-v1](https://huggingface.co/OpenMed/Ministral-3B-Medical-v1),

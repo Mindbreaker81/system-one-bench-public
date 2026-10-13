@@ -13,6 +13,31 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.2.0] - 2026-10-13 — Drex v1.5 (Nace.AI) en la batería (JEV-101)
+
+- Nuevo decisor dedicado evaluado: `nace-ai/drex-v1.5` @ `328ee227` (~9B,
+  backbone híbrido MiMo/Qwen3.5 + cabeza pointer —una fila por pregunta,
+  opciones sin aislamiento, temperatura 1.0—; licencia Open RAIL-M
+  modificada, sin aval del proveedor), servido por su `serve.py` en el DGX
+  y medido con el adaptador `systemone_http` por túnel SSH. Run
+  `drex_v15_9b`: 194/194 casos, 0 errores; ajustado 44 [IC95 30–56] con
+  GT v5, frente a 49 de Jev, 47 de Nimble-9B y 0 de la mayoría. Ninguna
+  celda McNemar p<0,05 frente a `jev_v3`; frente a `nimble_9b` solo
+  `relevance` de papers32 con p=0,02 sin corregir (no concluyente). Ventana
+  pre-comprobada: 0 desbordes en los 194 casos (máx. 6 578 tokens). Ficha en
+  `docs/modelos.md` §Drex v1.5 y manifiesto en
+  `docs/infra_runs/drex_v15_9b.md`.
+- Revisión documental R111 (sin inferencia): licencia Open RAIL-M leída
+  cláusula a cláusula (§2(c) sin excepción de investigación para productos
+  competidores); contaminación «sin solapamiento encontrado en los
+  materiales públicos inspeccionados; corpus de entrenamiento no disponible
+  para verificarlo»; las cifras de los autores no se incorporan.
+- Marcador, ficha de modelo, web y sitio (ES/EN) incluyen el run; familia
+  «Drex» con color propio. Con el bump de `jevbench.__version__` se
+  re-congela solo el sha256 de `jevbench/__init__.py` en las 12 auditorías
+  (enmienda en `docs/experimentos/enmienda_atestaciones_r109.md`;
+  `attest verify` 12/12).
+
 ## [2.1.0] - 2026-10-12 — Réplica confirmatoria GT v5, enmienda de atestaciones y web alineada
 
 - Réplica confirmatoria con GT v5 (JEV-100/101): las 12 familias de hipótesis de los cierres v4

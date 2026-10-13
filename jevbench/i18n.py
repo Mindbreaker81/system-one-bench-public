@@ -220,6 +220,7 @@ JS_SHARED = frozenset({
     '--f-clm',
     '--f-decider',
     '--f-diffusiongemma',
+    '--f-drex',
     '--f-gliner',
     '--f-jev',
     '--f-julia',
