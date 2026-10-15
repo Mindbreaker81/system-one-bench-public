@@ -430,3 +430,45 @@ Conclusión: Haiku 5.5 **no se confirma como revisor** (criterio ampliado NO CUM
 adv4 en ambos D1, aunque supere las fracciones y sea el máximo audit del banco). Como
 alerta de una pasada tampoco cumple (ver `alerta_manipulacion.md`). La recomendación no
 cambia: Jev → Jev `audit` (y Decider-4B → Jev como opción barata).
+
+## Revisores de Decider-4B en JEV-103 (14-oct, GT v5)
+
+Mismo prompt del revisor y mismas reglas de fusión, D1 = `decider_4b`, pre-registrado
+en [`jev103_preregistro.md`](jev103_preregistro.md) (congelado el 14-oct-2026; enmienda
+E1 solo de formato de `nimble`/`tev1`). Tres revisores nuevos: **Microsoft-Decision-1**
+(OpenRouter, adaptador `jev`, snapshot `microsoft/microsoft-decision-1-20261009`;
+runs `decider_4b_msrev_*`), **Drex v1.5** (`systemone_http` contra su `serve.py`;
+`decider_4b_drexrev_*`) y **Nimble-9B** (`decider_4b_nimblerev_*`). Referencia: revisor
+Jev, ganancia sobre Decider-4B de 12.25 puntos en adv3+adv5 (mitad 6.125) y 6.428571…
+en triaje (mitad 3.214286…), con Clef-27B (JEV-34) como control.
+
+| revisor (regla `audit`) | ajustado | adv3+adv5: % de la ganancia | triaje: % | fase > 2 puntos peor | alerta adv5 TP·FP | JEV-32 |
+|---|---:|---:|---:|---|---|---|
+| mayoría (oráculo, línea base trivial) | 0 | — | — | — | — | — |
+| Decider-4B solo (D1) | 34 | — | — | — | — | — |
+| Jev (referencia) | 66 | 100 % | 100 % | — | — | — |
+| Clef-27B (control, JEV-34) | 59 | 79.6 % | 61.1 % | ninguna | 9·1 | cumple |
+| Microsoft-Decision-1 | **64** | 77.6 % | 77.8 % | ninguna | 10·**2** | **no** (alerta: 2 FP) |
+| Drex v1.5 | 52 | 42.9 % | 0.0 % | ninguna | 3·1 | no |
+| Nimble-9B | 46 | 26.5 % | 50.0 %* | ninguna | 3·1 | no |
+
+\* Empate exacto con la mitad en coma flotante de triaje (se cuenta como cumplido el
+≥ 50 % de ese bloque; no cambia el veredicto).
+
+Conclusiones:
+
+1. **Microsoft-Decision-1 no cumple JEV-32 por un falso positivo de más**: su alerta
+   adv5 da 10/10 TP pero 2 FP (el límite es 1). Por lo demás es el candidato más
+   cercano de los tres: cuarto en ajustado entre los revisores de Decider-4B medidos
+   (64; por delante, Claude Haiku 5.5 69, gpt-6.1-sol 68 y Jev 66; detrás, Clef-27B
+   59), recupera más de tres cuartos de la ganancia en ambos bloques y no empeora
+   ninguna fase. Resultado negativo por el componente de alerta, no por la revisión
+   de decisiones.
+2. **Drex v1.5 (52) y Nimble-9B (46) no recuperan la mitad de la ganancia en
+   adv3+adv5** (42.9 % y 26.5 %) y su alerta adv5 solo detecta 3/10.
+3. Los McNemar frente a Decider-4B son solo descriptivos (pocas discordancias, casi
+   siempre a favor del revisor). Coste registrado del revisor Microsoft: $0.0075.
+4. **La recomendación no cambia:** los revisores que cumplen JEV-32 siguen siendo
+   los ya medidos — Jev (referencia), Clef-27B, Claude Haiku 5.5 y gpt-6.1-sol (los
+   dos últimos por API). Detalle completo:
+   [`jev103_resultados.md`](jev103_resultados.md) §3 y [`jev103/`](jev103/).

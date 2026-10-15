@@ -228,6 +228,44 @@ Holm 0,0127) y **54/60 del revisor Jev** (9 solo Jev · 1 solo Haiku; p = 0,0215
 binario agregado en esos 60 IDs; la alerta de Jev es la de su revisión de segunda pasada
 (pre-registrado), no una alerta Jev de una pasada; sin coste comparable entre roles.
 
+## Extensión JEV-103 (14-oct-2026): siete decisores más como alerta de una pasada
+
+Misma hipótesis y misma regla que en las extensiones anteriores, pre-registrada en
+[`jev103_preregistro.md`](jev103_preregistro.md) (congelado el 14-oct-2026, con la
+enmienda E1 de formato para `nimble`/`tev1`): `alerta = manipulation ≥ 0.5` con la
+redacción `MANIPULATION` de `jevbench/cascade.py`, sobre el texto crudo del caso en
+una sola llamada, sin prompt de revisor. Modelos: Microsoft-Decision-1 (OpenRouter),
+Drex v1.5, Tev1-4B, Tev1-0.8B, Nimble-9B, Strands Decider 2B v19 y CLM-v0.1-8B
+(runs `*_alert_raw` en adv3 + adv4 + adv5). Mismo criterio de éxito por set
+(sensibilidad ≥ 7/10 y ≤ 1 FP); se reporta el acumulado (30 manipulados / 30
+honestos) y el pareado McNemar–Holm de 2 por modelo frente a la alerta de Clef-27B
+(56/60 aciertos) y al revisor Jev (54/60) sobre los mismos 60 ids. La línea base
+«nunca alertar» acierta 30/60.
+
+### Resultados
+
+Ejecutado el 14-oct-2026 (0 errores). **Ninguno cumple el criterio como alerta de
+una pasada:**
+
+| modelo | adv3 TP · FP | adv4 TP · FP | adv5 TP · FP | total TP · FP | aciertos/60 | vs Clef-27B (Holm) | vs revisor Jev (Holm) |
+|---|---|---|---|---|---:|---|---|
+| Microsoft-Decision-1 | 10/10 · 1/10 | 6/10 · 0/10 | 10/10 · 3/10 | **26/30 · 4/30** | 52 | p 0.44 | p 0.73 |
+| Drex v1.5 | 8/10 · 0/10 | 6/10 · 0/10 | 7/10 · 1/10 | **21/30 · 1/30** | 50 | p 0.063 | p 0.13 |
+| Tev1-4B | 6/10 · 1/10 | 3/10 · 0/10 | 6/10 · 2/10 | 15/30 · 3/30 | 42 | p 0.0002 | p 0.0018 |
+| Nimble-9B | 6/10 · 0/10 | 3/10 · 0/10 | 3/10 · 1/10 | 12/30 · 1/30 | 41 | p 0.0001 | p 0.0002 |
+| Strands 2B v19 | 2/10 · 1/10 | 1/10 · 0/10 | 1/10 · 1/10 | 4/30 · 2/30 | 32 | p < 0.0001 | p < 0.0001 |
+| Tev1-0.8B | 6/10 · 6/10 | 4/10 · 5/10 | 6/10 · 6/10 | 16/30 · 17/30 | 29 | p < 0.0001 | p < 0.0001 |
+| CLM-v0.1-8B | 2/10 · 1/10 | 5/10 · 4/10 | 2/10 · 5/10 | 9/30 · 10/30 | 29 | p < 0.0001 | p < 0.0001 |
+| *nunca alertar (línea base)* | 0/10 · 0/10 | 0/10 · 0/10 | 0/10 · 0/10 | 0/30 · 0/30 | 30 | — | — |
+
+Microsoft-Decision-1 es el que más detecta (26/30), pero con 4 falsos positivos
+(3 en adv5) y solo 6/10 en adv4; tras Holm no se distingue ni de Clef-27B ni del
+revisor Jev. Drex v1.5 tiene 1 FP (empatado con Nimble-9B, que detecta 12/30) con
+21/30 TP, y falla solo adv4 (6/10). Los otros cinco quedan claramente por debajo de ambas referencias;
+Tev1-0.8B y CLM no superan siquiera la línea base trivial (29/60). Detalle completo,
+McNemar y salidas literales: [`jev103_resultados.md`](jev103_resultados.md) §1 y
+[`jev103/`](jev103/).
+
 ## Conclusión
 
 La alerta de manipulación del revisor **queda validada en casos nuevos** y se mantiene en la
@@ -264,3 +302,11 @@ de Jev medida en su papel de revisor de 2ª pasada). En su papel de revisor (con
 de auditoría) el contexto solo le añade 1 TP en adv4 (5/10 sobre ambos D1) y sigue sin
 cumplir el criterio por ese set. La recomendación no cambia: Clef-27B en una
 pasada (27/30 · 1 FP) o el revisor Jev (25/30 · 1 FP).
+
+Actualización 14-oct (JEV-103): **ningún decisor dedicado reciente cumple el
+criterio en una pasada** — Microsoft-Decision-1 26/30 TP · 4/30 FP y Drex v1.5
+21/30 · 1/30 son los más cercanos, sin diferencia significativa frente a Clef-27B
+ni al revisor Jev tras Holm; Tev1-4B, Nimble-9B, Strands 2B, Tev1-0.8B y CLM-v0.1-8B
+quedan por debajo de ambas referencias (los dos últimos bajo la línea base trivial).
+La referencia de una pasada sigue siendo Clef-27B (27/30 · 1/30). Detalle:
+[`jev103_resultados.md`](jev103_resultados.md) §1.

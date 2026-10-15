@@ -12,6 +12,10 @@
   rotate_choice=<int>  JEV-70: rotate the criteria keys of every choice question
                        N positions before sending (jevbench.rotation.rotate_choice);
                        labels, criteria and GT stay intact — only the order changes
+  choice_order=<qid>:<orden>  JEV-103: like the jev adapter (JEV-82 semantics) —
+                       reorder the criteria keys of ONE named choice question
+                       (named order d0..d3 or comma-separated labels); mutually
+                       exclusive with rotate_choice
 
 HTTP errors keep the status and the (truncated) response body in `diag`, which
 jevbench.run stores with the case.
@@ -47,15 +51,20 @@ class SystemOneHTTP(Adapter):
             raise ValueError("timeout debe ser > 0")
         self.capture_raw = _bool(capture_raw)
         self.rotate_choice = int(rotate_choice or 0)
-        self._perm_sha256 = None
+        if self.choice_order and self.rotate_choice:
+            raise ValueError(
+                "choice_order y rotate_choice son excluyentes: un orden "
+                "explícito por pregunta no se combina con la rotación global")
 
     def meta(self):
         m = {"url": self.url + self.path, "model": self.model}
         if self.rotate_choice:
             m.update(rotate_choice=self.rotate_choice, perm_sha256=self._perm_sha256)
+        m.update(self._order_meta())
         return m
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         if self.rotate_choice:
             questions = _rotate_choice(questions, self.rotate_choice)
             self._perm_sha256 = _rotation_manifest(questions)["perm_sha256"]

@@ -1,7 +1,8 @@
 """Cloudflare/clef in-process: Qwen3.8-27B backbone + joint schema head.
 The release ships `joint_schema_model.py` with `load_release_model` and `systemone`
 (the wire-compatible Jev/SystemOne API), imported from the HF snapshot.
-Options: model, revision, device (cuda|cpu), dtype, max_length."""
+Options: model, revision, device (cuda|cpu), dtype, max_length, choice_order
+(base Adapter, JEV-103)."""
 import sys
 from pathlib import Path
 
@@ -28,9 +29,11 @@ class Clef(Adapter):
 
     def meta(self):
         return {"model": self.model_name, "revision": self.revision or self.snapshot,
-                "device": self.device, "dtype": self.dtype, "max_length": self.max_length}
+                "device": self.device, "dtype": self.dtype, "max_length": self.max_length,
+                **self._order_meta()}
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         out = self.systemone(self.model, self.processor,
                              {"model": self.model_name, "state": state, "questions": questions},
                              max_length=self.max_length)

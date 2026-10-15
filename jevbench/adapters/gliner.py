@@ -10,6 +10,7 @@ the wire question has to be packed into labels:
 Probabilities: every label is scored (multi_label, threshold 0, confidences) and
 renormalised; the argmax is the answer. Checked 26-sep on GLiNER2.5-Decide: the
 argmax matches plain single-label classify_text in 190/190 answers.
+Options: model, labels, device, score, choice_order (base Adapter, JEV-103).
 """
 from . import Adapter
 
@@ -27,7 +28,8 @@ class Gliner(Adapter):
         self.device = device
 
     def meta(self):
-        return {"model": self.model_id, "labels": self.labels, "device": self.device, "score": self.score}
+        return {"model": self.model_id, "labels": self.labels, "device": self.device, "score": self.score,
+                **self._order_meta()}
 
     def _task(self, q):
         """-> (schema entry, [label strings], [wire keys])"""
@@ -49,6 +51,7 @@ class Gliner(Adapter):
         return {"labels": labs, "multi_label": True, "cls_threshold": 0.0}, labs, ["1", "0"]
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         schema, maps = {}, {}
         for name, q in questions.items():
             schema[name], labs, keys = self._task(q)

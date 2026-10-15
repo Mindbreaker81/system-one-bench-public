@@ -1,5 +1,6 @@
 """convaiinnovations/laya (pip install laya). variant: router | en | multilingual | typed-decisions.
-Legacy runs used `multilingual` for ES and the English root for EN."""
+Legacy runs used `multilingual` for ES and the English root for EN.
+Options: variant, repo, choice_order (base Adapter, JEV-103)."""
 import os
 
 from . import Adapter
@@ -22,9 +23,11 @@ class Laya(Adapter):
 
     def meta(self):
         import laya
-        return {"model": self.repo, "variant": self.variant, "laya_version": getattr(laya, "__version__", None)}
+        return {"model": self.repo, "variant": self.variant, "laya_version": getattr(laya, "__version__", None),
+                **self._order_meta()}
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         out = self.agent.predict(state, questions)
         return {"answers": out["answers"], "cost": None, "model": f"{self.repo}:{self.variant}",
                 "routing": out.get("routing")}

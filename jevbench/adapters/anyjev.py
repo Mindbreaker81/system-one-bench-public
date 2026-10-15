@@ -1,5 +1,6 @@
 """AnyJev (Nokia) over a local HF model: wire questions -> anyjev.Question -> wire answers.
-Mirrors legacy anyjev_run.py (options rendered as 'label - description')."""
+Mirrors legacy anyjev_run.py (options rendered as 'label - description').
+Options: model, level, device, dtype, batch_size, choice_order (base Adapter, JEV-103)."""
 from . import Adapter, option_list
 
 
@@ -14,7 +15,8 @@ class AnyJev(Adapter):
     def meta(self):
         import anyjev
         return {"model": self.model, "level": self.level, "device": self.device, "dtype": self.dtype,
-                "anyjev_version": getattr(anyjev, "__version__", None)}
+                "anyjev_version": getattr(anyjev, "__version__", None),
+                **self._order_meta()}
 
     def _questions(self, questions):
         from anyjev import Question
@@ -32,6 +34,7 @@ class AnyJev(Adapter):
         return qs, spec
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         qs, spec = self._questions(questions)
         ds = self.dec.decide(state, qs)
         ans = {}

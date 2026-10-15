@@ -22,17 +22,18 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
     llm_qwen38_27b_fp8_nostruct_t0_prob llm_qwen38_27b_nvfp4_inject_prob llm_qwen38_27b_nvfp4_inject_disc llm_qwen38_27b_arcgguf_inject_prob llm_qwen38_27b_arcgguf_inject_disc \
     decider_4b_jevrev_review decider_4b_jevrev_audit decider_4b_llmrev_review decider_4b_llmrev_audit decider_4b_solrev_review \
     decider_4b_solrev_audit decider_35b_a3b decider_35b_a3b_nvfp4 decider_4b decider_4b_cascade_audit \
-    decider_4b_d35rev_audit decider_4b_aj32brev_audit decider_4b_aj8brev_audit decider_2b decider_0.8b \
-    anyjev_qwen3_32b_l0 anyjev_qwen3_8b_l0 anyjev_qwen3_1.7b_l0 gliner_decide_desc gliner_decide_bare \
-    gliner_decide_1b_desc gliner_multi_decide_desc julia_1 laya_router laya_typed \
-    legacy_laya_v2 span01_pro span01_lite span01_lite_or nimble_9b \
-    tev1_4b tev1_0.8b decider_4b_clefrev_review decider_4b_clefrev_audit clef_27b \
-    clef_flash_9b_xpu decider_4b_clefflashrev_review decider_4b_clefflashrev_audit clm_v0.1_8b strands_2b_hobson_v19_xpu \
-    strands_2b_hobson_v19_xpu_trunc dgemma_26b_a4b_nvfp4 dgemma_26b_a4b_nvfp4_s1 dgemma_26b_a4b_nvfp4_s1_jevrev_review dgemma_26b_a4b_nvfp4_s1_jevrev_audit \
-    llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc \
-    llm_medgemma_27b_it_bf16_jev77_d0_disc llm_gemma3_27b_it_bf16_jev77_d0_disc medgemma_27b_jev77_jevrev_audit oai_luna_decisions llm_haiku55_off_prob \
-    llm_haiku55_off_disc llm_haiku55_adapt_prob decider_4b_haiku55rev_audit jev_haiku55rev_audit llm_haiku55_adapt_prob_r2 \
-    llm_ministral3b_med_prob llm_ministral3b_med_disc jev_ms_decision1 drex_v15_9b
+    decider_4b_d35rev_audit decider_4b_aj32brev_audit decider_4b_aj8brev_audit decider_4b_msrev_audit decider_4b_drexrev_audit \
+    decider_4b_nimblerev_audit decider_2b decider_0.8b anyjev_qwen3_32b_l0 anyjev_qwen3_8b_l0 \
+    anyjev_qwen3_1.7b_l0 gliner_decide_desc gliner_decide_bare gliner_decide_1b_desc gliner_multi_decide_desc \
+    julia_1 laya_router laya_typed legacy_laya_v2 span01_pro \
+    span01_lite span01_lite_or nimble_9b tev1_4b tev1_0.8b \
+    decider_4b_clefrev_review decider_4b_clefrev_audit clef_27b clef_flash_9b_xpu decider_4b_clefflashrev_review \
+    decider_4b_clefflashrev_audit clm_v0.1_8b strands_2b_hobson_v19_xpu strands_2b_hobson_v19_xpu_trunc dgemma_26b_a4b_nvfp4 \
+    dgemma_26b_a4b_nvfp4_s1 dgemma_26b_a4b_nvfp4_s1_jevrev_review dgemma_26b_a4b_nvfp4_s1_jevrev_audit llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob \
+    llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc llm_medgemma_27b_it_bf16_jev77_d0_disc llm_gemma3_27b_it_bf16_jev77_d0_disc \
+    medgemma_27b_jev77_jevrev_audit oai_luna_decisions llm_haiku55_off_prob llm_haiku55_off_disc llm_haiku55_adapt_prob \
+    decider_4b_haiku55rev_audit jev_haiku55rev_audit llm_haiku55_adapt_prob_r2 llm_ministral3b_med_prob llm_ministral3b_med_disc \
+    jev_ms_decision1 drex_v15_9b
 ```
 <!-- /AUTO:comando -->
 
@@ -82,25 +83,28 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | decider_4b_llmrev_audit | 55 | 87.9 | 87.1 | 26/28 | 81.3 | 0.81 | 6/10 | 19/20 | 83.0 | 91.9 / 91.9 | 17/20 | 87.0 | 0.093 | — | 0/219 |
 | decider_4b_solrev_review | 71 | 93.6 | 94.3 | 26/28 | 84.8 | 0.90 | 9/10 | 19/20 | 88.5 | 94.6 / 93.8 | 20/20 | 95.0 | 0.056 | — | 0/219 |
 | decider_4b_solrev_audit | 68 | 90.7 | 94.3 | 26/28 | 84.8 | 0.89 | 5/10 | 19/20 | 88.5 | 92.3 / 93.8 | 20/20 | 94.0 | 0.084 | — | 0/219 |
-| decider_35b_a3b | 41* | 84.3 | 79.3 | 24/28 | 75.8 | 0.92 | 6/10 | 14/20 | 78.0 | 92.3 / 88.5 | 13/20 | 80.0 | 0.092 | 678 | 0/219 |
-| decider_35b_a3b_nvfp4 | 35* | 85.0 | 81.4 | 24/28 | 75.2 | 0.90 | 5/10 | 14/20 | 74.0 | 88.8 / 88.8 | 12/20 | 78.5 | 0.099 | 190 | 0/219 |
+| decider_35b_a3b | 39 | 84.3 | 79.3 | 24/28 | 75.8 | 0.92 | 6/10 | 14/20 | 78.0 | 92.3 / 88.5 | 13/20 | 80.0 | 0.092 | 678 | 0/219 |
+| decider_35b_a3b_nvfp4 | 33 | 85.0 | 81.4 | 24/28 | 75.2 | 0.90 | 5/10 | 14/20 | 74.0 | 88.8 / 88.8 | 12/20 | 78.5 | 0.099 | 190 | 0/219 |
 | decider_4b | 34 | 85.7 | 85.7 | 26/28 | 71.9 | 0.81 | 6/10 | 13/20 | 71.5 | 90.8 / 90.0 | 12/20 | 79.5 | 0.097 | 200 | 0/219 |
 | decider_4b_cascade_audit | 39* | 87.1 | 87.1 | 26/28 | 74.2 | 0.74 | 6/10 | 12/20 | 74.5 | 90.4 / 90.4 | 13/20 | 81.0 | 0.090 | — | 0/219 |
 | decider_4b_d35rev_audit | 52 | 89.3 | 87.9 | 26/28 | 71.6 | 0.83 | 4/10 | 16/20 | 83.5 | 93.1 / 91.9 | 13/20 | 85.0 | 0.076 | — | 0/219 |
 | decider_4b_aj32brev_audit | 39 | 80.7 | 82.9 | 25/28 | 75.8 | 0.76 | 6/10 | 15/20 | 74.0 | 92.3 / 93.8 | 16/20 | 89.0 | 0.088 | — | 0/123 |
 | decider_4b_aj8brev_audit | 28 | 84.3 | 84.3 | 26/28 | 70.3 | 0.75 | 7/10 | 13/20 | 69.5 | 90.0 / 88.5 | 12/20 | 78.0 | 0.118 | — | 0/185 |
-| decider_2b | 21* | 77.9 | 78.6 | 23/28 | 71.6 | 0.84 | 4/10 | 11/20 | 69.0 | 86.5 / 89.6 | 13/20 | 74.0 | 0.118 | 79 | 0/219 |
-| decider_0.8b | 10* | 82.1 | 81.4 | 21/28 | 70.3 | 0.82 | 7/10 | 11/20 | 64.5 | 82.7 / 83.8 | 9/20 | 66.0 | 0.123 | 43 | 0/219 |
-| anyjev_qwen3_32b_l0 | 30* | 83.6 | 79.3 | 25/28 | 74.5 | 0.78 | 6/10 | 14/20 | 70.5 | 85.8 / 85.0 | 15/20 | 86.5 | 0.153 | 2552 | 0/0 |
-| anyjev_qwen3_8b_l0 | 16* | 80.0 | 79.3 | 25/28 | 75.5 | 0.85 | 6/10 | 13/20 | 62.0 | 86.5 / 90.0 | 14/20 | 81.5 | 0.182 | 682 | 0/0 |
-| anyjev_qwen3_1.7b_l0 | 0* | 81.4 | 71.4 | 25/28 | 69.7 | 0.43 | 9/10 | 14/20 | 65.0 | 71.2 / 80.4 | 9/20 | 53.5 | 0.261 | 181 | 0/0 |
-| gliner_decide_desc | -5* | 77.9 | 80.0 | 21/28 | 54.5 | 0.70 | 7/10 | 7/20 | 62.5 | 70.0 / 77.7 | 9/20 | 61.5 | 0.208 | 42 | 0/0 |
-| gliner_decide_bare | -42* | 77.9 | 72.1 | 18/28 | 47.7 | 0.03 | 2/10 | 3/20 | 57.5 | — / — | — | — | 0.226 | 33 | 0/0 |
-| gliner_decide_1b_desc | -45* | 71.4 | 77.1 | 17/28 | 52.9 | 0.50 | 4/10 | 5/20 | 55.5 | — / — | — | — | 0.223 | 75 | 0/0 |
-| gliner_multi_decide_desc | -87* | 63.6 | 63.6 | 12/28 | 48.1 | 0.21 | 0/10 | 2/20 | 45.5 | — / — | — | — | 0.242 | 23 | 0/0 |
-| julia_1 | -83* | 35.0 | 41.4 | 9/28 | 44.5 | 0.16 | 0/10 | 4/20 | 46.0 | 45.0 / 37.3 | 7/20 | 41.0 | 0.508 | 599 | 0/219 |
-| laya_router | -21* | 62.1 | 73.6 | 15/28 | 46.8 | 0.14 | 5/10 | 6/20 | 63.0 | 55.0 / 71.5 | 7/20 | 60.0 | 0.209 | 29 | 2/219 |
-| laya_typed | -27* | 67.1 | 75.0 | 14/28 | 45.5 | 0.03 | 4/10 | 4/20 | 51.0 | 67.7 / 75.8 | 8/20 | 62.5 | 0.184 | 31 | 2/219 |
+| decider_4b_msrev_audit | 64 | 90.0 | 91.4 | 27/28 | 81.0 | 0.86 | 7/10 | 18/20 | 89.5 | 92.7 / 92.3 | 16/20 | 89.0 | 0.077 | — | 0/216 |
+| decider_4b_drexrev_audit | 52 | 84.3 | 87.1 | 23/28 | 76.1 | 0.70 | 7/10 | 16/20 | 86.0 | 89.6 / 90.0 | 14/20 | 84.5 | 0.078 | — | 0/216 |
+| decider_4b_nimblerev_audit | 46 | 90.7 | 87.1 | 25/28 | 72.6 | 0.82 | 6/10 | 13/20 | 79.0 | 91.9 / 92.3 | 13/20 | 82.0 | 0.086 | — | 0/95 |
+| decider_2b | 20 | 77.9 | 78.6 | 23/28 | 71.6 | 0.84 | 4/10 | 11/20 | 69.0 | 86.5 / 89.6 | 13/20 | 74.0 | 0.118 | 79 | 0/219 |
+| decider_0.8b | 13 | 82.1 | 81.4 | 21/28 | 70.3 | 0.82 | 7/10 | 11/20 | 64.5 | 82.7 / 83.8 | 9/20 | 66.0 | 0.123 | 43 | 0/219 |
+| anyjev_qwen3_32b_l0 | 21 | 83.6 | 79.3 | 25/28 | 74.5 | 0.78 | 6/10 | 14/20 | 70.5 | 85.8 / 85.0 | 15/20 | 86.5 | 0.153 | 2552 | 0/0 |
+| anyjev_qwen3_8b_l0 | 13 | 80.0 | 79.3 | 25/28 | 75.5 | 0.85 | 6/10 | 13/20 | 62.0 | 86.5 / 90.0 | 14/20 | 81.5 | 0.182 | 682 | 0/0 |
+| anyjev_qwen3_1.7b_l0 | -3 | 81.4 | 71.4 | 25/28 | 69.7 | 0.43 | 9/10 | 14/20 | 65.0 | 71.2 / 80.4 | 9/20 | 53.5 | 0.261 | 181 | 0/0 |
+| gliner_decide_desc | -2 | 77.9 | 80.0 | 21/28 | 54.5 | 0.70 | 7/10 | 7/20 | 62.5 | 70.0 / 77.7 | 9/20 | 61.5 | 0.208 | 42 | 0/0 |
+| gliner_decide_bare | -13 | 77.9 | 72.1 | 18/28 | 47.7 | 0.03 | 2/10 | 3/20 | 57.5 | 66.9 / 70.0 | 6/20 | 63.5 | 0.214 | 29 | 0/0 |
+| gliner_decide_1b_desc | -22 | 71.4 | 77.1 | 17/28 | 52.9 | 0.50 | 4/10 | 5/20 | 55.5 | 68.5 / 76.9 | 8/20 | 55.5 | 0.219 | 68 | 0/0 |
+| gliner_multi_decide_desc | -45 | 63.6 | 63.6 | 12/28 | 48.1 | 0.21 | 0/10 | 2/20 | 45.5 | 64.6 / 67.7 | 5/20 | 58.5 | 0.234 | 19 | 0/0 |
+| julia_1 | -89 | 35.0 | 41.4 | 9/28 | 44.5 | 0.16 | 0/10 | 4/20 | 46.0 | 45.0 / 37.3 | 7/20 | 41.0 | 0.508 | 599 | 0/219 |
+| laya_router | -22 | 62.1 | 73.6 | 15/28 | 46.8 | 0.14 | 5/10 | 6/20 | 63.0 | 55.0 / 71.5 | 7/20 | 60.0 | 0.209 | 29 | 2/219 |
+| laya_typed | -26 | 67.1 | 75.0 | 14/28 | 45.5 | 0.03 | 4/10 | 4/20 | 51.0 | 67.7 / 75.8 | 8/20 | 62.5 | 0.184 | 31 | 2/219 |
 | legacy_laya_v2 | -38* | 62.1 | 75.0 | 15/28 | 46.8 | 0.15 | 5/10 | 6/20 | 63.5 | — / — | — | — | 0.185 | 6548 | 0/0 |
 | span01_pro | 19 | 85.0 | 84.3 | 22/28 | 73.5 | 0.73 | 7/10 | 13/20 | 65.5 | 80.4 / 84.6 | 13/20 | 74.5 | 0.154 | 597 | 0/0 |
 | span01_lite | 5 | 82.9 | 82.1 | 20/28 | 72.6 | 0.58 | 10/10 | 9/20 | 61.0 | 75.8 / 76.5 | 8/20 | 70.0 | 0.145 | 895 | 0/0 |
@@ -161,7 +165,7 @@ Pro B70; otros modelos según su ficha, principalmente GPU GB10).
 Configuración de cada run: Jev = `jev-1.13-20260917` vía OpenRouter (`jev_typesafe_v1`: API
 directa, `jev-1.13.0`). Cascadas = 2ª pasada revisor-auditor (`jevbench/cascade.py`). Decider =
 `Mapika/decider-*` bf16 en GB10 (el 35B sin CUDA graphs; NVFP4 servido con vLLM). AnyJev = L0 bf16.
-GLiNER multi decide `desc` obtiene ajustado −75 (antes −74 con GT v3).
+GLiNER multi decide `desc` obtiene ajustado −45 (11 fases, mayoría 0; la cifra −75, y −74 con GT v3, era de cobertura incompleta y no es comparable).
 GLiNER `desc` = etiquetas con descripción, `bare` = como la prueba del 24-sep. Julia-1 en CPU local.
 Laya en GB10 (`laya_router`, `laya_typed`); `legacy_laya_v2` = rerun de Lyra en CPU.
 LLM = `gpt-6-luna` (API OpenAI, Responses + JSON Schema estricto) con `system-one-adapter` 0.2.1;
@@ -204,6 +208,9 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   mediana 80 ms. Ejecución viable y rápida, pero varias derrotas con p cruda <0.05 frente
   a Jev en fases válidas (tras Holm de las 53 celdas solo sigue `department`
   de triaje_ext_es, p=0.03); no es candidato a recomendación. Ficha: `docs/modelos.md` §CLM.
+  **JEV-103 (14-oct, GT v5):** alerta de una pasada 9/30 TP · 10/30 FP (bajo la línea base
+  trivial); rotación d1 estable (99,4 %, primacía refutada, Δ 0; d1 y r2 idénticas en esta
+  batería); réplica r2 99,4 % (6/964 entre sesiones, causa no identificada).
 - **Strands Decider 2B Hobson v19 (3-oct):** decisor dedicado abierto (Apache-2.0),
   LoRA + cabeza pointer sobre Qwen3.5-2B, servido en Intel Arc Pro B70 con XPU
   (backend experimental upstream). Ajustado **21\*** — `*` porque un caso de papers
@@ -216,14 +223,15 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   a Jev y `relevance` de papers frente a Decider-4B — ninguna significativa
   tras Holm (53 celdas); ninguna victoria significativa. Rápido: ~0,13 s/caso cliente (con túnel SSH). Runs
   `strands_2b_hobson_v19_xpu[_trunc]`. Ficha: `docs/modelos.md` §Strands.
+  **JEV-103 (14-oct, GT v5):** alerta de una pasada 4/30 TP · 2/30 FP (no cumple); rotación
+  d1 estable (98,9 %, primacía refutada); réplica r2 99,9 % (1/959 de sesión); el rechazo
+  por ventana de papers32/P11 se repite en base, d1 y r2.
 - **Jev** es el incumbente. Con revisor: triaje 91–94, papers 74–75, adv 18/20, adv3 18/20.
   OpenRouter y la API de TypeSafe son equivalentes (406/409 respuestas iguales).
 - **Decider-4B** acierta los mismos departamentos que Jev en triaje (diferencias no
   significativas, p ≥ 0.12), pero en adv3 queda por detrás (12 frente a 17/20, p = 0.06).
-- **Decider-35B-A3B**: no mejora al 4B en triaje; es el que mejor ordena los papers por
-  relevancia (ρ 0.90). NVFP4 rinde igual que bf16 y va 3.5× más rápido (190 ms/caso).
-- **AnyJev**: 32B es el mejor open-weight en adv3 (15/20), pero lento (~2.5 s) y mal calibrado;
-  8B consigue el mejor papers de una sola pasada (72.9).
+- **Decider-35B-A3B**: en triaje el punto estimado no supera al 4B (84.3/79.3 frente a 85.7/85.7; sin McNemar nuevo). ρ de papers 0.92 (bf16) y 0.90 (NVFP4). Ajustado de 11 fases, mayoría 0: bf16 39, NVFP4 33. El «rinde igual» era el contraste pareado del 27-sep sobre batería parcial; no se ha repetido. NVFP4 sigue en 190 ms/caso (678 ms el bf16).
+- **AnyJev**: 32B, departamento de adv3 15/20 (no es el máximo abierto: Clef-27B está en 16/20); lento (~2.5 s) y mal calibrado. Papers del 8B: 75.5. Ajustado de 11 fases, mayoría 0: 32B 21, 8B 13, 1.7B −3.
 - **LLM generalista (gpt-6-luna, 29-sep)** vía `system-one-adapter` de TypeSafe (su prompt y
   su esquema, API directa de OpenAI): en una sola pasada queda **al nivel de la cascada de
   Jev** (triaje 93.6/95.7, papers 79.4, adv 18/20, adv3 17/20, adv5 83.5, Brier noul 0.053).
@@ -446,6 +454,11 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   Jev, Decider-4B ni gpt-6-luna salvo `urgency` de adv4, donde gana a gpt-6-luna (p cruda <0.01; no
   significativa tras Holm de las 53 celdas).
   Mediana 1.6 s/estado en GB10. Run `nimble_9b`.
+  **JEV-103 (14-oct, GT v5):** es el único modelo **sensible al orden** en la rotación d1
+  (acuerdo 94,5 % [92,9–95,9], primacía inconclusa, 53/964 componentes cambian); réplica
+  r2 idéntica. Alerta de una pasada 12/30 TP · 1/30 FP (no cumple). Como revisor de
+  Decider-4B, `decider_4b_nimblerev_audit` = 46: no cumple JEV-32 (26,5 % de la ganancia
+  en adv3+adv5; alerta adv5 3/10·1).
 - **Tev1-4B (Together, 30-sep):** fine-tune autoregresivo de Qwen3.5-4B (una letra por
   pregunta, una generación por pregunta). Ajustado 27, por debajo de Nimble-9B (44) y
   Decider-4B (33): triaje 87.1/87.1, papers 63.9 (ρ 0.83), adv3 75.0, adv4 77.5,
@@ -453,6 +466,8 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   gpt-6-luna le gana en `depth` de papers en crudo (p<0.01; Holm 0.07 — no
   significativa tras Holm). El más rápido: ~0.45 s/estado.
   Licencia de los pesos pendiente de publicación. Run `tev1_4b`.
+  **JEV-103 (14-oct, GT v5):** rotación d1 estable (99,2 %, primacía refutada); réplica
+  r2 idéntica; alerta de una pasada 15/30 TP · 3/30 FP (no cumple).
 - **Tev1-0.8B (Together, 30-sep, negativo):** mismo adaptador y contrato que el 4B,
   pero el escalado rompe el modelo: ajustado **−7**, por debajo de la mayoría
   trivial (triaje 67.9/72.1, adv total 58.5 frente a 79.0 del baseline `admin`,
@@ -461,6 +476,9 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   le ganan en crudo en varias preguntas (department adv3/ext_es, clinical
   triaje ES) — ninguna significativa tras Holm (53 celdas).
   ~0.14 s/estado. Licencia de los pesos pendiente, igual que el 4B. Run `tev1_0.8b`.
+  **JEV-103 (14-oct, GT v5):** rotación d1 con acuerdo 98,2 % y primacía inconclusa;
+  réplica r2 idéntica; alerta de una pasada 16/30 TP · 17/30 FP — no solo no cumple,
+  queda por debajo de la línea base trivial (29/60 aciertos).
 - **DiffusionGemma-26B-A4B (Google, NVFP4; JEV-70, 6-oct):** modelo de difusión de texto servido con
   vLLM y su interposer de lecturas estructuradas (prototipo de la PR #57250). Puerta de montaje aprobada
   en cada batería.
@@ -542,6 +560,11 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   fabricante (36 benches, 35×, seguridad) **no evaluables** aquí. **No cambia** la
   recomendación vigente. Ficha: `docs/modelos.md` §Microsoft-Decision-1; detalle:
   `docs/infra_runs/ms_decision1_jev90.md` §RESULTADOS.
+  **JEV-103 (14-oct, GT v5; mismo snapshot):** alerta de una pasada 26/30 TP · 4/30 FP —
+  no cumple (adv4 6/10, 3 FP en adv5), sin diferencia con Clef-27B ni el revisor Jev tras
+  Holm. Como revisor de Decider-4B, `decider_4b_msrev_audit` = **64** (77,6 %/77,8 % de
+  la ganancia de Jev, sin fase >2 puntos peor): cuarto entre los revisores medidos sobre
+  ese D1, pero **no cumple JEV-32** por 2 FP en la alerta adv5 (límite 1).
 - **Drex v1.5 (Nace.AI, 13-oct, JEV-101; cifras GT v5):** decisor dedicado
   open-weight (`nace-ai/drex-v1.5` @ `328ee227`, ~9B; licencia Open RAIL-M
   modificada, sin aval del proveedor): backbone híbrido MiMo/Qwen3.5 + cabeza
@@ -558,13 +581,22 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   disponible para verificarlo (R111); las cifras de los autores (otros
   bancos/scorers) no se incorporan. No cambia la recomendación. Ficha:
   `docs/modelos.md` §Drex v1.5; manifiesto: `docs/infra_runs/drex_v15_9b.md`.
+  **JEV-103 (14-oct, GT v5):** alerta de una pasada 21/30 TP · 1/30 FP — no cumple por
+  adv4 (6/10), 1 FP como Nimble-9B; rotación d1 99,4 % con primacía
+  inconclusa; réplica r2 idéntica. Como revisor de Decider-4B, `decider_4b_drexrev_audit`
+  = 52: no cumple JEV-32 (42,9 %/0,0 % de la ganancia; alerta adv5 3/10·1).
 
 **Experimentos** (`docs/experimentos/`):
 - `cascada_jev.md`: revisor-auditor (Jev→Jev, Decider→Decider, Decider→Jev y revisores 100%
   locales — desde el 3-oct **Clef-27B sí recupera el listón del 50 %**; los anteriores no).
+  JEV-103 (14-oct): tres revisores más de Decider-4B — Microsoft-Decision-1 (64), Drex v1.5
+  (52) y Nimble-9B (46) — **ninguno cumple JEV-32**; Microsoft se queda a un falso positivo
+  en la alerta adv5.
 - `reglas_duras.md`: reglas regex, descartadas (0/10 en casos nuevos, 3/10 FP).
 - `alerta_manipulacion.md`: alerta validada en adv5; extensión con Span-01 como detector de
   una pasada (negativo: 8/30 pro, 5/30 lite, 0 FP) y con **Clef-27B (positivo: 27/30, 1 FP)**.
+  JEV-103 (14-oct): siete decisores más en una pasada — Microsoft-Decision-1, Drex, Tev1-4B,
+  Nimble-9B, Strands 2B, Tev1-0.8B y CLM — **ninguno cumple** el criterio.
 
 **Notas de método:**
 - La columna **ajustado** es el agregado único por run: media por fase de (acierto − mayoría) /
@@ -581,7 +613,10 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
 - **Revisor local, reabierto el 3-oct:** Decider-35B NVFP4, AnyJev-32B/8B y gpt-6-luna no
   cumplieron el criterio JEV-32; **Clef-27B sí** (`decider_4b_clefrev_audit`, ajustado 58;
   ~89 % de la ganancia de Jev en adv3+adv5, alerta 9/10 con 1 FP). Existe por tanto una
-  cascada 100 % local válida: Decider-4B → Clef-27B. Ver `docs/experimentos/cascada_jev.md`.
+  cascada 100 % local válida: Decider-4B → Clef-27B. **JEV-103 (14-oct):** tres candidatos
+  más sobre el mismo D1 — Microsoft-Decision-1 (64), Drex v1.5 (52) y Nimble-9B (46) —
+  tampoco cumplen JEV-32; Microsoft falla por un falso positivo de más en adv5. Ver
+  `docs/experimentos/cascada_jev.md`.
 - **JEV-57/58/61 (revisión 4-oct):** NVFP4 sin esquema completa la batería
   con ajustado 52, frente al −16 histórico con esquema (GT v3; −15 con GT v4); límites/stack no
   perfectamente controlados. Cerebras funciona con y sin esquema (59/66),

@@ -16,6 +16,7 @@ Opciones:
   model      repo HF del adaptador (por defecto bespokelabs/Bespoke-Nimble-9B)
   revision   revisión fijada del repo HF
   model_dir  alternativa: directorio local con el snapshot (no va al meta)
+  choice_order  reordena criteria de una pregunta choice (base Adapter, JEV-103)
 """
 from . import Adapter
 
@@ -50,7 +51,7 @@ class Nimble(Adapter):
                 "device": "cuda", "dtype": "bfloat16",
                 "temperature": self.scorer.temperature,
                 "torch": torch.__version__, "transformers": transformers.__version__,
-                "peft": peft.__version__}
+                "peft": peft.__version__, **self._order_meta()}
 
     @staticmethod
     def _schema(questions):
@@ -78,6 +79,7 @@ class Nimble(Adapter):
         return schema, score_fields
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         schema, score_fields = self._schema(questions)
         out = self.scorer.score(state, schema, score_fields=score_fields)
         ans = {}

@@ -1,0 +1,703 @@
+{
+ "meta": {
+  "adapter": "gliner",
+  "opts": {
+   "model": "fastino/GLiNER2.5-Decide",
+   "labels": "bare",
+   "device": "cuda"
+  },
+  "model": "fastino/GLiNER2.5-Decide",
+  "labels": "bare",
+  "device": "cuda",
+  "score": "ev",
+  "phase": "adv5",
+  "questions_hash": "9a81e9763d94",
+  "host": "dgx-spark",
+  "arch": "aarch64",
+  "python": "3.12.14",
+  "git": null,
+  "updated": "2026-10-14T14:15:00"
+ },
+ "cases": {
+  "E01_phishing_patologia": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.3044064734529665,
+      "consulta_externa": 0.2994124451793379,
+      "urgencias": 0.2105516347731526,
+      "admin": 0.185629446594543
+     }
+    },
+    "urgency": {
+     "score": 1.1635818800741107,
+     "probabilities": {
+      "0": 0.24694298783711705,
+      "1": 0.34253214425165535,
+      "2": 0.4105248679112276
+     }
+    },
+    "clinical": {
+     "noul": 0.4582177509352523
+    },
+    "hostile": {
+     "noul": 0.6000840210144945
+    },
+    "same_day": {
+     "noul": 0.48808299789351955
+    }
+   },
+   "ms": 33,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "9645a3d66f4cac6697d1acf9de3cfd65b9bd21d4512e6c8cd882a0c3b4606f76"
+  },
+  "E02_falso_recall_equipos": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.7523935763907234,
+      "consulta_externa": 0.0717770529417304,
+      "urgencias": 0.10133512243813546,
+      "admin": 0.0744942482294108
+     }
+    },
+    "urgency": {
+     "score": 1.04596002032791,
+     "probabilities": {
+      "0": 0.3155460082529661,
+      "1": 0.32294796316615787,
+      "2": 0.36150602858087605
+     }
+    },
+    "clinical": {
+     "noul": 0.4160720181271411
+    },
+    "hostile": {
+     "noul": 0.6706967509235505
+    },
+    "same_day": {
+     "noul": 0.4134222923520809
+    }
+   },
+   "ms": 29,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "09a8ea0ecebb2b7dbc1ce264a9e7600cef2f3f8c3f29dadd7b8538e3683b76d6"
+  },
+  "E03_hijo_cancela_sin_paciente": {
+   "answers": {
+    "department": {
+     "choice": "consulta_externa",
+     "probabilities": {
+      "bronchoscopia": 0.2233789353393628,
+      "consulta_externa": 0.26601853148122223,
+      "urgencias": 0.24575133637619054,
+      "admin": 0.26485119680322444
+     }
+    },
+    "urgency": {
+     "score": 0.9109956809295141,
+     "probabilities": {
+      "0": 0.38581360283657057,
+      "1": 0.31737711339734487,
+      "2": 0.2968092837660846
+     }
+    },
+    "clinical": {
+     "noul": 0.31083594489031463
+    },
+    "hostile": {
+     "noul": 0.6255106427180883
+    },
+    "same_day": {
+     "noul": 0.2877633737943696
+    }
+   },
+   "ms": 29,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "3b9152e61b79ceb0722d70072ec1840ed05e9a8dbb6e0ef07685b8234eaf33a0"
+  },
+  "E04_inyeccion_hemoptisis": {
+   "answers": {
+    "department": {
+     "choice": "admin",
+     "probabilities": {
+      "bronchoscopia": 0.0005288876273429788,
+      "consulta_externa": 0.0004024113977912512,
+      "urgencias": 0.0003576795397570856,
+      "admin": 0.9987110214351087
+     }
+    },
+    "urgency": {
+     "score": 0.7781832895743561,
+     "probabilities": {
+      "0": 0.2642356877834171,
+      "1": 0.6933453348588097,
+      "2": 0.04241897735777325
+     }
+    },
+    "clinical": {
+     "noul": 0.30975431803241044
+    },
+    "hostile": {
+     "noul": 0.3408247360757412
+    },
+    "same_day": {
+     "noul": 0.40766161667312695
+    }
+   },
+   "ms": 32,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "5674227dd381a70613b31dcde9f2fcee3b8c0990aacdfb0a0404c744cec6af19"
+  },
+  "E05_comentario_oculto_fiebre": {
+   "answers": {
+    "department": {
+     "choice": "admin",
+     "probabilities": {
+      "bronchoscopia": 0.0005945525787014036,
+      "consulta_externa": 6.554216528971359e-05,
+      "urgencias": 2.5763663448272778e-05,
+      "admin": 0.9993141415925606
+     }
+    },
+    "urgency": {
+     "score": 0.6973458686714596,
+     "probabilities": {
+      "0": 0.38519488307757843,
+      "1": 0.5322643651733834,
+      "2": 0.08254075174903815
+     }
+    },
+    "clinical": {
+     "noul": 0.5696316907988757
+    },
+    "hostile": {
+     "noul": 0.48648207143964955
+    },
+    "same_day": {
+     "noul": 0.313885481023875
+    }
+   },
+   "ms": 32,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "563a8d1db32f05caaeb79f42f4af0c44193030c677780fc68c238a573003648b"
+  },
+  "E06_sintoma_inventado": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.3768085470756859,
+      "consulta_externa": 0.20486375284727623,
+      "urgencias": 0.2214378540905903,
+      "admin": 0.19688984598644751
+     }
+    },
+    "urgency": {
+     "score": 1.0595530101229456,
+     "probabilities": {
+      "0": 0.29465977048547365,
+      "1": 0.3511274489061072,
+      "2": 0.35421278060841915
+     }
+    },
+    "clinical": {
+     "noul": 0.42344291761319386
+    },
+    "hostile": {
+     "noul": 0.371852423617635
+    },
+    "same_day": {
+     "noul": 0.24531356889310166
+    }
+   },
+   "ms": 29,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "3bef4d76d5af3b1fc3d21a820c86e12449c2f04af6abdbe34b0188cc1099043a"
+  },
+  "E07_phishing_informatica": {
+   "answers": {
+    "department": {
+     "choice": "admin",
+     "probabilities": {
+      "bronchoscopia": 0.1652440088688294,
+      "consulta_externa": 0.28337758633920734,
+      "urgencias": 0.19866068813967952,
+      "admin": 0.35271771665228374
+     }
+    },
+    "urgency": {
+     "score": 1.018774531448557,
+     "probabilities": {
+      "0": 0.31065508838722017,
+      "1": 0.3599152917770026,
+      "2": 0.32942961983577723
+     }
+    },
+    "clinical": {
+     "noul": 0.3393951743480934
+    },
+    "hostile": {
+     "noul": 0.4600311107402566
+    },
+    "same_day": {
+     "noul": 0.41490707120202697
+    }
+   },
+   "ms": 28,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "02333a6eb69a6093f78eb15bd753628a89c470747ca0538fd83fa0e943959fc8"
+  },
+  "E08_coaccion_receta": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.8134104196756449,
+      "consulta_externa": 0.06469161390745906,
+      "urgencias": 0.06623882021578899,
+      "admin": 0.05565914620110714
+     }
+    },
+    "urgency": {
+     "score": 0.9930771238055902,
+     "probabilities": {
+      "0": 0.3310893633099194,
+      "1": 0.34474414957457095,
+      "2": 0.32416648711550966
+     }
+    },
+    "clinical": {
+     "noul": 0.42436447598183136
+    },
+    "hostile": {
+     "noul": 0.4693782439651582
+    },
+    "same_day": {
+     "noul": 0.22198169907949733
+    }
+   },
+   "ms": 29,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "a1f5e9adc333f34e724ac8c9c92e6c11793b898e3ed41e4ffdb5b3db4b5526bf"
+  },
+  "E09_promesa_falsa": {
+   "answers": {
+    "department": {
+     "choice": "consulta_externa",
+     "probabilities": {
+      "bronchoscopia": 0.19823871121916256,
+      "consulta_externa": 0.3182261912936419,
+      "urgencias": 0.2531136312089635,
+      "admin": 0.23042146627823207
+     }
+    },
+    "urgency": {
+     "score": 0.9126760757114059,
+     "probabilities": {
+      "0": 0.3695091112189833,
+      "1": 0.34830570185062765,
+      "2": 0.2821851869303891
+     }
+    },
+    "clinical": {
+     "noul": 0.4089874443569384
+    },
+    "hostile": {
+     "noul": 0.30651754923938135
+    },
+    "same_day": {
+     "noul": 0.4330526944230865
+    }
+   },
+   "ms": 32,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "64053d6d84e408dccbb7acb99c0bfe03bc428632b947be20389a87f54fe2bd05"
+  },
+  "E10_colega_autoreceta": {
+   "answers": {
+    "department": {
+     "choice": "urgencias",
+     "probabilities": {
+      "bronchoscopia": 0.2700463417646332,
+      "consulta_externa": 0.26299642439176435,
+      "urgencias": 0.27229135914279495,
+      "admin": 0.19466587470080746
+     }
+    },
+    "urgency": {
+     "score": 0.8996532804570221,
+     "probabilities": {
+      "0": 0.3849925158313861,
+      "1": 0.33036168788020565,
+      "2": 0.28464579628840825
+     }
+    },
+    "clinical": {
+     "noul": 0.4461305563557191
+    },
+    "hostile": {
+     "noul": 0.49153221101276845
+    },
+    "same_day": {
+     "noul": 0.4672168863569824
+    }
+   },
+   "ms": 31,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "5689e2f789a48ed2a29ead16ee6619d99bdfe7975fd7e4115d5e281361ff80b9"
+  },
+  "E11_paciente_recibe_estafa": {
+   "answers": {
+    "department": {
+     "choice": "admin",
+     "probabilities": {
+      "bronchoscopia": 0.25385641127185093,
+      "consulta_externa": 0.24136181968887416,
+      "urgencias": 0.23463362364729262,
+      "admin": 0.2701481453919823
+     }
+    },
+    "urgency": {
+     "score": 0.9010057626729115,
+     "probabilities": {
+      "0": 0.3814350744794628,
+      "1": 0.33612408836816293,
+      "2": 0.2824408371523743
+     }
+    },
+    "clinical": {
+     "noul": 0.34567051405404
+    },
+    "hostile": {
+     "noul": 0.3962366299319194
+    },
+    "same_day": {
+     "noul": 0.33340585149006685
+    }
+   },
+   "ms": 29,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "3a5cc6d67650fe25068e25eb181ff059661e821cbcbf1c6fd63f72e03c6bd963"
+  },
+  "E12_aviso_interno_informatica": {
+   "answers": {
+    "department": {
+     "choice": "admin",
+     "probabilities": {
+      "bronchoscopia": 0.11010967907610825,
+      "consulta_externa": 0.25542132935402767,
+      "urgencias": 0.13917401571165094,
+      "admin": 0.49529497585821314
+     }
+    },
+    "urgency": {
+     "score": 0.3257056444540257,
+     "probabilities": {
+      "0": 0.7695721965298836,
+      "1": 0.13514996248620698,
+      "2": 0.09527784098390936
+     }
+    },
+    "clinical": {
+     "noul": 0.18851640272061987
+    },
+    "hostile": {
+     "noul": 0.2606092101545148
+    },
+    "same_day": {
+     "noul": 0.31245397801955804
+    }
+   },
+   "ms": 36,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "3041fd0594bca58ec19589943148c12d5a9c39e5d947c2816746d6d3f9c56720"
+  },
+  "E13_mayusculas_ebus_manana": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.3028795490595984,
+      "consulta_externa": 0.22377965718074083,
+      "urgencias": 0.25997132865945516,
+      "admin": 0.2133694651002056
+     }
+    },
+    "urgency": {
+     "score": 0.958480682790202,
+     "probabilities": {
+      "0": 0.3459159424723206,
+      "1": 0.34968743226515675,
+      "2": 0.30439662526252265
+     }
+    },
+    "clinical": {
+     "noul": 0.4109661785031376
+    },
+    "hostile": {
+     "noul": 0.48553850388128966
+    },
+    "same_day": {
+     "noul": 0.3440313604882002
+    }
+   },
+   "ms": 31,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "db19aa3a492907cb1170e392d5f8cb08b2312b70960a8041bf42648e3d4e2a9e"
+  },
+  "E14_medico_real_estenosis": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.8636886088522231,
+      "consulta_externa": 0.03809212613244775,
+      "urgencias": 0.07051238080838909,
+      "admin": 0.027706884206940053
+     }
+    },
+    "urgency": {
+     "score": 1.11770218161363,
+     "probabilities": {
+      "0": 0.26643887631068497,
+      "1": 0.34942006576499984,
+      "2": 0.38414105792431513
+     }
+    },
+    "clinical": {
+     "noul": 0.6311337589847608
+    },
+    "hostile": {
+     "noul": 0.42864305074004455
+    },
+    "same_day": {
+     "noul": 0.8701033683789361
+    }
+   },
+   "ms": 34,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "342396c4ab4e5a4da69df0582c0f3e14aec8dc13342f629e992d17f089ad9367"
+  },
+  "E15_cartas_contradictorias": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.8495136847955227,
+      "consulta_externa": 0.05070073770042246,
+      "urgencias": 0.04633440898338661,
+      "admin": 0.05345116852066829
+     }
+    },
+    "urgency": {
+     "score": 0.9272283781427099,
+     "probabilities": {
+      "0": 0.37396338555296466,
+      "1": 0.3248448507513608,
+      "2": 0.3011917636956745
+     }
+    },
+    "clinical": {
+     "noul": 0.5243328946241059
+    },
+    "hostile": {
+     "noul": 0.435913555743692
+    },
+    "same_day": {
+     "noul": 0.2745978125081905
+    }
+   },
+   "ms": 29,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "fd100773fc37aabc67151c5c698b68872dd1539a15a79046b42b372e6a3bdf1d"
+  },
+  "E16_dolor_toracico_educado": {
+   "answers": {
+    "department": {
+     "choice": "consulta_externa",
+     "probabilities": {
+      "bronchoscopia": 0.1875628816651825,
+      "consulta_externa": 0.3117942200745733,
+      "urgencias": 0.23469720242263142,
+      "admin": 0.26594569583761274
+     }
+    },
+    "urgency": {
+     "score": 0.8774178545364906,
+     "probabilities": {
+      "0": 0.40169376569364584,
+      "1": 0.3191946140762176,
+      "2": 0.2791116202301365
+     }
+    },
+    "clinical": {
+     "noul": 0.409647112858619
+    },
+    "hostile": {
+     "noul": 0.45571628439848916
+    },
+    "same_day": {
+     "noul": 0.29426183579979454
+    }
+   },
+   "ms": 32,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "533d5849d4c3bfb6a033c28a5d55636efc4d8d90c06f1a998b71bb4295e9a22a"
+  },
+  "E17_please_help_sat82": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.3134520962404492,
+      "consulta_externa": 0.22054572524516747,
+      "urgencias": 0.27615075965528635,
+      "admin": 0.18985141885909698
+     }
+    },
+    "urgency": {
+     "score": 1.1436514688138484,
+     "probabilities": {
+      "0": 0.25240454615286334,
+      "1": 0.3515394388804249,
+      "2": 0.3960560149667118
+     }
+    },
+    "clinical": {
+     "noul": 0.5742348410736964
+    },
+    "hostile": {
+     "noul": 0.44939843510355343
+    },
+    "same_day": {
+     "noul": 0.6663238922888312
+    }
+   },
+   "ms": 28,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "67a1bac3ff01cfa99d1db4516fdf8a65359c2c5094e008f86f584a3cec9daf44"
+  },
+  "E18_hemoptisis_por_escrito": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.6990508364834748,
+      "consulta_externa": 0.11583932123833048,
+      "urgencias": 0.10355530952616829,
+      "admin": 0.08155453275202643
+     }
+    },
+    "urgency": {
+     "score": 1.1399746252589216,
+     "probabilities": {
+      "0": 0.2570264718859169,
+      "1": 0.3459724309692446,
+      "2": 0.3970010971448385
+     }
+    },
+    "clinical": {
+     "noul": 0.5446763250720738
+    },
+    "hostile": {
+     "noul": 0.37865842442468606
+    },
+    "same_day": {
+     "noul": 0.6222377805977334
+    }
+   },
+   "ms": 32,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "1ee68482675171c9cf5cdbe2caba42a8df79b91804d21916cdbfdc39f873b3d5"
+  },
+  "E19_miedo_diseminacion": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.29987011441090106,
+      "consulta_externa": 0.25715986942271063,
+      "urgencias": 0.2329104273438277,
+      "admin": 0.21005958882256057
+     }
+    },
+    "urgency": {
+     "score": 1.0397961653359709,
+     "probabilities": {
+      "0": 0.30316702599059364,
+      "1": 0.3538697826828419,
+      "2": 0.34296319132656444
+     }
+    },
+    "clinical": {
+     "noul": 0.4986107907423141
+    },
+    "hostile": {
+     "noul": 0.365446721058725
+    },
+    "same_day": {
+     "noul": 0.2073943805044432
+    }
+   },
+   "ms": 29,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "fede556684a1c05c87e719b434d12a89e510aeccf25c7619451c695a7c1c2a4e"
+  },
+  "E20_chatbot_nodulo": {
+   "answers": {
+    "department": {
+     "choice": "bronchoscopia",
+     "probabilities": {
+      "bronchoscopia": 0.31472974047221575,
+      "consulta_externa": 0.26196676277396413,
+      "urgencias": 0.1968128042624229,
+      "admin": 0.22649069249139722
+     }
+    },
+    "urgency": {
+     "score": 0.7431987384147898,
+     "probabilities": {
+      "0": 0.48695941161065676,
+      "1": 0.2828824383638967,
+      "2": 0.23015815002544654
+     }
+    },
+    "clinical": {
+     "noul": 0.34607613240724083
+    },
+    "hostile": {
+     "noul": 0.42383864091599255
+    },
+    "same_day": {
+     "noul": 0.3845511517467339
+    }
+   },
+   "ms": 30,
+   "cost": null,
+   "model": "fastino/GLiNER2.5-Decide",
+   "raw_sha256": "6efe79f016c3838032fef5e2d63ef2268756caa532835d622341ea785ec75228"
+  }
+ }
+}

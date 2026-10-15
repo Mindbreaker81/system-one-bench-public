@@ -18,7 +18,8 @@ Mapeo wire -> options:
   score  -> options key=nombre del nivel ("bajo"…), description=resto del texto
   noul   -> options oficiales A=yes/"Yes." B=no/"No." (yes-no.json)
 
-Opciones: model (repo HF), revision, device, dtype.
+Opciones: model (repo HF), revision, device, dtype, choice_order (base Adapter,
+JEV-103).
 """
 import json
 import string
@@ -75,7 +76,8 @@ class Tev1(Adapter):
                 "device": self.device, "dtype": self.dtype,
                 "generations_per_state": "1 por pregunta (autoregresivo)",
                 "sampling": "temperature=0, max_tokens=8, enable_thinking=false",
-                "torch": torch.__version__, "transformers": transformers.__version__}
+                "torch": torch.__version__, "transformers": transformers.__version__,
+                **self._order_meta()}
 
     def _candidate_ids(self, prompt, letters):
         """IDs del token que sigue al prompt para cada letra (truco de la
@@ -109,6 +111,7 @@ class Tev1(Adapter):
         return keys, probs
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         ans = {}
         for name, q in questions.items():
             keys, probs = self._letter_probs(state, q)

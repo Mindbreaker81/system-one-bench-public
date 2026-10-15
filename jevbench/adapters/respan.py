@@ -16,6 +16,8 @@
   cuenta como falta de evidencia (->0.5), no como "no". El `state` va a
   span.input[0] y span.output es un turno de asistente vacío, así que las
   definiciones se enmarcan como "In the input text: ...".
+
+Options: provider, model, retries, pause, choice_order (base Adapter, JEV-103).
 """
 import json
 import os
@@ -53,7 +55,8 @@ class Respan(Adapter):
     def meta(self):
         return {"provider": self.provider, "model": self.model, "resolved": self.resolved,
                 "endpoint": self.url + ("/api/alpha/decisions" if self.provider == "openrouter"
-                                        else "/api/v1/scores")}
+                                        else "/api/v1/scores"),
+                **self._order_meta()}
 
     @staticmethod
     def _defs(name, q):
@@ -140,6 +143,7 @@ class Respan(Adapter):
         return answers, usage.get("cost"), out.get("model"), usage
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         fn = self._decide_openrouter if self.provider == "openrouter" else self._decide_respan
         answers, cost, model, usage = fn(state, questions)
         self.resolved = model or self.resolved

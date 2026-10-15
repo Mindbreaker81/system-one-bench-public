@@ -1,6 +1,7 @@
 """SupersonicLabs/Julia-1 (mmBERT-small + decision head, 144M). Same wire format as Jev.
 Install: snapshot_download('SupersonicLabs/Julia-1', local_dir='models/Julia-1'); pip install -e models/Julia-1
-Options: path (local snapshot dir), device (cpu|cuda), max_length, head_length."""
+Options: path (local snapshot dir), device (cpu|cuda), max_length, head_length,
+choice_order (base Adapter, JEV-103)."""
 from . import Adapter
 
 
@@ -17,8 +18,10 @@ class Julia(Adapter):
         import julia
         return {"model": "SupersonicLabs/Julia-1", "path": self.path, "device": self.device,
                 "max_length": self.max_length, "head_length": self.head_length,
-                "julia_version": getattr(julia, "__version__", None)}
+                "julia_version": getattr(julia, "__version__", None),
+                **self._order_meta()}
 
     def decide(self, state, questions):
+        questions = self._apply_choice_order(questions)
         out = self.engine.predict(state=state, questions=questions)
         return {"answers": out["answers"], "cost": None, "model": "SupersonicLabs/Julia-1"}

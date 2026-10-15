@@ -117,6 +117,11 @@ y es 51.9 % con GT v5.
 - **Límites de registro:** el adaptador guarda el host del cliente y el endpoint,
   pero no el hardware remoto ni revisiones; los datos anteriores corresponden al
   preflight. `cost=null`: no hay tarifa API, pero el coste eléctrico no se mide.
+- **14-oct-2026 (JEV-103, GT v5):** alerta de una pasada **no cumple** (9/30 TP ·
+  10/30 FP, bajo la línea base trivial de 30/60). Rotación d1: **estable**
+  (99.4 % de acuerdo, primacía refutada con Δ 0; en esta batería d1 y r2 dan salidas
+  idénticas en los 194 casos). Réplica r2: 99.4 % (6/964 componentes difieren
+  con el run base; divergencia entre sesiones en XPU, causa no identificada). Detalle: `docs/experimentos/jev103_resultados.md`.
 
 ## Strands Decider 2B Hobson v19 (Strands Agents)
 
@@ -161,6 +166,12 @@ y es 51.9 % con GT v5.
 - **Límites de registro:** `cost=null` (sin tarifa API; la electricidad no se
   mide). `server_ms` = round-trip del cliente con túnel SSH, no la latencia
   interna del servidor. No se probó el fallback CPU.
+- **14-oct-2026 (JEV-103, GT v5):** alerta de una pasada **no cumple**
+  (`strands_2b_hobson_v19_xpu_alert_raw`: 4/30 TP · 2/30 FP). Rotación d1:
+  estable (98.9 % de acuerdo, primacía refutada). Réplica r2: 99.9 % (1 de 959
+  difiere entre sesiones en XPU; causa no identificada). El rechazo por ventana
+  de papers32/P11 (HTTP 422) se repite en base, d1 y r2. Detalle:
+  `docs/experimentos/jev103_resultados.md`.
 
 ## Jev
 
@@ -212,6 +223,16 @@ y es 51.9 % con GT v5.
   - Pre-registro y detalle: `docs/infra_runs/ms_decision1_jev90.md` §RESULTADOS.
   - **No cambia** la recomendación vigente del banco (cascada/revisor/alerta fuera
     de alcance).
+- **14-oct-2026 (JEV-103, GT v5; mismo snapshot `…-20261009` en todas las
+  llamadas):** alerta de una pasada (`jev_ms_decision1_alert_raw`, coste registrado
+  $0.00029): 26/30 TP · 4/30 FP — **no cumple** el criterio (adv4 6/10, 3 FP en
+  adv5); tras Holm no se distingue ni de Clef-27B ni del revisor Jev. Como
+  **revisor de Decider-4B** (`decider_4b_msrev_*`; audit **64**, 77.6 % de la
+  ganancia de Jev en adv3+adv5 y 77.8 % en triaje, sin fase >2 puntos peor,
+  coste registrado $0.0075) **no cumple JEV-32 por un falso positivo de más** en la
+  alerta adv5 (10/10 TP · 2 FP; el límite es 1) — resultado negativo por el
+  componente de alerta, no por la revisión. Detalle:
+  `docs/experimentos/jev103_resultados.md` y `docs/experimentos/cascada_jev.md`.
 
 ## Laya
 
@@ -242,6 +263,7 @@ y es 51.9 % con GT v5.
   casos nuevos: triaje ext 55.0/71.5, adv3 7/20. La variante `typed-decisions` (su fine-tune
   de 0.766 en su set) no ayuda aquí: 67.1/75.0, papers 45.5, adv 3/20, adv3 8/20. El rerun original sobre 32 papers daba 48.8; las cifras anteriores están re-puntuadas con GT v4. Las dos
   quedan en o por debajo de la línea base de mayoría en triaje ES y en adversarial.
+- **14-oct-2026 (JEV-103):** batería completada (11 fases) → ajustado −22 (`laya_router`) y −26 (`laya_typed`); mayoría 0. Ver `docs/infra_runs/jev103_adv45.md`. Las cifras del 27-sep de arriba están re-puntuadas con GT v4 sobre la batería de entonces.
 
 ## Decider
 
@@ -282,7 +304,8 @@ y es 51.9 % con GT v5.
   - NVFP4 **solo con vLLM 0.29 + ModelOpt** (`scripts/serve_decider_nvfp4.sh`, adaptador
     `systemone_http`). Carga con kernels CUTLASS FP4 en sm_121. **Rinde igual que bf16**
     (sin diferencias pareadas significativas; triaje 85.0/81.4, papers 70.6, ρ 0.88, adv3 12/20)
-    y va 3.5× más rápido (190 ms/caso), con ~20 GB.
+    y va 3.5× más rápido (190 ms/caso), con ~20 GB. Ese contraste pareado es el del 27-sep sobre la batería de entonces (papers 70.6, ρ 0.88); no se ha repetido sobre las 11 fases.
+- **14-oct-2026 (JEV-103):** batería completada (11 fases) → ajustado 13 (`decider_0.8b`), 20 (`decider_2b`), 39 (`decider_35b_a3b`) y 33 (`decider_35b_a3b_nvfp4`); mayoría 0. Ver `docs/infra_runs/jev103_adv45.md`.
 - **Intento anterior (26-sep, Lyra):** `decider-2b` en CPU ARM bf16 sin soporte bf16
   nativo: fallback de mkldnn a BLAS, sin `causal_conv1d` ni `flash-linear-attention`
   (Qwen3.5 usa gated delta-net), **~240 s por estado**. Se abortó en triaje ES T12 y no
@@ -302,6 +325,7 @@ y es 51.9 % con GT v5.
 - **Probado:** Qwen3-1.7B, F32, L0, CPU ARM 4 cores (~60 s/estado), y Qwen3-8B / 32B
   L0 bf16 en DGX Spark. Scripts del primer estudio en
   [../anyjev_investigacion/](../anyjev_investigacion/) y runs completos en `results/`.
+- **14-oct-2026 (JEV-103):** batería completada (11 fases) → ajustado −3 (`anyjev_qwen3_1.7b_l0`), 13 (`anyjev_qwen3_8b_l0`) y 21 (`anyjev_qwen3_32b_l0`); mayoría 0. Ver `docs/infra_runs/jev103_adv45.md`.
 
 ## LLM generalista (system-one-adapter)
 
@@ -696,6 +720,7 @@ y es 51.9 % con GT v5.
   Adaptar las preguntas a Julia rompería la regla de "mismas preguntas para todos", así que
   el resultado oficial es el de la batería estándar. Si interesa, se puede medir aparte
   una variante "julia-friendly".
+- **14-oct-2026 (JEV-103):** batería completada (11 fases) → ajustado −89 (`julia_1`); mayoría 0. Ver `docs/infra_runs/jev103_adv45.md`. Las cifras del 26-sep de arriba están re-puntuadas con GT v4 sobre la batería de entonces.
 
 ## GLiNER
 
@@ -709,13 +734,14 @@ y es 51.9 % con GT v5.
   | Repo | Params | Nota |
   |---|---|---|
   | `fastino/GLiNER2.5-Decide` | ~0.5B (carga 486M F32) | **probado 24-sep** |
-  | `fastino/GLiNER2.5-Decide-1B` | 1B | sin probar |
-  | `fastino/GLiNER2.5-multi-Decide` | 0.3B | multilingüe, sin probar (útil para ES) |
+  | `fastino/GLiNER2.5-Decide-1B` | 1B | probado (`gliner_decide_1b_desc` y `gliner_decide_1b_bare`, 11 fases) |
+  | `fastino/GLiNER2.5-multi-Decide` | 0.3B | multilingüe, probado (`gliner_multi_decide_desc` y `gliner_multi_decide_bare`, 11 fases) |
   | `fastino/gliner2.5-{small,base,multi}-v1` | 74M–0.3B | extracción, no decisión |
   | `fastino/gliner2-privacy-filter-PII-multi` | 0.3B | PII/guardrail: posible capa de reglas |
 
   Dataset propio: `fastino/fast-decisions` (con él publican 60.2% vs "JevK5" 57.6%).
-- **Puntuación vigente:** `gliner_multi_decide_desc` obtiene ajustado −75 (GT v3: −74), frente a la línea base 0; papers 46.8 %.
+- **Puntuación vigente:** `gliner_multi_decide_desc` obtiene ajustado −45 (11 fases, mayoría 0; la cifra −75, y −74 con GT v3, era de cobertura incompleta y no es comparable); papers 48.1 %.
+- **14-oct-2026 (JEV-103):** batería completada (11 fases) → ajustado −2 (`gliner_decide_desc`), −13 (`gliner_decide_bare`), −22 (`gliner_decide_1b_desc`), −22 (`gliner_decide_1b_bare`), −45 (`gliner_multi_decide_desc`) y −49 (`gliner_multi_decide_bare`); mayoría 0. Ver `docs/infra_runs/jev103_adv45.md`.
 - **Resultados históricos (Decide 0.5B, zero-shot, GT original):** triaje 79.3/71.4, papers 45.6% (relevance=1 en
   los 32: varianza cero), adversarial 3/20. Falla toda la familia keyword-stuffing.
 - **Problemas del test anterior que hay que corregir:**
@@ -816,6 +842,16 @@ y es 51.9 % con GT v5.
   `llm_gpt6luna_prob` salvo `urgency` de adv4, donde **supera** a gpt-6-luna
   (b=9, c=0, p cruda <0.01; no significativa tras Holm de las 53 celdas). Es el open-weight puro más fuerte medido hasta ahora sin
   revisor. No genera texto: ejecuta un forward por campo, cinco por caso de triaje.
+- **14-oct-2026 (JEV-103, GT v5):** alerta de una pasada **no cumple**
+  (`nimble_9b_alert_raw`: 12/30 TP · 1/30 FP). Rotación d1: es el **único
+  modelo sensible al orden** de los medidos en JEV-103 — acuerdo 94.5 %
+  [92.9–95.9], primacía inconclusa, Δp máx 0.93 (53 de 964 componentes
+  pareados cambian al rotar `department`). Réplica r2: 100 % idéntica (Δp 0).
+  Como **revisor de Decider-4B** (`decider_4b_nimblerev_audit` 46) no cumple
+  JEV-32: 26.5 % de la ganancia de Jev en adv3+adv5, 50.0 % en triaje (empate
+  exacto con la mitad), alerta adv5 3/10·1. Detalle:
+  `docs/experimentos/jev103_resultados.md`.
+
 ## Tev1 (Together AI)
 
 - **Proveedor:** Together AI. HF: `togethercomputer/Tev1-4B-experimental` y
@@ -863,6 +899,12 @@ y es 51.9 % con GT v5.
     a Jev y gpt-6-luna, p≤0.03) — ninguna significativa tras Holm (53 celdas). Mediana ~0.14 s/estado. El escalado de
     4B→0.8B rompe el contrato de decisión: no baja gradualmente, cae bajo
     la línea base.
+- **14-oct-2026 (JEV-103, GT v5):** alerta de una pasada **no cumple** en
+  ninguno de los dos tamaños — 4B: 15/30 TP · 3/30 FP; 0.8B: 16/30 · 17/30,
+  por debajo de la línea base trivial (29/60). Rotación d1: el 4B es estable
+  (99.2 % de acuerdo, primacía refutada); el 0.8B queda en «acuerdo ≥ 97 %,
+  primacía inconclusa» (98.2 %). Réplica r2: 100 % en ambos. Detalle:
+  `docs/experimentos/jev103_resultados.md`.
 
 ## Clef (Cloudflare)
 
@@ -1013,6 +1055,14 @@ y es 51.9 % con GT v5.
   múltiples. Ventana pre-comprobada con el tokenizer del checkpoint: **0
   desbordes** en los 194 casos (máx. empaquetado 6 578 tokens, papers32/P11),
   así que no hizo falta variante `_trunc`.
+- **14-oct-2026 (JEV-103, GT v5):** alerta de una pasada **no cumple**
+  (`drex_v15_9b_alert_raw`: 21/30 TP · 1/30 FP; le falla adv4 con 6/10) — 1 FP,
+  empatada con Nimble-9B (que detecta 12/30), sin diferencia significativa
+  frente a Clef-27B ni al revisor Jev tras Holm. Rotación d1: acuerdo 99.4 %,
+  primacía inconclusa. Réplica r2: 100 % idéntica. Como **revisor de
+  Decider-4B** (`decider_4b_drexrev_audit` 52) no cumple JEV-32: 42.9 % de la
+  ganancia de Jev en adv3+adv5, 0.0 % en triaje; alerta adv5 3/10·1. Detalle:
+  `docs/experimentos/jev103_resultados.md` y `docs/experimentos/cascada_jev.md`.
 
 ## OpenMed Ministral-3B-Medical-v1
 

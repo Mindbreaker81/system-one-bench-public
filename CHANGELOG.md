@@ -13,6 +13,107 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.3.0] - 2026-10-15 — JEV-103: alerta de una pasada, rotación d1, réplica r2 y revisores de Decider-4B; procedimientos de JEV-101
+
+- `scripts/attest_rebind.py`: re-liga en `docs/auditorias/` solo el sha256 de un fichero que
+  cambió sin cambiar el cálculo (cada subida de versión cambia `jevbench/__init__.py`, que ligan
+  las 12 auditorías); comprueba que ningún otro campo cambia. `--check` sale con 1 si hay
+  ligaduras desfasadas; `tests/test_attest_rebind.py` lo vigila.
+- `publicar-version`: re-ligado + párrafo de enmienda en cada versión; los ficheros sin
+  seguimiento cuentan como árbol sucio (`git stash push -u -- <rutas>` / `pop`); el export usa
+  `git ls-files` (runs sin commit no llegan al espejo); comprobación de Netlify y republicación
+  del artifact con sus companions.
+- `evaluar-modelo-nuevo`: `--vs` sin `--phases` solo cubre 6 fases (comando con las 11 y Holm
+  sobre 53 celdas); 194 casos (no 195); cifras de informes delegados recalculadas con el GT
+  vigente; redacción de solapamiento sin corpus; licencia fijada y cláusulas tipo RAIL-M;
+  desviaciones de dependencias del `serve.py` del modelo en el manifiesto; alcance de la latencia.
+- `actualizar-web`: familia nueva también en `template.en.html` y en `JS_SHARED` de `i18n.py`.
+
+### JEV-103 (pasos 1–3): resultados
+
+- Adquisición del 14-oct-2026 (0 errores; .81 Nimble/Tev1, .80 Drex, .70 CLM y Strands
+  —encendido por Wake-on-LAN—, Microsoft por OpenRouter, $0.0078 registrados). Preflights por run en
+  `docs/infra_runs/jev103_*_preflight.md`; resultados en `docs/experimentos/jev103_resultados.md`
+  y salidas literales en `docs/experimentos/jev103/`.
+- Alerta de una pasada: ningún modelo cumple (≥7/10 TP y ≤1 FP por set). Microsoft 26/30 · 4/30,
+  Drex 21/30 · 1/30; Nimble, Tev1, Strands y CLM quedan por debajo de Clef-27B y del revisor Jev
+  tras Holm.
+- Rotación d1: solo Nimble-9B es sensible al orden (acuerdo 94.5 %); Tev1-4B, CLM y Strands
+  estables; Tev1-0.8B y Drex con primacía inconclusa. r2: idéntica en Nimble, Tev1 y Drex;
+  CLM (99.4 %) y Strands (99.9 %) varían entre sesiones en .70.
+- Revisor de Decider-4B: ninguno cumple JEV-32. Microsoft ajustado 64 y ~78 % de la ganancia
+  en ambos bloques, pero 2 FP en la alerta adv5; Drex 52 y Nimble 46 no recuperan la mitad.
+  Los tres revisores `*_audit` entran en el marcador.
+- Enmienda E1 del pre-registro: `nimble`/`tev1` no guardan `type` en las respuestas y `jev81`/
+  `jev82` abortaban; `scripts/jev103_typed_analyze.py` añade el tipo de la batería al leer, sin
+  tocar analizadores ni resultados (comprobado idéntico con Drex).
+- Scripts de análisis: `scripts/jev103_alert.py` y `scripts/jev103_reviewer.py`.
+- Propagación (T52): fichas de `modelos.md`, `alerta_manipulacion.md`, `cascada_jev.md`, partes no
+  AUTO de `resultados.md`, matriz de «Experimentos», `RUNS` de `web.py`/`site.py` (+3 audits) y web
+  ES/EN (pares de revisores, alertas, hito del 14-oct).
+- Revisión Codex R118: costes corregidos a la suma de `cases[*].cost` ($0.00029 alerta, $0.0075
+  revisor; antes se sumaban los `cost_ledger` acumulativos); divergencias r2 de CLM/Strands con causa
+  no identificada (sin atribuirlas a la caché); fila de mayoría en la tabla del revisor; desviación
+  operativa de orden .70/.81 documentada; Drex y Nimble empatan a 1 FP.
+- ai-models (ahora en `/mnt/nas4tb`): añadidos Drex v1.5, CLM-v0.1-8B, Strands 2B v19 y
+  Qwen3.5-2B-Base, verificados con SHA256SUMS.
+
+### JEV-103 (pasos 1–3): pre-registro congelado y `choice_order` genérico
+
+- `docs/experimentos/jev103_preregistro.md`: congelado el 14-oct-2026 con la aprobación del
+  usuario, que confirma que el §2(c) de la licencia de Drex no le aplica y autoriza el coste de
+  Microsoft-Decision-1 por OpenRouter (entra en la alerta y como revisor; su d1/r2 ya existen
+  de JEV-90). Pasos 1–3
+  para nimble_9b, tev1_4b, tev1_0.8b, drex_v15_9b, clm_v0.1_8b y strands_2b_hobson_v19_xpu:
+  alerta de una pasada (`<base>_alert_raw`, criterio ≥7/10 TP y ≤1 FP por set, McNemar–Holm
+  de 2 frente a `clef_27b_alert_raw` y al revisor Jev), rotación `department:d1` con réplica
+  r2 (`jevbench.jev82 analyze` / `jevbench.jev81 repeat`, referencia ≥97 %) y revisor de
+  Decider-4B (criterio JEV-32: Nimble, Drex y Microsoft, ajustados ≥ Decider-4B 34). Incluye
+  la cita literal del §2(c) del Attachment A de la licencia de Drex.
+- `choice_order` pasa a ser opción común de la clase base `Adapter`
+  (`jevbench/adapters/__init__.py`): la reciben por `--opt` todos los adaptadores que no la
+  declaraban — systemone_http, decider, clef, laya, julia, anyjev, gliner, nimble, tev1 y
+  respan (jev, llm y openai_decisions ya la tenían). Reutiliza `resolve_choice_order`,
+  `reorder_choice` y `order_manifest` de `jevbench/rotation.py`; reordena solo las claves de
+  `criteria` de la pregunta choice nombrada y registra `choice_order` + `perm_sha256` en
+  `meta()` **solo cuando la opción está activa** — sin ella, salidas y meta quedan byte a
+  byte como antes. En `systemone_http` es excluyente con `rotate_choice` (misma convención
+  que `llm`). Tests: `tests/test_choice_order_generic.py` (14 tests; incluye que
+  `jevbench.jev82 analyze` acepta runs de otros adaptadores).
+- Re-ligado del sha256 de `jevbench/adapters/__init__.py` en las 12 auditorías
+  (`scripts/attest_rebind.py`); `attest verify` reejecuta los analizadores con salida
+  idéntica. Enmienda en `docs/experimentos/enmienda_atestaciones_r109.md`, aprobada por el
+  usuario el 14-oct-2026.
+
+### JEV-103 (paso 0): batería completa en 16 runs antiguos
+
+- adv4/adv5 añadidos a Decider 0.8B/2B/35B-A3B (bf16 y NVFP4), AnyJev Qwen3 1.7B/8B/32B L0,
+  GLiNER-Decide desc, Laya router/typed y Julia-1; GLiNER bare, 1B desc/bare y multi desc/bare
+  reciben además triage_ext_es/en y adv3. 47 ficheros de fase, 0 errores, mismas opciones, revisiones
+  y venvs que el run original (`HF_HUB_OFFLINE=1`). Manifiesto: `docs/infra_runs/jev103_adv45.md`.
+- El ajustado de estos runs pasa a ser de 11 fases y comparable (p. ej. Decider-35B 41*→39,
+  AnyJev 32B 30*→21, GLiNER multi −87*→−45). Mayoría = 0.
+- Julia: `.venv-julia` recreada con Python 3.12 de uv y las mismas versiones fijadas (el sistema
+  pasó a Python 3.14); desviación declarada en el manifiesto.
+
+### JEV-102: página «Experimentos» (sitio y artifact, ES/EN)
+
+- Página nueva con 54 fichas de experimento en 13 bloques temáticos. Cada ficha lleva pregunta,
+  criterio, fecha del pre-registro (como declaración documental), modelos y su papel, resultado,
+  veredicto literal, GT del cierre (v2/v3 histórico, v4 cierre, v5 réplica) y enlace al espejo
+  solo si el documento se exporta.
+- Matriz de 23 modelos × 10 tipos de experimento. Estados: sí, no, n/a, no evaluable y batería
+  parcial (◐, 9 de 11 fases, sin adv4/adv5). Tabla de cobertura de 57 runs con GT v4 y una
+  sección «Huecos» derivada de los estados.
+- Aviso explícito: los experimentos se hicieron con subconjuntos de modelos elegidos por la
+  pregunta, no con todos.
+- Inventario verificado por Codex (R113–R116), en `docs/site_src/experimentos/` junto con la
+  matriz, i18n y una evidencia mínima de precisión. Generador `jevbench/experimentos_web.py`
+  con `--check`. Ni el generador ni los insumos se exportan al espejo (`publish.EXCLUDE`).
+- Enlaces en la navegación y en Metodología. `tests/test_experimentos.py` (13 tests).
+- Huecos de cobertura detectados (decisores dedicados recientes sin alerta, rotación, réplica
+  ni revisor; modelos antiguos sin adv4/adv5) → JEV-103.
+
 ## [2.2.0] - 2026-10-13 — Drex v1.5 (Nace.AI) en la batería (JEV-101)
 
 - Nuevo decisor dedicado evaluado: `nace-ai/drex-v1.5` @ `328ee227` (~9B,
