@@ -13,27 +13,30 @@ El registro completo por run se conserva en el repositorio privado.
 <!-- AUTO:comando -->
 ```bash
 python3 -m jevbench.report   # regenera este documento (runs en docs/resultados_runs.txt)
-python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review jev_cascade_audit jev_cascade_audit_rules \
-    llm_gpt6luna_jevrev_review llm_gpt6luna_jevrev_audit llm_gpt61sol_jevrev_review llm_gpt61sol_jevrev_audit jev_cerebrasqwenrev_review \
-    jev_cerebrasqwenrev_audit jev_cerebrasqwennsrev_review jev_cerebrasqwennsrev_audit llm_gpt6luna_prob llm_gpt6luna_disc \
-    jev_luna_decisions jev_luna_decisions_fb llm_gpt61sol_low_prob llm_gpt61sol_low_disc llm_qwen38_27b_prob \
-    llm_qwen38flash_prob llm_cerebras_gptoss120b_low_prob llm_cerebras_qwen38_27b_low_prob llm_cerebras_qwen38_27b_nostruct_prob llm_cerebras_qwen38_27b_disc \
-    llm_cerebras_qwen38_27b_nostruct_disc llm_qwen38_27b_fp8_nostruct_prob llm_qwen38_27b_gguf81_nostruct_prob llm_qwen38_27b_nvfp4_nostruct_prob llm_qwen38_27b_fp8_inject_prob \
-    llm_qwen38_27b_fp8_nostruct_t0_prob llm_qwen38_27b_nvfp4_inject_prob llm_qwen38_27b_nvfp4_inject_disc llm_qwen38_27b_arcgguf_inject_prob llm_qwen38_27b_arcgguf_inject_disc \
-    decider_4b_jevrev_review decider_4b_jevrev_audit decider_4b_llmrev_review decider_4b_llmrev_audit decider_4b_solrev_review \
-    decider_4b_solrev_audit decider_35b_a3b decider_35b_a3b_nvfp4 decider_4b decider_4b_cascade_audit \
-    decider_4b_d35rev_audit decider_4b_aj32brev_audit decider_4b_aj8brev_audit decider_4b_msrev_audit decider_4b_drexrev_audit \
-    decider_4b_nimblerev_audit decider_2b decider_0.8b anyjev_qwen3_32b_l0 anyjev_qwen3_8b_l0 \
-    anyjev_qwen3_1.7b_l0 gliner_decide_desc gliner_decide_bare gliner_decide_1b_desc gliner_multi_decide_desc \
-    julia_1 laya_router laya_typed legacy_laya_v2 span01_pro \
-    span01_lite span01_lite_or nimble_9b tev1_4b tev1_0.8b \
-    decider_4b_clefrev_review decider_4b_clefrev_audit clef_27b clef_flash_9b_xpu decider_4b_clefflashrev_review \
-    decider_4b_clefflashrev_audit clm_v0.1_8b strands_2b_hobson_v19_xpu strands_2b_hobson_v19_xpu_trunc dgemma_26b_a4b_nvfp4 \
-    dgemma_26b_a4b_nvfp4_s1 dgemma_26b_a4b_nvfp4_s1_jevrev_review dgemma_26b_a4b_nvfp4_s1_jevrev_audit llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob \
-    llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc llm_qwen38_27b_fp8_jev76_on_d1_disc llm_medgemma_27b_it_bf16_jev77_d0_disc llm_gemma3_27b_it_bf16_jev77_d0_disc \
-    medgemma_27b_jev77_jevrev_audit oai_luna_decisions llm_haiku55_off_prob llm_haiku55_off_disc llm_haiku55_adapt_prob \
-    decider_4b_haiku55rev_audit jev_haiku55rev_audit llm_haiku55_adapt_prob_r2 llm_ministral3b_med_prob llm_ministral3b_med_disc \
-    jev_ms_decision1 drex_v15_9b
+python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_v114_typesafe_preview jev_cascade_review jev_cascade_audit \
+    jev_cascade_audit_rules jev114_cascade_audit llm_gpt6luna_jevrev_review llm_gpt6luna_jevrev_audit llm_gpt61sol_jevrev_review \
+    llm_gpt61sol_jevrev_audit jev_cerebrasqwenrev_review jev_cerebrasqwenrev_audit jev_cerebrasqwennsrev_review jev_cerebrasqwennsrev_audit \
+    llm_gpt6luna_prob llm_gpt6luna_disc jev_luna_decisions jev_luna_decisions_fb llm_gpt61sol_low_prob \
+    llm_gpt61sol_low_disc llm_qwen38_27b_prob llm_qwen38flash_prob llm_cerebras_gptoss120b_low_prob llm_cerebras_qwen38_27b_low_prob \
+    llm_cerebras_qwen38_27b_nostruct_prob llm_cerebras_qwen38_27b_disc llm_cerebras_qwen38_27b_nostruct_disc llm_qwen38_27b_fp8_nostruct_prob llm_qwen38_27b_gguf81_nostruct_prob \
+    llm_qwen38_27b_nvfp4_nostruct_prob llm_qwen38_27b_fp8_inject_prob llm_qwen38_27b_fp8_nostruct_t0_prob llm_qwen38_27b_nvfp4_inject_prob llm_qwen38_27b_nvfp4_inject_disc \
+    llm_qwen38_27b_arcgguf_inject_prob llm_qwen38_27b_arcgguf_inject_disc decider_4b_jevrev_review decider_4b_jevrev_audit decider_4b_llmrev_review \
+    decider_4b_llmrev_audit decider_4b_solrev_review decider_4b_solrev_audit decider_35b_a3b decider_35b_a3b_nvfp4 \
+    decider_4b decider_4b_cascade_audit decider_4b_d35rev_audit decider_4b_aj32brev_audit decider_4b_aj8brev_audit \
+    decider_4b_msrev_audit decider_4b_drexrev_audit decider_4b_nimblerev_audit decider_4b_jev114rev_audit decider_2b \
+    decider_0.8b anyjev_qwen3_32b_l0 anyjev_qwen3_8b_l0 anyjev_qwen3_1.7b_l0 gliner_decide_desc \
+    gliner_decide_bare gliner_decide_1b_desc gliner_multi_decide_desc julia_1 laya_router \
+    laya_typed legacy_laya_v2 span01_pro span01_lite span01_lite_or \
+    nimble_9b tev1_4b tev1_0.8b decider_4b_clefrev_review decider_4b_clefrev_audit \
+    clef_27b clef_flash_9b_xpu decider_4b_clefflashrev_review decider_4b_clefflashrev_audit clm_v0.1_8b \
+    strands_2b_hobson_v19_xpu strands_2b_hobson_v19_xpu_trunc dgemma_26b_a4b_nvfp4 dgemma_26b_a4b_nvfp4_s1 dgemma_26b_a4b_nvfp4_s1_jevrev_review \
+    dgemma_26b_a4b_nvfp4_s1_jevrev_audit llm_qwen38_27b_fp8_jev68_off_d0_prob llm_qwen38_27b_fp8_jev68_on_d0_prob llm_qwen38_27b_fp8_jev71_off_d0_disc llm_qwen38_27b_fp8_jev76_on_d0_disc \
+    llm_qwen38_27b_fp8_jev76_on_d1_disc llm_medgemma_27b_it_bf16_jev77_d0_disc llm_gemma3_27b_it_bf16_jev77_d0_disc medgemma_27b_jev77_jevrev_audit oai_luna_decisions \
+    llm_haiku55_off_prob llm_haiku55_off_disc llm_haiku55_adapt_prob decider_4b_haiku55rev_audit jev_haiku55rev_audit \
+    llm_haiku55_adapt_prob_r2 llm_ministral3b_med_prob llm_ministral3b_med_disc jev_ms_decision1 drex_v15_9b \
+    drex_v15_or drex_v20_or clef_27b_or clef_flash_or clef_omni_or \
+    tev1_4b_or classify1_or pplx_decider_v11_27b_or solar_decide_or solar_decide_flash_or \
+    kev_4b_or liquid_d1_or mercury_decide_or
 ```
 <!-- /AUTO:comando -->
 
@@ -44,9 +47,11 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | jev_v3 | 49 | 88.6 | 90.0 | 26/28 | 76.8 | 0.89 | 5/10 | 15/20 | 81.0 | 95.0 / 92.7 | 17/20 | 90.0 | 0.062 | 657 | 0/219 |
 | jev_typesafe_v1 | 56* | 87.9 | 90.0 | 26/28 | 76.8 | 0.89 | 5/10 | 15/20 | 81.0 | 95.0 / 92.7 | 17/20 | 91.0 | 0.063 | 902 | 0/219 |
+| jev_v114_typesafe_preview | 50 | 87.1 | 88.6 | 26/28 | 76.8 | 0.89 | 5/10 | 16/20 | 81.5 | 93.5 / 95.0 | 17/20 | 90.0 | 0.062 | 537 | 0/216 |
 | jev_cascade_review | 69 | 92.1 | 93.6 | 26/28 | 84.8 | 0.80 | 6/10 | 19/20 | 91.0 | 95.4 / 93.8 | 18/20 | 92.5 | 0.045 | — | 0/219 |
 | jev_cascade_audit | 68 | 91.4 | 93.6 | 26/28 | 83.2 | 0.89 | 5/10 | 19/20 | 90.5 | 94.6 / 93.5 | 18/20 | 92.5 | 0.045 | — | 0/219 |
 | jev_cascade_audit_rules | 69* | 91.4 | 93.6 | 26/28 | — | — | — | 20/20 | 91.5 | 94.6 / 93.5 | 20/20 | 94.5 | 0.043 | — | 0/117 |
+| jev114_cascade_audit | 66 | 89.3 | 91.4 | 26/28 | 81.3 | 0.89 | 5/10 | 19/20 | 91.0 | 93.5 / 95.0 | 18/20 | 94.5 | 0.046 | — | 0/216 |
 | llm_gpt6luna_jevrev_review | 72 | 94.3 | 97.1 | 25/28 | 84.5 | 0.84 | 6/10 | 19/20 | 91.0 | 95.8 / 95.8 | 18/20 | 92.0 | 0.042 | — | 0/219 |
 | llm_gpt6luna_jevrev_audit | 75 | 93.6 | 97.1 | 25/28 | 85.2 | 0.80 | 9/10 | 19/20 | 94.0 | 95.0 / 95.0 | 18/20 | 92.5 | 0.034 | — | 0/219 |
 | llm_gpt61sol_jevrev_review | 70 | 92.1 | 95.7 | 25/28 | 85.5 | 0.86 | 7/10 | 19/20 | 90.0 | 94.2 / 95.0 | 18/20 | 93.0 | 0.043 | — | 0/219 |
@@ -93,6 +98,7 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | decider_4b_msrev_audit | 64 | 90.0 | 91.4 | 27/28 | 81.0 | 0.86 | 7/10 | 18/20 | 89.5 | 92.7 / 92.3 | 16/20 | 89.0 | 0.077 | — | 0/216 |
 | decider_4b_drexrev_audit | 52 | 84.3 | 87.1 | 23/28 | 76.1 | 0.70 | 7/10 | 16/20 | 86.0 | 89.6 / 90.0 | 14/20 | 84.5 | 0.078 | — | 0/216 |
 | decider_4b_nimblerev_audit | 46 | 90.7 | 87.1 | 25/28 | 72.6 | 0.82 | 6/10 | 13/20 | 79.0 | 91.9 / 92.3 | 13/20 | 82.0 | 0.086 | — | 0/95 |
+| decider_4b_jev114rev_audit | 63 | 90.7 | 90.0 | 26/28 | 82.3 | 0.81 | 6/10 | 18/20 | 88.5 | 92.7 / 91.5 | 17/20 | 92.0 | 0.060 | — | 0/216 |
 | decider_2b | 20 | 77.9 | 78.6 | 23/28 | 71.6 | 0.84 | 4/10 | 11/20 | 69.0 | 86.5 / 89.6 | 13/20 | 74.0 | 0.118 | 79 | 0/219 |
 | decider_0.8b | 13 | 82.1 | 81.4 | 21/28 | 70.3 | 0.82 | 7/10 | 11/20 | 64.5 | 82.7 / 83.8 | 9/20 | 66.0 | 0.123 | 43 | 0/219 |
 | anyjev_qwen3_32b_l0 | 21 | 83.6 | 79.3 | 25/28 | 74.5 | 0.78 | 6/10 | 14/20 | 70.5 | 85.8 / 85.0 | 15/20 | 86.5 | 0.153 | 2552 | 0/0 |
@@ -144,6 +150,19 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_cascade_review je
 | llm_ministral3b_med_disc | 45* | 76.2 | 80.0 | 16/28 | 79.7 | 0.83 | 9/10 | 6/18 | 64.4 | 83.8 / 84.6 | 9/19 | 70.0 | 0.150 | 1913 | 0/206 |
 | jev_ms_decision1 | 47 | 91.4 | 86.4 | 28/28 | 79.7 | 0.90 | 6/10 | 17/20 | 80.5 | 92.3 / 88.1 | 16/20 | 88.5 | 0.079 | 693 | 0/216 |
 | drex_v15_9b | 44 | 85.0 | 81.4 | 24/28 | 75.8 | 0.86 | 5/10 | 14/20 | 79.5 | 91.5 / 90.4 | 15/20 | 86.5 | 0.083 | 360 | 0/216 |
+| drex_v15_or | 41 | 82.1 | 80.0 | 24/28 | 74.5 | 0.87 | 5/10 | 14/20 | 78.5 | 91.9 / 89.6 | 15/20 | 87.0 | 0.082 | 921 | 0/216 |
+| drex_v20_or | 42 | 85.0 | 83.6 | 25/28 | 76.8 | 0.82 | 4/10 | 14/20 | 77.5 | 90.4 / 91.5 | 14/20 | 85.0 | 0.081 | 891 | 0/216 |
+| clef_27b_or | 54 | 87.9 | 90.7 | 23/28 | 83.2 | 0.86 | 5/10 | 10/20 | 80.5 | 93.5 / 94.2 | 16/20 | 91.0 | 0.052 | 767 | 0/216 |
+| clef_flash_or | 45 | 87.9 | 86.4 | 24/28 | 82.3 | 0.90 | 6/10 | 10/20 | 76.5 | 90.8 / 92.7 | 14/20 | 84.0 | 0.075 | 738 | 0/216 |
+| clef_omni_or | 45 | 90.7 | 91.4 | 22/28 | 78.7 | 0.90 | 7/10 | 8/20 | 72.0 | 93.8 / 94.2 | 15/20 | 85.5 | 0.067 | 533 | 0/216 |
+| tev1_4b_or | 32 | 88.6 | 90.0 | 26/28 | 70.0 | 0.83 | 7/10 | 13/20 | 70.5 | 89.2 / 90.8 | 12/20 | 79.5 | 0.105 | 787 | 0/216 |
+| classify1_or | 43 | 82.1 | 88.6 | 26/28 | 74.5 | 0.85 | 7/10 | 14/20 | 80.5 | 90.8 / 93.1 | 13/20 | 85.5 | 0.104 | 692 | 0/216 |
+| pplx_decider_v11_27b_or | 53 | 87.1 | 84.3 | 26/28 | 79.7 | 0.90 | 5/10 | 15/20 | 83.0 | 95.0 / 93.8 | 14/20 | 88.0 | 0.067 | 997 | 0/216 |
+| solar_decide_or | 40 | 87.1 | 85.7 | 24/28 | 75.2 | 0.65 | 6/10 | 15/20 | 77.0 | 90.4 / 94.2 | 13/20 | 80.5 | 0.091 | 9332 | 0/216 |
+| solar_decide_flash_or | 37 | 82.1 | 80.7 | 23/28 | 78.4 | 0.90 | 4/10 | 14/20 | 75.5 | 87.7 / 90.4 | 10/20 | 77.5 | 0.092 | 1032 | 0/216 |
+| kev_4b_or | 31 | 87.1 | 82.1 | 25/28 | 74.2 | 0.78 | 7/10 | 12/20 | 71.5 | 91.5 / 88.1 | 13/20 | 81.5 | 0.114 | 941 | 0/216 |
+| liquid_d1_or | 33 | 82.9 | 80.7 | 26/28 | 74.2 | 0.86 | 6/10 | 15/20 | 76.5 | 88.8 / 90.0 | 15/20 | 85.5 | 0.111 | 613 | 0/216 |
+| mercury_decide_or | 50 | 82.9 | 85.7 | 25/28 | 78.7 | 0.89 | 5/10 | 13/20 | 81.0 | 93.5 / 92.7 | 15/20 | 89.5 | 0.070 | 831 | 0/216 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.9 | — | 0/10 | 17/20 | 80.0 | 57.7 / 57.7 | 5/20 | 55.5 | — | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
@@ -174,6 +193,8 @@ LLM = `gpt-6-luna` (API OpenAI, Responses + JSON Schema estricto) con `system-on
 Strands = `strands-decider` git `eb89e5c`, LoRA+cabeza pointer sobre Qwen3.5-2B bf16
 en Arc Pro B70 (XPU), ventana 4096 estricta.
 Versiones de Jev comprobadas: `docs/versiones_jev.md` (sin cambios a 27-sep).
+Los runs `*_or` (JEV-106, 16-oct) van por el endpoint de decisiones de OpenRouter con el
+adaptador `jev`; el snapshot servido está en `meta.resolved` de cada fase.
 
 ## Lectura
 
@@ -585,6 +606,22 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   adv4 (6/10), 1 FP como Nimble-9B; rotación d1 99,4 % con primacía
   inconclusa; réplica r2 idéntica. Como revisor de Decider-4B, `decider_4b_drexrev_audit`
   = 52: no cumple JEV-32 (42,9 %/0,0 % de la ganancia; alerta adv5 3/10·1).
+- **JEV-106 (16-oct, GT v5): 13 configuraciones por el endpoint de decisiones de
+  OpenRouter** (adaptador `jev`, 194/194 sin errores en todas; pre-registro + enmienda
+  E1 en `docs/experimentos/jev106_preregistro.md`). Nueve modelos nuevos —
+  `drex_v20_or` 42, `classify1_or` 43, `pplx_decider_v11_27b_or` 53, `clef_omni_or` 45,
+  `solar_decide_or` 40, `solar_decide_flash_or` 37, `kev_4b_or` 31, `liquid_d1_or` 33 y
+  `mercury_decide_or` 50 — y cuatro homólogos de runs locales — `drex_v15_or` 41,
+  `tev1_4b_or` 32, `clef_27b_or` 54, `clef_flash_or` 45 — frente a Jev 49 y mayoría 0.
+  **Ninguna celda McNemar significativa tras Holm (53 celdas) en ninguno de los 13.**
+  Pares local↔API (964 decisiones pareadas): acuerdo 96,2 % (Tev1-4B, único bajo la
+  referencia del 97 %) – 99,9 % (Clef-Flash), sin celdas significativas ni sin corregir;
+  lectura pre-registrada: diferencia de configuración/servicio, sin atribuir causa.
+  Rarezas: Solar-Decide ~9,3 s/caso de mediana (~14× el resto) y coste idéntico a
+  Solar-Decide-Flash caso a caso; Mercury-Decide con el 51 % de sus `noul` en
+  <0,01/>0,99; Kev-4B con 55 binarios en la frontera 0,45–0,55 (el máximo del grupo);
+  `clef_27b_or` y `clef_flash_or` resuelven a snapshots sin fecha. Detalle:
+  `docs/experimentos/jev106_resultados.md`. No cambia la recomendación.
 
 **Experimentos** (`docs/experimentos/`):
 - `cascada_jev.md`: revisor-auditor (Jev→Jev, Decider→Decider, Decider→Jev y revisores 100%

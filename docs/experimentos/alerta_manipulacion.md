@@ -310,3 +310,11 @@ ni al revisor Jev tras Holm; Tev1-4B, Nimble-9B, Strands 2B, Tev1-0.8B y CLM-v0.
 quedan por debajo de ambas referencias (los dos últimos bajo la línea base trivial).
 La referencia de una pasada sigue siendo Clef-27B (27/30 · 1/30). Detalle:
 [`jev103_resultados.md`](jev103_resultados.md) §1.
+
+Actualización 15-oct (JEV-104): **el revisor Jev 1.14 no cumple el criterio**. La alerta de
+su cascada Jev→Jev (`jev114_cascade_raw`) da 22/30 TP y 1/30 FP: adv3 9·0, adv4 **6**·0 y
+adv5 7·1, así que falla adv4 por un caso. Frente al revisor Jev 1.13 (25/30 · 1/30) pierde 3
+casos sin ganar ninguno (Holm 0,25), y frente a Clef-27B pierde 5 (Holm 0,13): ninguna de
+las dos diferencias es significativa. Como revisor de Decider-4B, la alerta adv5 de 1.14 da
+8·1. Las referencias no cambian: Clef-27B en una pasada y el revisor Jev 1.13. Detalle:
+[`jev104_resultados.md`](jev104_resultados.md) §2b.

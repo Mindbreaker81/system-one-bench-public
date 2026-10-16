@@ -191,6 +191,40 @@ y es 51.9 % con GT v5.
   - Circuito recomendado: **decisor Jev → revisor Jev (framing auditor) → reglas
     duras** (ver [legacy/jev_vs_laya.md](../legacy/jev_vs_laya.md) §3–5).
 
+### Jev 1.14 (`jev_v114_typesafe_preview`, ficha propia)
+
+- **Versión:** `jev-1.14.0` por la API de TypeSafe, alias `jev-preview` (15-oct-2026; en
+  TypeSafe `jev-latest` seguía en `jev-1.13.0`). En OpenRouter `~typesafe/jev-latest` ya
+  resuelve a `typesafe/jev-1.14-20261014` desde el 14-oct.
+- **Run:** `python3 -m jevbench.run jev --run jev_v114_typesafe_preview --opt provider=typesafe
+  --opt model=jev-preview --max-case-cost 0.01 --max-cost 0.20`, fases `all+new` y `adv4,adv5`.
+  194/194 casos, 0 errores, todas las respuestas con `jev-1.14.0`; coste registrado $0.0067.
+- **Resultado (GT v5, comparación descriptiva sin pre-registro):** ajustado **50,3**
+  [39,8–59,7] frente a 49,3 [39,5–58,6] de `jev_v3` (1.13). McNemar sobre las 53 celdas de
+  las 11 fases: 16 preguntas solo las acierta 1.13 y 16 solo 1.14; menor p cruda 0,50, Holm 1
+  en todas. **No hay diferencia medible con 1.13 en este banco.** Latencia mediana 537 ms
+  (657 ms en `jev_v3`, otra vía y otra fecha). Salidas en `docs/experimentos/jev114/`.
+- **Experimentos (15-oct, JEV-104, pre-registro congelado antes de medir):**
+  [`jev104_resultados.md`](experimentos/jev104_resultados.md).
+  - **Réplica r2:** acuerdo 955/964 = 99,1 % (IC95 98,2–99,6), Δp máx 0,12. Repetible
+    pero **no determinista**.
+  - **Rotación d1** de `department`: acuerdo 98,7 % (IC95 97,7–99,3), primacía REFUTADA:
+    **estable**.
+  - **Jev 1.13 medido igual el mismo día** (extensión E2: `jev_v113_typesafe`, `_r2`, `_d1`
+    por TypeSafe `jev-latest` → `jev-1.13.0`): r2 99,3 %, d1 99,3 % (primacía INCONCLUSA).
+    No se observa diferencia de acuerdos entre versiones (IC95 solapados, lo que no prueba
+    equivalencia). Base 1.13 frente a 1.14 en el mismo día y ruta: ambos ajustados redondean
+    a 50,3, con 19 frente a 15 discordantes y Holm 1.
+  - **Cascada Jev→Jev 1.14:** cumple el criterio de `cascada_jev.md`: review y audit mejoran
+    los 4 bloques más que el control, que solo mejora un poco en triaje y casos nuevos. Ajustado audit 66 y review 68, frente a 50 de D1. Frente a la cascada
+    1.13 (Holm53): 15 frente a 25 discordantes, Holm 1, sin diferencia significativa.
+    **Alerta del revisor: no cumple** (22/30 · 1 FP; adv4 6/10, el listón es 7).
+  - **Revisor de Decider-4B:** **cumple JEV-32** (71 % y 72 % de la ganancia de 1.13,
+    ninguna fase peor, alerta adv5 8·1). Ajustado audit 63 frente a 66 de 1.13. Holm53: 13
+    frente a 28 discordantes, Holm 1.
+  - No medido: la ruta OpenRouter y la alerta de una pasada. `jev_v3` (1.13) sigue siendo la
+    referencia de Jev en el banco y de JEV-32; 1.14 es una ficha aparte y no la sustituye.
+
 ## Microsoft-Decision-1 (Microsoft, vía OpenRouter)
 
 - **Proveedor:** Microsoft. API cerrada; en este banco solo la ruta **OpenRouter**
@@ -905,6 +939,20 @@ y es 51.9 % con GT v5.
   (99.2 % de acuerdo, primacía refutada); el 0.8B queda en «acuerdo ≥ 97 %,
   primacía inconclusa» (98.2 %). Réplica r2: 100 % en ambos. Detalle:
   `docs/experimentos/jev103_resultados.md`.
+- **Por OpenRouter (JEV-106):** run `tev1_4b_or`, snapshot
+  `togethercomputer/tev1-4b-experimental-20260923`, adaptador `jev`
+  (`provider=openrouter`). 194/194, 0 errores. Ajustado **32 [IC95 19–44]**;
+  adv3 79,5 %, adv4 79,0 %, adv5 78,0 %; Brier noul 0,105; mediana de cliente (9 fases del resumen)
+  787 ms; coste medido $0,0160. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm
+  1,000) — sin diferencias significativas. Par local↔API
+  (`tev1_4b` ↔ `tev1_4b_or`): acuerdo 927/964 = **96,2 %** [94,7–97,3]
+  (referencia descriptiva ≥97 %: no; único par por debajo), Δp media/máx
+  0,029/0,422, b/c 9/25, Holm 0 (mín. 1,000). Lectura de
+  configuración/servicio (local: logits del 1.er token en bf16 con adaptador
+  `tev1`; OpenRouter sirve su propia implementación), sin atribuir causa. El
+  run local no guarda `type` y `jev81 repeat` lo rechaza; se midió con
+  `scripts/jev106_repeat_typed.py` (detalle:
+  `docs/experimentos/jev106_resultados.md`).
 
 ## Clef (Cloudflare)
 
@@ -955,6 +1003,17 @@ y es 51.9 % con GT v5.
   `manipulation` sobre el texto crudo da **27/30 TP y 1/30 FP** acumulados en
   adv3+4+5 — cumple el criterio en los tres sets. Frente al revisor Jev
   (25/30), no hay diferencia significativa (McNemar exacto p=0.50). Detalles: `docs/experimentos/alerta_manipulacion.md`.
+- **Por OpenRouter (JEV-106):** run `clef_27b_or`, snapshot resuelto
+  `cloudflare/clef` (**sin fecha** en el slug; único dentro del run, pero no
+  fija versión para una re-medición futura), adaptador `jev`
+  (`provider=openrouter`). 194/194, 0 errores. Ajustado **54 [IC95 44–64]**;
+  adv3 91,0 %, adv4 83,5 %, adv5 81,5 %; Brier noul 0,052; mediana de cliente (9 fases del resumen)
+  767 ms; coste medido $0,0088. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm
+  1,000) — sin diferencias significativas. Par local↔API
+  (`clef_27b` ↔ `clef_27b_or`): acuerdo 958/964 = **99,4 %** [98,7–99,8],
+  Δp media/máx 0,003/0,179, b/c 3/2, Holm 0 (mín. 1,000). Lectura de
+  configuración/servicio, sin atribuir causa. Detalle:
+  `docs/experimentos/jev106_resultados.md`.
 
 ### Clef-Flash (9B)
 
@@ -991,6 +1050,50 @@ y es 51.9 % con GT v5.
   en cada set** (21/30 acumulado) — cumple el criterio justo en el límite;
   el 27B sacó 27/30 con 1 FP. McNemar pareado: p=0.18, sin diferencia
   significativa.
+- **Por OpenRouter (JEV-106):** run `clef_flash_or`, snapshot resuelto
+  `cloudflare/clef-flash` (**sin fecha** en el slug), adaptador `jev`
+  (`provider=openrouter`). 194/194, 0 errores. Ajustado **45 [IC95 36–54]**;
+  adv3 84,0 %, adv4 82,0 %, adv5 80,0 %; Brier noul 0,075; mediana de cliente (9 fases del resumen)
+  738 ms; coste medido $0,0038. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm
+  1,000) — sin diferencias significativas. Par local↔API
+  (`clef_flash_9b_xpu` ↔ `clef_flash_or`): acuerdo 963/964 = **99,9 %**
+  [99,4–100,0], Δp media/máx 0,004/0,237, b/c 0/1, Holm 0 (mín. 1,000).
+  Lectura de configuración/servicio, sin atribuir causa. Detalle:
+  `docs/experimentos/jev106_resultados.md`.
+
+### Clef-Omni (Cloudflare, vía OpenRouter)
+
+- **Proveedor:** Cloudflare. Id OpenRouter `cloudflare/clef-omni`. HF:
+  `Cloudflare/clef-omni`. Apache-2.0. Anuncio:
+  <https://blog.cloudflare.com/clef-faster-cheaper-multimodal/>.
+  Endpoint del snapshot: Cloudflare.
+- **Qué es:** post-train de `Qwen/Qwen3-Omni-30B-A3B-Instruct`, MoE 30B con
+  ~3B activos. La ficha HF: thinker con encoders de visión y de audio; los
+  pesos de habla (talker y code2wav) van en el checkpoint y no se cargan.
+  Cabeza de esquema conjunta (`joint_head.safetensors`): un transformer
+  pequeño sobre los hidden states finales que puntúa a la vez todas las
+  opciones de todas las preguntas; un logit por opción y softmax por
+  pregunta. Una pasada, sin generación. `encode_record` admite `max_length`
+  64 000 por defecto. Memoria citada para bf16 en una H200: unos 64 GB.
+  El anuncio (2026-10-09) dice que se congela el backbone Qwen3, se entrenan
+  adaptadores LoRA y la pérdida mezcla entropía cruzada con suavizado de
+  etiquetas y un término Brier. La ficha HF no nombra LoRA: si ese adaptador
+  va fusionado en los safetensors, no se ha comprobado (sin verificar).
+- **Contrato:** `choice`, `noul` y `score`, API Jev/SystemOne. Entradas de la
+  ficha: texto o JSON, imágenes, audio y vídeo. La página de OpenRouter
+  declara probabilidad calibrada. La ficha no publica temperatura.
+- **Precio (catálogo OpenRouter, 16-oct-2026):** prompt $0,15/M, completion 0.
+  Ventana 65 536; modalidad `text+image+audio+video->decisions`.
+- **Snapshot medido:** `cloudflare/clef-omni-20261009`. Revisión HF de
+  `main` citada en la investigación: `0db1cd2607d76a7bdb2a382f659e7b313079f84b`.
+- **Resultados (16-oct, JEV-106, GT v5; run `clef_omni_or`; 194/194, 0
+  errores):** ajustado **45 [IC95 36–54]**; adv3 85,5 %, adv4 85,5 %,
+  adv5 80,5 %; Brier noul 0,067; mediana de cliente (9 fases del resumen) 533 ms; coste medido
+  $0,0253 (el más alto tras Solar). Holm53 vs `jev_v3`: 0 celdas (mín. p Holm
+  0,828) — sin diferencias significativas. adv1+2 department 8/20 (la
+  mayoría `admin` saca 17/20), en la línea de la familia Clef. Detalle:
+  `docs/experimentos/jev106_resultados.md`. Las cifras del Decision Index
+  del fabricante no se copian.
 
 ## Drex v1.5 (Nace.AI)
 
@@ -1063,6 +1166,265 @@ y es 51.9 % con GT v5.
   Decider-4B** (`decider_4b_drexrev_audit` 52) no cumple JEV-32: 42.9 % de la
   ganancia de Jev en adv3+adv5, 0.0 % en triaje; alerta adv5 3/10·1. Detalle:
   `docs/experimentos/jev103_resultados.md` y `docs/experimentos/cascada_jev.md`.
+- **Por OpenRouter (JEV-106):** run `drex_v15_or`, snapshot
+  `nace-ai/drex-v1.5-20261009`, adaptador `jev` (`provider=openrouter`).
+  194/194, 0 errores. Ajustado **41 [IC95 27–53]**; adv3 87,0 %, adv4 80,0 %,
+  adv5 82,0 %; Brier noul 0,082; mediana de cliente (9 fases del resumen) 921 ms; coste medido
+  $0,0037. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm 1,000) — sin diferencias
+  significativas. Par local↔API (`drex_v15_9b` ↔ `drex_v15_or`): acuerdo
+  947/964 = **98,2 %** [97,2–99,0], Δp media/máx 0,011/0,220, b/c 12/5, Holm 0
+  (mín. 1,000). Lectura de configuración/servicio (local: `serve.py` en DGX
+  vía `systemone_http`; OpenRouter: endpoint DeepInfra del snapshot), sin
+  atribuir causa. Detalle: `docs/experimentos/jev106_resultados.md`.
+
+## Drex v2.0 (Nace.AI, vía OpenRouter)
+
+- **Proveedor:** Nace.AI. Id OpenRouter `nace-ai/drex-v2.0`. En el catálogo
+  `hugging_face_id` es null; el repositorio público sí existe:
+  `nace-ai/drex-v2.0` (no gated). Repo:
+  <https://github.com/nace-ai/drex-decision-models>. Endpoint del snapshot:
+  DeepInfra (`quantization: unknown`).
+- **Qué es:** MoE de 35B con unos 3B activos. La ficha HF fija la base
+  `Qwen/Qwen3.6-35B-A3B` y la clase `Qwen3_5MoeForConditionalGeneration`:
+  40 capas, 256 expertos, 8 activos por token. Solo se usa el modelo de
+  lenguaje; la torre de visión se descarta al cargar. Cabeza pointer en
+  `head.pt` (estilo Kev): una pasada hacia delante por pregunta, estado más
+  esa pregunta, sin generar texto. Pesos bf16 de unos 70 GB; el GGUF Q8_0,
+  unos 37 GB. Límite por defecto del servidor propio: 16 384 tokens,
+  ampliable a 131 072.
+- **Pesos y licencia:** abiertos. Licencia **Nace.AI Open RAIL-M modificada,
+  versión 1.0 (octubre 2026)**, no OSI (`license: other`). El Attachment A §2
+  corta el uso a quien supere 1 M USD de ingresos en doce meses o de
+  financiación, con excepción de uso personal o de investigación en (a) y
+  (b), y a quien ofrezca productos o servicios competidores (modelos de
+  decisión e inteligencia documental) en (c), **sin** esa excepción. §6
+  incluye «evaluating». §9 reserva marcas y prohíbe apariencia de aval:
+  **este banco no tiene aval del proveedor**.
+- **Contrato:** la página de OpenRouter declara yes/no, elección múltiple y
+  score ordinal, con probabilidad calibrada por opción, en una pasada, y
+  compatibilidad System One. La ficha sirve `POST /v1/systemone`. El README
+  no publica temperatura; si `head.pt` guarda una, no se ha leído (sin
+  verificar el valor).
+- **Precio (catálogo OpenRouter, 16-oct-2026):** prompt $0,06/M, completion 0.
+  Ventana 131 072; modalidad `text->decisions`.
+- **Snapshot medido:** `nace-ai/drex-v2.0-20261009`. Revisión HF de `main`
+  citada: `3e6d164cb5c8cf264eec167905cc2448d89ea97d`. Adaptador `jev`
+  (`provider=openrouter`). Contaminación: sin solapamiento encontrado en los
+  materiales públicos inspeccionados; corpus de entrenamiento no disponible
+  para verificarlo. Las cifras de Decision Index / JevBench ajenos del
+  fabricante no se copian.
+- **Resultados (16-oct, JEV-106, GT v5; run `drex_v20_or`; 194/194, 0
+  errores):** ajustado **42 [IC95 33–51]**; adv3 85,0 %, adv4 80,5 %,
+  adv5 81,0 %; Brier noul 0,081; mediana de cliente (9 fases del resumen) 891 ms; coste medido
+  $0,0055. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm 1,000) — sin diferencias
+  significativas. La comparación con Drex v1.5 local es de
+  configuración/servicio (v1.5 en DGX, v2.0 por OpenRouter), no solo de
+  versión: Holm53 frente a `drex_v15_9b` b=66/c=59, 0 celdas (mín. p Holm 1,000). Detalle: `docs/experimentos/jev106_resultados.md`.
+
+## Classify-1 (ScaleDown, vía OpenRouter)
+
+- **Proveedor:** ScaleDown. Id OpenRouter `scaledown/classify-1`. Endpoint
+  del snapshot: el propio ScaleDown. `hugging_face_id` null. Doc:
+  <https://docs.scaledown.ai/api-reference/decisions-overview>.
+- **Qué es:** no publicado. Ni la página ni el catálogo dan arquitectura,
+  base ni tamaño. Búsqueda en el Hub (`classify-1`, `scaledown`) el
+  2026-10-16: sin repositorio.
+- **Pesos y licencia:** no publicados.
+- **Contrato:** Decisions API: `choice`, `noul` y `score` calibrados;
+  `score` se reduce a la esperanza sobre los índices de nivel. Declara
+  compatibilidad con la API de decisiones de Jev. Esa doc es una SPA; el
+  cuerpo se tomó del extracto renderizado, no de un HTML estático completo.
+- **Precio (catálogo OpenRouter, 16-oct-2026):** prompt $0,04/M, completion 0;
+  el endpoint declara `discount: 0.2` (no se recalcula aquí el neto). Ventana
+  1 000 000; modalidad `text+image+file->decisions`.
+- **Snapshot medido:** `scaledown/classify-1-20260928`. Adaptador `jev`
+  (`provider=openrouter`).
+- **Resultados (16-oct, JEV-106, GT v5; run `classify1_or`; 194/194, 0
+  errores):** ajustado **43 [IC95 31–54]**; adv3 85,5 %, adv4 81,0 %,
+  adv5 74,0 %; Brier noul 0,104; mediana de cliente (9 fases del resumen) 692 ms; coste medido
+  $0,0202. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm 1,000) — sin diferencias
+  significativas. Detalle: `docs/experimentos/jev106_resultados.md`.
+
+## Decider V1.1 27B (Perplexity, vía OpenRouter)
+
+- **Proveedor:** Perplexity. Id OpenRouter `perplexity/pplx-decider-v1.1-27b`.
+  En el catálogo `hugging_face_id` es null; el repositorio público sí existe:
+  `perplexity-ai/pplx-decider-v1.1-27b` (no gated). Endpoint del snapshot:
+  Perplexity. Sucede a `perplexity/pplx-decider-v1-27b` con el mismo
+  contrato, según la página.
+- **Qué es:** fine-tune de `Qwen/Qwen3.8-27B`. Layout nativo: backbone
+  `Qwen3_5Model` más cabeza de lectura BF16 `[255, 5120]` en
+  `readout.safetensors`, no un `lm_head` de vocabulario completo.
+  `decision_config.json`: `temperature` 1.0087417621345625,
+  `attention_mode: noncausal_full_attention`, `pooling: last`. Las capas de
+  atención completa van en modo no causal; las de atención lineal conservan
+  el comportamiento nativo. Inferencia causal por defecto no reproduce el
+  checkpoint evaluado por los autores. Autohospedado: unos 49 GiB de pesos;
+  `prepare` limita a 8 192 tokens y rechaza el exceso (no trunca). El README
+  aún pide acceso autenticado a un «private repository»; la API del Hub, el
+  mismo día, lo marca público. No se descargaron los shards: que el GET de
+  los pesos exija token queda (sin verificar).
+- **Pesos y licencia:** abiertos en el Hub. Apache-2.0.
+- **Contrato:** `noul`, `choice` y `score` sobre `state` de texto, JSON o
+  imágenes, hasta 128 preguntas en una petición. La página no usa la palabra
+  «calibrated»; la calibración está en el artefacto HF (temperatura
+  guardada). Ventana del listado (262 144) y tope de 8 192 del `prepare`
+  autohospedado son cifras distintas.
+- **Precio (catálogo OpenRouter, 16-oct-2026):** prompt $0,02/M, completion 0.
+  Ventana 262 144; modalidad `text+image->decisions`.
+- **Snapshot medido:** `perplexity/pplx-decider-v1.1-27b-20261006`. Revisión
+  HF de `main` citada: `14c9d90137962d300f3de95633f7b6535e80c5ce`. Adaptador
+  `jev` (`provider=openrouter`). Decision Index del fabricante no se copia.
+- **Resultados (16-oct, JEV-106, GT v5; run `pplx_decider_v11_27b_or`;
+  194/194, 0 errores):** ajustado **53 [IC95 43–63]**; adv3 88,0 %,
+  adv4 83,0 %, adv5 81,0 %; Brier noul 0,067; mediana de cliente (9 fases del resumen) 997 ms;
+  coste medido $0,0074. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm 1,000) —
+  sin diferencias significativas. Detalle:
+  `docs/experimentos/jev106_resultados.md`.
+
+## Solar Decide (Upstage, vía OpenRouter)
+
+- **Proveedor:** Upstage. Id OpenRouter `upstage/solar-decide`. Endpoints
+  del snapshot: Upstage y Upstage ZDR, mismo precio. `hugging_face_id` null.
+- **Qué es:** no publicado más allá de la frase de la página: endpoint
+  System One «on Solar Mini 4». Arquitectura, número de parámetros y base
+  concreta del decisor no están en el catálogo ni en una ficha HF. Búsqueda
+  en el Hub (`solar-decide`) el 2026-10-16: sin repositorio. Tamaño de
+  Solar Mini 4 en prensa: (sin verificar); no se usa.
+- **Pesos y licencia:** no publicados.
+- **Contrato:** `choice`, `score` y sí/no, con probabilidad calibrada tomada
+  del modelo, una pasada hacia delante, esquema `/v1/systemone` como Jev.
+  La página atribuye al modelo la comprensión de coreano de Solar Mini 4.
+  Solo texto en este listado.
+- **Precio (catálogo OpenRouter, 16-oct-2026):** prompt $0,05/M, completion 0,
+  `input_cache_read` $0,05/M; endpoints con `discount: 0.5` (no se recalcula
+  el neto). Ventana 524 288; modalidad `text->decisions`.
+- **Snapshot medido:** `upstage/solar-decide-20260928`. Adaptador `jev`
+  (`provider=openrouter`).
+- **Resultados (16-oct, JEV-106, GT v5; run `solar_decide_or`; 194/194, 0
+  errores):** ajustado **40 [IC95 26–52]**; adv3 80,5 %, adv4 77,0 %,
+  adv5 81,5 %; Brier noul 0,091; mediana de cliente (9 fases del resumen) **9332 ms** (~14× el
+  resto del grupo; máx. observado ~24 s); coste medido $0,0312. Holm53 vs
+  `jev_v3`: 0 celdas (mín. p Holm 1,000) — sin diferencias significativas.
+  Rareza: ρ de relevancia en papers 0,65 (resto del grupo ~0,82–0,90). Coste
+  idéntico caso a caso al de Solar Decide Flash. Detalle:
+  `docs/experimentos/jev106_resultados.md`.
+
+### Solar Decide Flash (Upstage, vía OpenRouter)
+
+- **Proveedor:** Upstage. Id OpenRouter `upstage/solar-decide-flash`. Mismos
+  dos endpoints (Upstage y Upstage ZDR). `hugging_face_id` null.
+- **Qué es:** no publicado más allá de la página: variante de baja latencia
+  de Solar Decide, construida sobre Solar Mini 4, una pasada hacia delante
+  por decisión. Arquitectura y tamaño: no publicados. Sin ficha HF localizada
+  el 2026-10-16.
+- **Pesos y licencia:** no publicados.
+- **Contrato:** `choice`, `score` o sí/no, con una probabilidad tomada del
+  modelo, vía `/v1/systemone`. La página de Flash no dice «calibrated»; la
+  de Solar Decide sí. Conserva la ventana de 512K que anuncia la página.
+  Solo texto.
+- **Precio (catálogo OpenRouter, 16-oct-2026):** igual que Solar Decide
+  ($0,05/M prompt; `discount: 0.5`). Ventana 524 288.
+- **Snapshot medido:** `upstage/solar-decide-flash-20261008`. Adaptador `jev`
+  (`provider=openrouter`).
+- **Resultados (16-oct, JEV-106, GT v5; run `solar_decide_flash_or`; 194/194,
+  0 errores):** ajustado **37 [IC95 24–49]**; adv3 77,5 %, adv4 82,0 %,
+  adv5 82,5 %; Brier noul 0,092; mediana de cliente (9 fases del resumen) 1032 ms; coste medido
+  $0,0312 (idéntico caso a caso a Solar Decide; las decisiones sí difieren).
+  Holm53 vs `jev_v3`: 0 celdas (mín. p Holm 0,828) — sin diferencias
+  significativas. Detalle: `docs/experimentos/jev106_resultados.md`.
+
+## Kev 4B (Jared Palmer, vía OpenRouter)
+
+- **Proveedor:** Jared Palmer. Id OpenRouter `jaredpalmer/kev-4b`. HF:
+  `jaredpalmer/kev-4b`. Repo: <https://github.com/jaredpalmer/kev>.
+  Endpoints del snapshot: Phala (`quantization: unknown`) y SiliconFlow
+  (`siliconflow/fp8`, `quantization: fp8`). La página lo sitúa en la familia
+  Kev (0,8B, 4B, 9B) como checkpoint recomendado.
+- **Qué es:** adaptador LoRA y cabeza pointer sobre `Qwen/Qwen3.5-4B-Base`
+  (revisión de la base `1001bb4d` en la ficha). Backbone congelado: 32 capas,
+  24 Gated DeltaNet y 8 de atención completa, hidden 2 560. LoRA r=16, α=32
+  (33,8M). La cabeza compara el token de cierre de cada opción con el token
+  final de la pregunta y aplica softmax. Prefill, sin generación.
+  Calibración: temperatura T = 2,41 en `head.pt`. La ficha dice servir
+  estados de hasta 65 536 tokens; la ventana del listado de OpenRouter es
+  8 192.
+- **Pesos y licencia:** abiertos (adaptador + `head.pt`; la base es un repo
+  aparte). Apache-2.0 en el adaptador, la cabeza y, según la ficha, la base.
+- **Contrato:** `POST /v1/systemone`. `choice`, `score` y `noul`. La página y
+  la ficha declaran probabilidad calibrada. `KEV_TEMPERATURE=1.0` en el
+  servidor propio devuelve las probabilidades crudas.
+- **Precio (catálogo OpenRouter, 16-oct-2026):** prompt $0,042/M, completion 0.
+  Ventana 8 192; modalidad `text->decisions`.
+- **Snapshot medido:** `jaredpalmer/kev-4b-20260924`. La ficha llama Kev 1.0
+  a la revisión `139fdd94` (2026-09-24); el `main` consultado es
+  `6cfce5c2fa4b4bd64026336ab649c5ca78857d52` (commit del 2026-10-01,
+  «weights unchanged»). Adaptador `jev` (`provider=openrouter`). Aciertos y
+  Brier de las suites del fabricante no se copian.
+- **Resultados (16-oct, JEV-106, GT v5; run `kev_4b_or`; 194/194, 0
+  errores):** ajustado **31 [IC95 19–42]**; adv3 81,5 %, adv4 73,0 %,
+  adv5 81,0 %; Brier noul 0,114; mediana de cliente (9 fases del resumen) 941 ms; coste medido
+  $0,0039. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm 1,000) — sin diferencias
+  significativas. Rareza: 55 binarios en la frontera 0,45–0,55 (máximo del
+  grupo; jev_v3 30) y p máx. mediana de choice 0,77; adv4 73,0 % bajo la
+  mayoría (76,5 %). Detalle: `docs/experimentos/jev106_resultados.md`.
+
+## Liquid d1 (Liquid AI, vía OpenRouter)
+
+- **Proveedor:** Liquid AI. Id OpenRouter `liquid/d1`. Nombre en catálogo
+  «LiquidAI: d1». Endpoint del snapshot: Liquid. `hugging_face_id` null.
+  Anuncio: <https://www.liquid.ai/blog/d1-decision-model>.
+- **Qué es:** no publicado. La página no da arquitectura, base ni tamaño.
+  Búsqueda en el Hub (`liquidai d1`) el 2026-10-16: sin repositorio a nombre
+  de este id. El anuncio del proveedor (2026-10-05) describe visión en su
+  propia API y texto solo, de momento, en OpenRouter; eso coincide con la
+  modalidad del catálogo. Tamaño: tampoco está en ese anuncio (no
+  publicado). Latencias y comparativas de ese post no se copian.
+- **Pesos y licencia:** no publicados para este id.
+- **Contrato:** `choice`, `score` o sí/no, probabilidad tomada del modelo,
+  esquema `/v1/systemone`. La página no dice «calibrated».
+- **Precio (catálogo OpenRouter, 16-oct-2026):** prompt $0,02/M, completion 0,
+  `input_cache_read` $0,02/M. Ventana 65 536; modalidad `text->decisions`.
+- **Snapshot medido:** `liquid/d1-20260930`. Adaptador `jev`
+  (`provider=openrouter`).
+- **Resultados (16-oct, JEV-106, GT v5; run `liquid_d1_or`; 194/194, 0
+  errores):** ajustado **33 [IC95 24–41]**; adv3 85,5 %, adv4 70,0 %,
+  adv5 79,5 %; Brier noul 0,111; mediana de cliente (9 fases del resumen) 613 ms; coste medido
+  $0,0061. Holm53 vs `jev_v3`: 0 celdas (mín. p Holm 0,828) — sin diferencias
+  significativas. Rareza: adv4 70,0 % bajo la mayoría (76,5 %); celdas
+  `same_day` con p<0,05 sin corregir frente a jev_v3 (exploratorias).
+  Detalle: `docs/experimentos/jev106_resultados.md`.
+
+## Mercury Decide (Inception, vía OpenRouter)
+
+- **Proveedor:** Inception. Id OpenRouter `inception/mercury-decide`
+  (de pago; no la variante `:free`). Endpoint del snapshot: Inception.
+  `hugging_face_id` null.
+- **Qué es:** no publicado. La página no da arquitectura, base ni tamaño.
+  Búsqueda en el Hub (`mercury-decide`) el 2026-10-16: sin repositorio. La
+  misma página afirma «hasta 14 decisiones por segundo»: es texto del
+  listado, no una medición de este banco. Una ficha de Baseten etiqueta la
+  licencia como propietaria de Inception (sin verificar; no es la página del
+  modelo ni un repo HF).
+- **Pesos y licencia:** no publicados en OpenRouter ni en HF.
+- **Contrato:** `choice`, `score` o sí/no, con probabilidad calibrada tomada
+  del modelo, esquema `/v1/systemone` como Jev. Entrada de texto e imagen en
+  el catálogo.
+- **Precio (catálogo OpenRouter, 16-oct-2026):** prompt $0,02/M, completion 0;
+  el endpoint declara `discount: 0.5`. Ventana 65 536; modalidad
+  `text+image->decisions`. El catálogo lista también
+  `inception/mercury-decide:free` con el mismo slug canónico y prompt 0; no
+  es el id medido aquí.
+- **Snapshot medido:** `inception/mercury-decide-20260930`. Adaptador `jev`
+  (`provider=openrouter`).
+- **Resultados (16-oct, JEV-106, GT v5; run `mercury_decide_or`; 194/194, 0
+  errores):** ajustado **50 [IC95 39–60]**; adv3 89,5 %, adv4 82,0 %,
+  adv5 83,0 %; Brier noul 0,070; mediana de cliente (9 fases del resumen) 831 ms; coste medido
+  $0,0028 (el más bajo del grupo). Holm53 vs `jev_v3`: 0 celdas (mín. p Holm
+  1,000) — sin diferencias significativas. Rareza: el 50,6 % de sus `noul`
+  (11 fases) está en <0,01 o >0,99, cerca de Perplexity Decider (48,8 %;
+  resto del grupo 0–34,6 %; jev_v3 0,2 %), y solo 3 binarios en 0,45–0,55; choice con p máx. mediana 0,996. Detalle:
+  `docs/experimentos/jev106_resultados.md`.
 
 ## OpenMed Ministral-3B-Medical-v1
 

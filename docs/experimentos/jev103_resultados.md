@@ -43,6 +43,9 @@ referencias tras Holm; Tev1-0.8B y CLM no superan la línea base trivial (29/60)
 
 ## 2. Rotación d1 de `department` y réplica r2
 
+*(La tabla consolidada de todas las réplicas r2 del banco está en
+[`repetibilidad.md`](repetibilidad.md).)*
+
 `jev82 analyze <base> <base>_d1` y `jev81 repeat <base> <base>_r2`. Lectura fijada: «estable»
 solo con acuerdo ≥ 97 % **y** primacía REFUTADA; con primacía INCONCLUSA, «acuerdo observado
 ≥ 97 %, primacía inconclusa»; «sensible al orden» si el acuerdo < 97 % o la primacía queda

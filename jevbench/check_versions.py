@@ -22,7 +22,8 @@ from .adapters.jev import Jev
 from .env import load_env
 
 # Backward-compatible alias (historical Jev known-set).
-KNOWN = {"typesafe/jev-1.13-20260917", "jev-1.13.0"}
+KNOWN = {"typesafe/jev-1.13-20260917", "jev-1.13.0",
+         "typesafe/jev-1.14-20261014", "jev-1.14.0"}  # 1.14 medida el 15-oct (jev_v114_typesafe_preview)
 KNOWN_LUNA_DECISIONS = {"openai/gpt-6-luna-decisions-20261006"}
 
 LOG = Path(__file__).resolve().parent.parent / "docs" / "versiones_jev.md"

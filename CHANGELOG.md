@@ -13,6 +13,47 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.4.0] - 2026-10-16 — JEV-106: 13 decisores por OpenRouter y pares local↔API; Jev 1.14 (preview) como ficha propia; JEV-104 y JEV-105
+
+### JEV-106: 13 decisores por OpenRouter
+
+- 13 decisores por OpenRouter (pre-registro + E1): fichas nuevas en `docs/modelos.md`
+  (Drex v2.0, Classify-1, Perplexity Decider V1.1 27B, Clef Omni, Solar Decide/Flash,
+  Kev 4B, Liquid d1, Mercury Decide) y párrafo «Por OpenRouter (JEV-106)» en Drex v1.5,
+  Tev1, Clef y Clef-Flash (pares local↔API: acuerdo, Holm; lectura de
+  configuración/servicio). Filas nuevas en `AGENTS.md`. Resultados:
+  `docs/experimentos/jev106_resultados.md` — ninguna celda Holm significativa vs
+  `jev_v3`; coste total medido ≈ $0,166; Tev1 local↔OR 96,2 % vía
+  `scripts/jev106_repeat_typed.py` (sin tocar `results/tev1_4b` ni el atestado de
+  `jev81`). Marcador, web y sitio: 13 runs nuevos (manifiesto 118, web 109, sitio 115) y
+  familias ScaleDown, Perplexity, Upstage, Kev, Liquid e Inception. Revisiones Codex R126/R127
+  aplicadas.
+
+- `jev_v114_typesafe_preview`: Jev `jev-1.14.0` por la API de TypeSafe (`jev-preview`), 11 fases,
+  194/194, 0 errores, $0.0067. Ajustado 50,3 frente a 49,3 de `jev_v3`; McNemar 16/16
+  discordancias, 0 de 53 celdas tras Holm: sin diferencia medible. Ficha aparte en
+  `docs/modelos.md`, `docs/versiones_jev.md`, marcador, web y sitio; `jev_v3` (1.13) sigue como
+  referencia. `check_versions` conoce ya 1.14. Salidas en `docs/experimentos/jev114/`.
+- JEV-104 (pre-registro `docs/experimentos/jev104_preregistro.md` congelado antes de medir,
+  enmienda E1 solo de la guarda de coste de d1): réplica `_r2` 99,1 % de acuerdo (no
+  determinista); rotación `_d1` 98,7 %, primacía REFUTADA, estable. La cascada Jev→Jev 1.14
+  (`jev114_cascade_*`) cumple el criterio original (audit 66, review 68), pero su alerta no
+  (22/30 · 1 FP, adv4 6/10). Como revisor de Decider-4B (`decider_4b_jev114rev_*`, audit 63)
+  cumple JEV-32. Frente a 1.13, Holm 1 en las 53 pruebas de cascada y revisor. Coste de las cuatro
+  adquisiciones de 1.14 ≈ $0.033; ≈ $0.053 incluyendo E2. Extensión E2 (pre-registrada): réplica y rotación de Jev 1.13 por TypeSafe el
+  mismo día (`jev_v113_typesafe`, `_r2`, `_d1`): r2 99,3 %, d1 99,3 % (primacía inconclusa).
+  No se observa diferencia de acuerdos con 1.14 según E2 (IC95 solapados); base 1.13 frente a 1.14, Holm 1. `scripts/jev104_d1_analyze.py` (E1);
+  resultados en
+  `docs/experimentos/jev104_resultados.md` y `docs/experimentos/jev104/`.
+- `docs/experimentos/repetibilidad.md` (T54 / JEV-105): síntesis de las réplicas r2 ya
+  medidas (sin medir nada nuevo) — 11 configuraciones, acuerdo de decisiones pareadas con
+  IC95, Δp y Δ ajustado, criterio de referencia descriptivo ≥ 97 % (JEV-81). Sección
+  «Repetibilidad»/«Repeatability» en la página Experimentos del sitio y del artifact
+  (datos en `docs/site_src/experimentos/repetibilidad.json`), línea de metodología
+  «una ejecución por configuración» en `metodologia.html` y en la cabecera del marcador, y nota de
+  discrepancia: el Δ ajustado de Haiku publicado en JEV-84 era con GT v4 (−1,80); con GT
+  v5 es −1,4.
+
 ## [2.3.0] - 2026-10-15 — JEV-103: alerta de una pasada, rotación d1, réplica r2 y revisores de Decider-4B; procedimientos de JEV-101
 
 - `scripts/attest_rebind.py`: re-liga en `docs/auditorias/` solo el sha256 de un fichero que

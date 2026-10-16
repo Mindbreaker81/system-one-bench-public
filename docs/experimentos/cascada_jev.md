@@ -472,3 +472,28 @@ Conclusiones:
    los ya medidos — Jev (referencia), Clef-27B, Claude Haiku 5.5 y gpt-6.1-sol (los
    dos últimos por API). Detalle completo:
    [`jev103_resultados.md`](jev103_resultados.md) §3 y [`jev103/`](jev103/).
+
+## Jev 1.14: cascada Jev→Jev y revisor de Decider-4B (JEV-104, 15-oct, GT v5)
+
+Mismo prompt y mismas reglas de fusión, con Jev 1.14 (API TypeSafe, `jev-preview` →
+`jev-1.14.0`). Pre-registro: [`jev104_preregistro.md`](jev104_preregistro.md), congelado
+antes de medir. Detalle: [`jev104_resultados.md`](jev104_resultados.md).
+
+| run | ajustado | triaje (media ES/EN) | papers | adv1+2 total | casos nuevos (ext + adv3) |
+|---|---:|---:|---:|---:|---:|
+| mayoría (oráculo) | 0 | 66,4 | 51,9 | 80,0 | 57,0 |
+| D1 1.14 (`jev_v114_typesafe_preview`) | 50 | 87,9 | 76,8 | 81,5 | 92,8 |
+| control (D1 + réplica r2) | 51 | 88,6 | 76,8 | 81,5 | 92,9 |
+| review | 68 | 91,8 | 83,9 | 92,0 | 93,9 |
+| audit | 66 | 90,4 | 81,3 | 91,0 | 94,3 |
+| Jev→Jev 1.13 audit (referencia) | 68 | 92,5 | 83,2 | 90,5 | 93,5 |
+
+- **Cumple el criterio original**: `review` y `audit` mejoran los 4 bloques más que el
+  control, que solo mejora un poco en triaje (+0,7) y en casos nuevos (+0,1). La ganancia viene de la revisión, igual que con 1.13.
+- **Frente a la cascada 1.13** (audit, Holm53): 15 frente a 25 discordantes, menor p cruda
+  0,25 y Holm 1. Sin diferencia significativa.
+- **Alerta del revisor:** 22/30 TP · 1/30 FP. **No cumple** por adv4 (6/10).
+- **Como revisor de Decider-4B** (`decider_4b_jev114rev_*`): ajustado audit 63 (66 con 1.13).
+  Recupera el 71,4 % de la ganancia de 1.13 en adv3+adv5 y el 72,2 % en triaje, no empeora
+  ninguna fase (empata en ood) y su alerta adv5 da 8·1: **cumple JEV-32**. Holm53 frente a 1.13: 13 frente a
+  28 discordantes, Holm 1. La referencia de JEV-32 sigue siendo el revisor Jev 1.13.
