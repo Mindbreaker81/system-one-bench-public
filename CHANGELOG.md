@@ -13,6 +13,37 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.5.0] - 2026-10-19 — JEV-89: LoRA propio sobre Qwen3.5-9B (H1 refutada); errores con mucha confianza; plan de modelo propio
+
+- Web y sitio (ES/EN): ficha «LoRA propio sobre Qwen3.5-9B frente a su base» (JEV-89) en
+  «Experimentos», en un bloque nuevo 14 «Modelo propio: ajuste fino» (55 fichas en 14 bloques), con
+  cifras de `docs/experimentos/jev89_resultado.md` y lo interpretativo separado en la salvedad. Los
+  runs `jev89_qwen35_9b_lora` y `qwen35_9b_base_tev1fmt` no entran en el marcador ni en `RUNS`.
+- JEV-89 paso 3: LoRA de Qwen3.5-9B con el conjunto propio (pre-registrado). **H1 refutada**: ajustado
+  38 [25–51] frente a 48 [38–57] de la misma base sin entrenar (`qwen35_9b_base_tev1fmt`); 0/53 celdas
+  tras Holm frente al control, `jev_v3` y `nimble_9b`. Mejora triaje (sobre todo EN) y adv4/adv5,
+  empeora adv1/adv3 (manipulación sin cobertura en los datos) y papers; los errores con confianza
+  ≥ 0,99 pasan de 7 a 50. Detalle en `docs/experimentos/jev89_resultado.md`; manifiesto en
+  `docs/infra_runs/jev89_qwen35_9b.md`. Revisión humana de 60 sintéticos: 0 correcciones.
+  `train_lora.py` guarda estado de reanudación cada 200 pasos tras perder el primer intento por un
+  Xid 120 de la GPU de .81.
+- JEV-89 paso 2: conjunto de entrenamiento para un decisor propio (`scripts/jev89/`, tests
+  `tests/test_jev89_*`): triaje sintético ES/EN con Qwen3.8-27B (etiqueta por construcción y
+  aceptación por coincidencia exacta), papers de PubMed por MeSH Major Topic, PMR-Bench (NC aparte),
+  filtro de contaminación de 8-gramas/PMID con índice hasheado y ensamblado con manifiesto.
+  Resultado: 4.640 train / 516 val (+772/87 NC), 0 solapamientos con el banco. Revisado por Codex
+  (R-JEV89 NO APTO → enmienda E1 → R2 APTO con reservas, corregidas). Detalle en
+  `docs/plan_modelo_propio.md` §8.
+- `docs/plan_modelo_propio.md` (JEV-89): investigación de datos con licencia para un decisor
+  System One propio especializado en medicina (sin entrenar ni descargar nada).
+- `docs/experimentos/errores_seguros.md` + `scripts/errores_seguros.py`: análisis descriptivo,
+  sobre las salidas ya guardadas, de las decisiones erróneas emitidas con confianza ≥ 0,9 / 0,99
+  (la forma de «alucinar» de un decisor tipado). Plan fijado antes de calcular (2d76579); 64
+  configuraciones con probabilidades y 13 discretas, 11 fases. 26 configuraciones, casi todas
+  decisores dedicados, quedan en 0–3,7 errores seguros por cada 100 binarias (Jev 0,8); Qwen3.8-27B
+  sin preguntas visibles 21,3; las salidas discretas, 6,6–16,9. Sin contrastes. Las pruebas
+  directas («no consta» y ablación de evidencia) quedan como JEV-107 y JEV-108 bajo JEV-88.
+
 ## [2.4.0] - 2026-10-16 — JEV-106: 13 decisores por OpenRouter y pares local↔API; Jev 1.14 (preview) como ficha propia; JEV-104 y JEV-105
 
 ### JEV-106: 13 decisores por OpenRouter
