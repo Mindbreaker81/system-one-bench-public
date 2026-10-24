@@ -13,6 +13,20 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.6.0] - 2026-10-24 — JEV-109: Base Labs mammoth-1 y elephant-1; vigilante de red de las DGX
+
+- JEV-109: **Base Labs mammoth-1 (27B) y elephant-1 (9B)** (Baseten, pesos MIT sobre Qwen3.5-27B/9B)
+  medidos por el endpoint de decisiones de OpenRouter, variante `:free` (runs `mammoth_1_or`,
+  `elephant_1_or`; 194/194, 0 errores). Ajustado 57 [49–65] y 52 [41–63] frente a Jev 49, la base
+  Qwen3.5-9B sin entrenar 48 y mayoría 0; Holm53 sin celdas significativas frente a Jev, la base,
+  Nimble, el LoRA de JEV-89, Clef-27B ni entre ellos. Familia nueva «Baseten» en web y sitio
+  (marcador 120 entradas, web 111, sitio 117); ficha en `docs/modelos.md`. Latencia publicada sin
+  la pausa de 3,5 s del límite gratuito; coste no registrado. Pesos descargados a ai-models.
+- `docs/dgx-spark.md`: la tarjeta LAN r8127 de las dos Spark se queda sin enlace tras un *transmit
+  timeout* (18-oct-2026); servicio `vigilante-nic` instalado en ambas (EEE desactivado y recuperación
+  automática del enlace, probada en las dos) y acceso de reserva por el enlace QSFP. Pesos del LoRA JEV-89 (adaptadores y
+  fusionado) copiados a la biblioteca local de modelos con SHA256 verificado desde la otra Spark.
+
 ## [2.5.0] - 2026-10-19 — JEV-89: LoRA propio sobre Qwen3.5-9B (H1 refutada); errores con mucha confianza; plan de modelo propio
 
 - Web y sitio (ES/EN): ficha «LoRA propio sobre Qwen3.5-9B frente a su base» (JEV-89) en

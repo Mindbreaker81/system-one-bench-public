@@ -36,7 +36,7 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_v114_typesafe_pre
     llm_haiku55_adapt_prob_r2 llm_ministral3b_med_prob llm_ministral3b_med_disc jev_ms_decision1 drex_v15_9b \
     drex_v15_or drex_v20_or clef_27b_or clef_flash_or clef_omni_or \
     tev1_4b_or classify1_or pplx_decider_v11_27b_or solar_decide_or solar_decide_flash_or \
-    kev_4b_or liquid_d1_or mercury_decide_or
+    kev_4b_or liquid_d1_or mercury_decide_or elephant_1_or mammoth_1_or
 ```
 <!-- /AUTO:comando -->
 
@@ -163,6 +163,8 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_v114_typesafe_pre
 | kev_4b_or | 31 | 87.1 | 82.1 | 25/28 | 74.2 | 0.78 | 7/10 | 12/20 | 71.5 | 91.5 / 88.1 | 13/20 | 81.5 | 0.114 | 941 | 0/216 |
 | liquid_d1_or | 33 | 82.9 | 80.7 | 26/28 | 74.2 | 0.86 | 6/10 | 15/20 | 76.5 | 88.8 / 90.0 | 15/20 | 85.5 | 0.111 | 613 | 0/216 |
 | mercury_decide_or | 50 | 82.9 | 85.7 | 25/28 | 78.7 | 0.89 | 5/10 | 13/20 | 81.0 | 93.5 / 92.7 | 15/20 | 89.5 | 0.070 | 831 | 0/216 |
+| elephant_1_or | 52 | 94.3 | 90.0 | 26/28 | 71.6 | 0.87 | 6/10 | 15/20 | 83.5 | 92.7 / 91.2 | 16/20 | 90.0 | 0.067 | 3935 | 0/216 |
+| mammoth_1_or | 57 | 85.7 | 83.6 | 27/28 | 79.4 | 0.90 | 5/10 | 17/20 | 87.5 | 90.8 / 91.2 | 17/20 | 92.5 | 0.064 | 4114 | 0/216 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.9 | — | 0/10 | 17/20 | 80.0 | 57.7 / 57.7 | 5/20 | 55.5 | — | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
@@ -622,6 +624,18 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   <0,01/>0,99; Kev-4B con 55 binarios en la frontera 0,45–0,55 (el máximo del grupo);
   `clef_27b_or` y `clef_flash_or` resuelven a snapshots sin fecha. Detalle:
   `docs/experimentos/jev106_resultados.md`. No cambia la recomendación.
+- **JEV-109 (22-oct, GT v5): Base Labs (Baseten) mammoth-1 y elephant-1** por el
+  endpoint de decisiones de OpenRouter, variante `:free` (adaptador `jev`, 194/194 sin
+  errores). Pesos abiertos (MIT) sobre Qwen3.5-27B y Qwen3.5-9B. `mammoth_1_or` **57**
+  [49–65], Brier 0,064 — el ajustado observado más alto entre los decisores de una pasada
+  (`clef_27b` 56); `elephant_1_or` **52** [41–63], Brier 0,067, frente a su base sin
+  entrenar `qwen35_9b_base_tev1fmt` 48, `nimble_9b` 47, el LoRA de JEV-89 38, Jev 49 y
+  mayoría 0. **Holm53: 0 celdas** frente a `jev_v3`, la base, `nimble_9b`, el LoRA,
+  `clef_27b`, `clef_flash_9b_xpu`, `drex_v15_9b` y entre ellos; frente a
+  `llm_cerebras_qwen38_27b_nostruct_prob` (70), mín. p Holm 0,38. Latencia de cliente
+  ~0,61 / ~0,43 s (mediana del resumen menos la pausa fija de 3,5 s del límite gratuito);
+  coste no registrado (variante gratuita). Ficha: `docs/modelos.md` §Base Labs.
+  No cambia la recomendación.
 
 **Experimentos** (`docs/experimentos/`):
 - `cascada_jev.md`: revisor-auditor (Jev→Jev, Decider→Decider, Decider→Jev y revisores 100%

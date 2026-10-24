@@ -1426,6 +1426,37 @@ y es 51.9 % con GT v5.
   resto del grupo 0–34,6 %; jev_v3 0,2 %), y solo 3 binarios en 0,45–0,55; choice con p máx. mediana 0,996. Detalle:
   `docs/experimentos/jev106_resultados.md`.
 
+## Base Labs mammoth-1 y elephant-1 (Baseten, vía OpenRouter)
+
+- **Proveedor:** Base Labs (Baseten). Publicados el 21-oct-2026. Ids OpenRouter
+  `baseten/mammoth-1:free` y `baseten/elephant-1:free` (variante gratuita hasta el
+  27-oct-2026); también en Baseten Model APIs (`/v1/systemone`).
+- **HF:** [baselabs/mammoth-1](https://huggingface.co/baselabs/mammoth-1) @
+  `03007ab3c4481bf01c71ef63adbbbc4b2093d71a` (post-entrenado sobre Qwen/Qwen3.5-27B, 2 shards) y
+  [baselabs/elephant-1](https://huggingface.co/baselabs/elephant-1) @
+  `c54a55c2d362a7e30ff30814d28e39054e954d58` (sobre Qwen/Qwen3.5-9B, la misma base que Nimble-9B,
+  Tev1 y el LoRA de JEV-89). Licencia **MIT**. Fine-tune completo solo de texto (visión
+  congelada), máscara bidireccional por bloques en las capas de atención completa, ventana de
+  16 384 tokens (rechazan, no truncan). 6,21 M ejemplos de entrenamiento públicos y sintéticos;
+  sin corpus publicado para comprobar solapamiento con el banco.
+- **Contrato:** `choice` / `score` / `noul` con probabilidad por opción en una sola pasada
+  (prefill compartido), esquema `/v1/systemone` como Jev.
+- **Servidor propio:** `setup.sh` + `engine.py` + `serve.patch` (OneJev), pensado para la imagen
+  `pytorch/pytorch:2.8.0-cuda12.8` en x86; la ejecución local en los DGX (GB10, aarch64, CUDA 13)
+  queda pendiente (JEV-109 fase 2). Pesos en ai-models `hf/baselabs/`.
+- **Snapshots medidos:** `baseten/mammoth-1-20261021`, `baseten/elephant-1-20261021`.
+  Adaptador `jev` (`provider=openrouter`, `retries=3`, `pause=3.5` por el límite gratuito).
+- **Resultados (22-oct, JEV-109, GT v5; 194/194, 0 errores):** `mammoth_1_or` ajustado
+  **57 [IC95 49–65]**, Brier noul 0,064; `elephant_1_or` **52 [41–63]**, Brier 0,067
+  (Jev 49, base Qwen3.5-9B sin entrenar 48, mayoría 0). Holm53: 0 celdas frente a `jev_v3`,
+  `qwen35_9b_base_tev1fmt`, `nimble_9b`, `jev89_qwen35_9b_lora`, `clef_27b`,
+  `clef_flash_9b_xpu`, `drex_v15_9b` y entre ellos — sin diferencias significativas.
+  Latencia: el `ms` registrado incluye la pausa de 3,5 s; mediana del resumen 4114 / 3935 ms
+  → ~614 / ~435 ms sin ella (la prueba corta sin pausa dio ~0,8 s con la pausa normal de
+  0,3 s). Coste registrado 0 por ser la variante gratuita: se publica como no registrado.
+  Las cifras del fabricante (su «Jev Decision Index» 71,24 y 62,65) son de otro banco y no se
+  incorporan.
+
 ## OpenMed Ministral-3B-Medical-v1
 
 - **HF:** [OpenMed/Ministral-3B-Medical-v1](https://huggingface.co/OpenMed/Ministral-3B-Medical-v1),

@@ -60,6 +60,8 @@ STRINGS = {
     "latencia = mediana del resumen del scorer sobre las 9 fases base+nuevas (154 registros)":
         "API cost not recorded (local endpoint with no API pricing; electricity and hardware not measured); "
         "latency = upper median of the scorer summary over the 9 base+new phases (154 records)",
+    "coste no registrado: variante :free de OpenRouter (gratuita hasta el 27-oct-2026), no es precio de catálogo; latencia = mediana del resumen del scorer (9 fases base+nuevas, 154 registros) menos la pausa fija de 3,5 s entre peticiones":
+        "cost not recorded: OpenRouter :free variant (free until Oct 27, 2026), not a list price; latency = scorer-summary median (9 base+new phases, 154 records) minus the fixed 3.5 s pause between requests",
 }
 
 # Fragmentos recurrentes, ordenados de más largo a más corto en la aplicación.
@@ -223,6 +225,7 @@ JS_SHARED = frozenset({
     '--f-drex',
     '--f-gliner',
     '--f-inception',
+    '--f-baseten',
     '--f-jev',
     '--f-julia',
     '--f-kev',
