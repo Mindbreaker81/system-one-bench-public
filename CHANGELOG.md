@@ -13,6 +13,15 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.7.0] - 2026-10-24 — JEV-110: Jev 1.14 como jev-latest (ficha propia; 1.13 sigue de referencia)
+
+- JEV-110: `jev-latest` resuelve a **Jev 1.14** en TypeSafe y OpenRouter (24-oct). Run `jev_1_14` por
+  OpenRouter (194/194): ajustado 50 frente a 49 de `jev_v3`, 0/53 celdas tras Holm; cascada
+  `jev_1_14_cascade_*` audit 65 / review 71, alerta del revisor 9/7/7 con 1 FP (en el límite).
+  `jev_v3` (1.13) se mantiene como referencia histórica. Integrado en marcador, web y sitio.
+- Artículo (privado): corte v2.6.0 revisado por Codex y Claude en sesiones nuevas; correcciones
+  aplicadas y verificadas.
+
 ## [2.6.0] - 2026-10-24 — JEV-109: Base Labs mammoth-1 y elephant-1; vigilante de red de las DGX
 
 - JEV-109: **Base Labs mammoth-1 (27B) y elephant-1 (9B)** (Baseten, pesos MIT sobre Qwen3.5-27B/9B)

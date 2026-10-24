@@ -30,13 +30,13 @@ Notas (Jev):
 | 2026-10-01 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.13-20260917` · `typesafe:jev-latest` → `jev-1.13.0` · `typesafe:jev-preview` → `jev-1.13.0` | sin cambios |
 | 2026-10-10 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.13-20260917` · `typesafe:jev-latest` → `jev-1.13.0` · `typesafe:jev-preview` → `jev-1.13.0` | sin cambios |
 | 2026-10-15 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.14-20261014` · `typesafe:jev-latest` → `jev-1.13.0` · `typesafe:jev-preview` → `jev-1.14.0` | **NUEVA: jev-1.14** — medida como ficha aparte `jev_v114_typesafe_preview` (ajustado 50,3 vs 49,3; 0/53 celdas tras Holm); 1.13 sigue como referencia |
-
+| 2026-10-24 | `openrouter:~typesafe/jev-latest` → `typesafe/jev-1.14-20261014` · `typesafe:jev-latest` → `jev-1.14.0` · `typesafe:jev-preview` → `jev-1.14.0` | **jev-latest = 1.14 en TypeSafe y OpenRouter.** Medida por OpenRouter como `jev_1_14` (JEV-110): ajustado 50 vs 49 de 1.13, 0/53 celdas tras Holm; cascada audit 65 / review 71, alerta 9/7/7 · 1 FP. **1.13 (`jev_v3`) sigue como referencia histórica.** |
 ## gpt-6-luna-decisions (OpenRouter)
 
 | fecha | alias → versión resuelta | resultado |
 |---|---|---|
 | 2026-10-10 | `openrouter:openai/gpt-6-luna-decisions` → `openai/gpt-6-luna-decisions-20261006` | sin cambios |
-
+| 2026-10-24 | `openrouter:openai/gpt-6-luna-decisions` → `openai/gpt-6-luna-decisions-20261006` | sin cambios |
 ## Microsoft-Decision-1 (OpenRouter)
 
 | fecha | alias → versión resuelta | resultado |

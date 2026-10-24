@@ -191,6 +191,22 @@ y es 51.9 % con GT v5.
   - Circuito recomendado: **decisor Jev → revisor Jev (framing auditor) → reglas
     duras** (ver [legacy/jev_vs_laya.md](../legacy/jev_vs_laya.md) §3–5).
 
+### Jev 1.14 como `jev-latest` (`jev_1_14`, JEV-110)
+
+- **Versión:** desde el 24-oct-2026 `jev-latest` resuelve a 1.14 en las dos vías:
+  TypeSafe `jev-1.14.0` y OpenRouter `typesafe/jev-1.14-20261014`. **`jev_v3` (1.13) sigue como
+  referencia histórica** del banco y del artículo (decisión del usuario, 24-oct).
+- **Run:** `python3 -m jevbench.run jev --run jev_1_14 --opt retries=3`, fases `all+new` y
+  `adv4,adv5`, por OpenRouter (la misma vía que `jev_v3`). 194/194, 0 errores; coste $0,0067.
+- **Resultado (GT v5):** ajustado **50 [40–59]** frente a 49 [39–59] de `jev_v3` y 50 de la preview
+  por TypeSafe; Brier 0,062 los tres; mediana 597 ms. Holm53: 0 celdas frente a `jev_v3`
+  (18 discordancias solo 1.13 / 17 solo 1.14) y frente a la preview (6/5). TypeSafe y OpenRouter
+  sirven el mismo modelo.
+- **Cascada Jev→Jev** (`jev_1_14_cascade_*`): audit **65 [59–72]** / review **71 [65–77]**
+  (1.13: 68 / 69; preview: 66 / 68); audit frente a `jev_cascade_audit`: 25/14 discordancias,
+  0 celdas tras Holm. **Alerta del revisor** (`manipulation ≥ 0,5`): adv3 9/10 · adv4 7/10 ·
+  adv5 7/10, 1 FP en total (1.13: 9/7/9; preview: 9/6/7) — cumple, en el límite.
+
 ### Jev 1.14 (`jev_v114_typesafe_preview`, ficha propia)
 
 - **Versión:** `jev-1.14.0` por la API de TypeSafe, alias `jev-preview` (15-oct-2026; en
