@@ -13,6 +13,12 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.9.1] - 2026-10-25 — «Experimentos»: take-home messages, entradillas por bloque y fichas más claras
+
+- «Experimentos» (ES/EN): dos mensajes adicionales sobre el agregado de los LLM generalistas y el acuerdo local/API, con fuentes directas y cifras reproducidas (96,2–99,9 % en seis pares). Se distinguen ranking, interpretación operativa y ausencia de diferencias significativas; nueve mensajes en total, sin afirmar equivalencia ni identidad de configuración.
+
+- Página «Experimentos» (ES/EN): siete mensajes iniciales con fuerza de evidencia y enlaces a las fichas, entradillas para los quince bloques y veredictos más explícitos. Matizadas las inferencias sobre formato frente a ajuste fino y la comparación de verificadores; sin cambiar cifras, GT ni scoring. Fuentes del inventario y generador actualizados; salidas web y sitio regeneradas solo en local.
+
 ## [2.9.0] - 2026-10-25 — JEV-109 fase 2: elephant-1 y mammoth-1 en local (adaptador baselabs)
 
 - JEV-109 fase 2: **elephant-1 y mammoth-1 en local** (DGX Spark .81) con el adaptador nuevo `baselabs`
