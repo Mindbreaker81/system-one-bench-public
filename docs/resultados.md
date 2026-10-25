@@ -37,7 +37,7 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_v114_typesafe_pre
     jev_ms_decision1 drex_v15_9b drex_v15_or drex_v20_or clef_27b_or \
     clef_flash_or clef_omni_or tev1_4b_or classify1_or pplx_decider_v11_27b_or \
     solar_decide_or solar_decide_flash_or kev_4b_or liquid_d1_or mercury_decide_or \
-    elephant_1_or mammoth_1_or
+    elephant_1_or mammoth_1_or elephant_1_local mammoth_1_local
 ```
 <!-- /AUTO:comando -->
 
@@ -168,6 +168,8 @@ python3 -m jevbench.score --summary jev_v3 jev_typesafe_v1 jev_v114_typesafe_pre
 | mercury_decide_or | 50 | 82.9 | 85.7 | 25/28 | 78.7 | 0.89 | 5/10 | 13/20 | 81.0 | 93.5 / 92.7 | 15/20 | 89.5 | 0.070 | 831 | 0/216 |
 | elephant_1_or | 52 | 94.3 | 90.0 | 26/28 | 71.6 | 0.87 | 6/10 | 15/20 | 83.5 | 92.7 / 91.2 | 16/20 | 90.0 | 0.067 | 3935 | 0/216 |
 | mammoth_1_or | 57 | 85.7 | 83.6 | 27/28 | 79.4 | 0.90 | 5/10 | 17/20 | 87.5 | 90.8 / 91.2 | 17/20 | 92.5 | 0.064 | 4114 | 0/216 |
+| elephant_1_local | 54 | 92.9 | 90.0 | 26/28 | 71.6 | 0.88 | 6/10 | 16/20 | 84.5 | 92.7 / 91.9 | 16/20 | 91.0 | 0.069 | 335 | 0/216 |
+| mammoth_1_local | 58 | 88.6 | 83.6 | 28/28 | 79.0 | 0.90 | 5/10 | 17/20 | 88.5 | 90.0 / 91.9 | 17/20 | 93.0 | 0.063 | 974 | 0/216 |
 | *mayoría (oráculo)* | 0 | 66.4 | 66.4 | 12/28 | 51.9 | — | 0/10 | 17/20 | 80.0 | 57.7 / 57.7 | 5/20 | 55.5 | — | — | — |
 
 *ajustado: media por fase de (acierto − línea base de mayoría) / (100 − línea base) × 100 (ood queda excluida: la mayoría ya acierta todo). 0 = responder siempre lo más frecuente, <0 = peor que el trivial; `*` = no tiene las 11 fases.*
@@ -638,7 +640,9 @@ Las cifras de ejecución de 195 casos, costes y recuentos sobre 969 decisiones o
   `llm_cerebras_qwen38_27b_nostruct_prob` (70), mín. p Holm 0,38. Latencia de cliente
   ~0,61 / ~0,43 s (mediana del resumen menos la pausa fija de 3,5 s del límite gratuito);
   coste no registrado (variante gratuita). Ficha: `docs/modelos.md` §Base Labs.
-  No cambia la recomendación.
+  No cambia la recomendación. **Fase 2 (25-oct):** los dos en local en el DGX (adaptador
+  `baselabs`): `elephant_1_local` 54 [45–62], `mammoth_1_local` 58 [51–66]; acuerdo con la API
+  99,3 % / 99,1 %, 0 celdas tras Holm frente a la API y a `jev_v3`; 335 / 974 ms por caso.
 - **JEV-110 (24-oct, GT v5): `jev-latest` pasa a Jev 1.14** en TypeSafe y OpenRouter.
   `jev_1_14` (OpenRouter, 194/194) 50 [40–59] frente a 49 de `jev_v3`: 0/53 celdas tras Holm.
   Cascada audit 65 / review 71; alerta del revisor 9/7/7 con 1 FP (cumple en el límite; 1.13:

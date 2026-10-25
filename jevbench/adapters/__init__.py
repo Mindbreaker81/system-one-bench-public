@@ -36,6 +36,7 @@ REGISTRY = {
     "nimble": "jevbench.adapters.nimble:Nimble",
     "tev1": "jevbench.adapters.tev1:Tev1",
     "clef": "jevbench.adapters.clef:Clef",
+    "baselabs": "jevbench.adapters.baselabs:BaseLabs",
     "openai_decisions": "jevbench.adapters.openai_decisions:OpenAIDecisions",
 }
 

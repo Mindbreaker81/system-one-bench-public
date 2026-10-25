@@ -13,6 +13,20 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.9.0] - 2026-10-25 — JEV-109 fase 2: elephant-1 y mammoth-1 en local (adaptador baselabs)
+
+- JEV-109 fase 2: **elephant-1 y mammoth-1 en local** (DGX Spark .81) con el adaptador nuevo `baselabs`
+  (runtime OneJev qev del release, en proceso). Runs `elephant_1_local` (54 [45–62]) y
+  `mammoth_1_local` (58 [51–66]), 194/194; acuerdo con la API 99,3 % y 99,1 %, 0 celdas tras Holm
+  frente a la API y a `jev_v3`; 335 y 974 ms por caso. Integrados en marcador, web y sitio;
+  manifiesto `docs/infra_runs/baselabs_local.md`.
+- bscribe_verif E4 (pre-registrada antes de ejecutar): **elephant-1 y mammoth-1 como verificadores** en
+  local. elephant-1: acierto 0,992, sensibilidad 1,000, FP 0,015 (~0,7 s); mammoth-1: 0,996 / 0,996 /
+  0,004 (~2,2 s). Los dos cumplen, sin NaN; mammoth-1 empata con Clef-27B como el mejor del set.
+  Ficha de «Experimentos» actualizada.
+- Re-ligado el sha256 de `jevbench/adapters/__init__.py` en las 12 auditorías (registro del adaptador
+  `baselabs`; inerte para los análisis auditados).
+
 ## [2.8.0] - 2026-10-25 — JEV-111/112: set opt-in bscribe_verif (verificador para BroncoScribe)
 
 - JEV-111/112: set opt-in **bscribe_verif** (verificador para BroncoScribe): GT v1 validado por el

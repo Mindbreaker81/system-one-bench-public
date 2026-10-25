@@ -170,6 +170,18 @@ llamadas de como mucho N; por defecto, todas en una, como en el pre-registro).
 
 Los NaN, si aparecen, se tratan igual (dos lecturas).
 
+## Enmienda E4 (25-oct-2026): elephant-1 y mammoth-1 (Base Labs), pre-registrados antes de ejecutarlos
+
+Mismo GT v1, preguntas, umbral, métricas y criterio; se informan junto a los anteriores. DGX Spark
+.81 (GB10), adaptador `baselabs` (OneJev qev @81ce62f + `serve.patch`, en proceso; el mismo entorno
+que `docs/infra_runs/baselabs_local.md`), todas las preguntas del caso en una llamada (el motor pasa
+solo a modo secuencial si una petición desborda el índice de 32 bits):
+
+1. `bv_elephant_1_local` — `baselabs/elephant-1` @ `c54a55c2d362a7e30ff30814d28e39054e954d58`.
+2. `bv_mammoth_1_local` — `baselabs/mammoth-1` @ `03007ab3c4481bf01c71ef63adbbbc4b2093d71a`.
+
+Los NaN o rechazos por longitud, si aparecen, se tratan igual (dos lecturas).
+
 ## Hallazgo lateral para BroncoScribe
 
 Al construir el set aparece que la regla `gauge` de `TRANSCRIPT_NORMALIZATION_RULES` no cubre
@@ -220,4 +232,18 @@ incluidas (262 verdaderas, 247 falsas; mayoría constante 0,515). IC 95 % por bo
 - **Jev 1.14 por TypeSafe cumple**: 6 avisos falsos (A1-05 «150 ml en el BAL» en 4 estados, B2-07
   «nueve pases en 11R», B3-02 «ganglio de 16 mm») y **2 hechos falsos sin aviso** (B2-13 «se puncionó
   la estación 11L» con p = 0,85 y 0,57), ninguno con confianza ≥ 0,9.
+### Variantes E4 (25-oct-2026): Base Labs en local
+
+| run | modelo | acierto | sensibilidad | FP | Brier | NaN | mediana/estado |
+|---|---|---|---|---|---|---|---|
+| `bv_elephant_1_local` | elephant-1 (9B), .81 | 0,992 [0,980–1,000] | 1,000 [1,000–1,000] | 0,015 [0,000–0,041] | 0,006 | 0 | 684 ms |
+| `bv_mammoth_1_local` | mammoth-1 (27B), .81 | 0,996 [0,990–1,000] | 0,996 [0,986–1,000] | 0,004 [0,000–0,012] | 0,004 | 0 | 2.203 ms |
+
+- **Los dos cumplen**, sin NaN ni errores de ejecución, con las 16 preguntas en una llamada.
+- **elephant-1** detecta todos los hechos falsos; 4 avisos falsos (A1-05 «150 ml en el BAL» en 3 estados y
+  B3-02 «ganglio de 16 mm», p = 0,05, el único error con confianza ≥ 0,9 de las variantes válidas).
+- **mammoth-1**: 1 aviso falso (B3-02) y 1 hecho falso sin aviso (A3-09 «biopsias en el lóbulo inferior
+  izquierdo», p = 0,85, el mismo que falla Clef-27B). Junto a Clef-27B, el mejor resultado del set.
+- Atribución: 12/12 en los dos. McNemar descriptivo frente a Clef-27B: elephant-1 b = 1, c = 4,
+  p = 0,375; mammoth-1 b = 0, c = 1, p = 1,0.
 - Manifiesto: [`docs/infra_runs/bscribe_verif.md`](../infra_runs/bscribe_verif.md).

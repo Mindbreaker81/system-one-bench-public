@@ -1459,7 +1459,7 @@ y es 51.9 % con GT v5.
   (prefill compartido), esquema `/v1/systemone` como Jev.
 - **Servidor propio:** `setup.sh` + `engine.py` + `serve.patch` (OneJev), pensado para la imagen
   `pytorch/pytorch:2.8.0-cuda12.8` en x86; la ejecución local en los DGX (GB10, aarch64, CUDA 13)
-  queda pendiente (JEV-109 fase 2). Pesos en ai-models `hf/baselabs/`.
+  se adapta en JEV-109 fase 2 (abajo). Pesos en ai-models `hf/baselabs/`.
 - **Snapshots medidos:** `baseten/mammoth-1-20261021`, `baseten/elephant-1-20261021`.
   Adaptador `jev` (`provider=openrouter`, `retries=3`, `pause=3.5` por el límite gratuito).
 - **Resultados (22-oct, JEV-109, GT v5; 194/194, 0 errores):** `mammoth_1_or` ajustado
@@ -1472,6 +1472,11 @@ y es 51.9 % con GT v5.
   0,3 s). Coste registrado 0 por ser la variante gratuita: se publica como no registrado.
   Las cifras del fabricante (su «Jev Decision Index» 71,24 y 62,65) son de otro banco y no se
   incorporan.
+- **En local (25-oct, JEV-109 fase 2; runs `elephant_1_local`, `mammoth_1_local`):** DGX Spark .81,
+  adaptador `baselabs` (OneJev qev @81ce62f + `serve.patch`, en proceso), torch 2.14.1+cu130,
+  transformers 5.19.0, sin `causal_conv1d`. 194/194 y 0 errores. Ajustado 54 [45–62] y 58 [51–66];
+  acuerdo con su API 99,3 % y 99,1 % (referencia 97 %), 0 celdas tras Holm frente a la API y frente a
+  `jev_v3`. Mediana en proceso 335 ms (9B) y 974 ms (27B). Manifiesto: `docs/infra_runs/baselabs_local.md`.
 
 ## OpenMed Ministral-3B-Medical-v1
 
