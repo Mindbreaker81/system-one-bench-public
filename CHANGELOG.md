@@ -13,6 +13,19 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.8.0] - 2026-10-25 — JEV-111/112: set opt-in bscribe_verif (verificador para BroncoScribe)
+
+- JEV-111/112: set opt-in **bscribe_verif** (verificador para BroncoScribe): GT v1 validado por el
+  usuario y congelado antes de ejecutar (118 hechos, 509 decisiones, mayoría 0,515). Clef-Flash 9B
+  cumple el criterio pre-registrado (sensibilidad ≥ 0,70, FP ≤ 0,05) en CUDA: acierto 0,988,
+  sensibilidad 1,000, FP 0,023; en la GPU Intel da 24 NaN con 16 preguntas por llamada (fallo del
+  backend XPU; contándolos como aviso, FP 0,115 y no cumple). Clef-27B: 0,998 / 0,996 / 0,000.
+  E3: actualizar y reiniciar .70 no arregla el NaN; con ≤ 8 preguntas por llamada desaparece y
+  Clef-Flash cumple también en XPU (FP 0,027). Jev 1.14 por TypeSafe cumple (0,984 / 0,992 / 0,023;
+  $0,0032). Detalle en `docs/experimentos/bscribe_verif.md`; manifiesto `docs/infra_runs/bscribe_verif.md`.
+- Página «Experimentos» (ES/EN): ficha 56 en un bloque nuevo 15 «Verificación de hechos clínicos
+  (BroncoScribe)» (56 fichas en 15 bloques).
+
 ## [2.7.0] - 2026-10-24 — JEV-110: Jev 1.14 como jev-latest (ficha propia; 1.13 sigue de referencia)
 
 - JEV-110: `jev-latest` resuelve a **Jev 1.14** en TypeSafe y OpenRouter (24-oct). Run `jev_1_14` por
