@@ -37,6 +37,7 @@ REGISTRY = {
     "tev1": "jevbench.adapters.tev1:Tev1",
     "clef": "jevbench.adapters.clef:Clef",
     "baselabs": "jevbench.adapters.baselabs:BaseLabs",
+    "tev1_gguf": "jevbench.adapters.tev1_gguf:Tev1GGUF",
     "openai_decisions": "jevbench.adapters.openai_decisions:OpenAIDecisions",
 }
 

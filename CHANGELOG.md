@@ -13,6 +13,20 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.10.0] - 2026-10-25 — Jetson Orin Nano (decisores en 8 GB) y JEV-113 (Ling-3.0 en la biblioteca)
+
+- **Jetson Orin Nano Super (8 GB):** experimento pre-registrado (`docs/experimentos/jetson_local.md`). Caben
+  Qwen3.5-4B en 4 bits (llama.cpp, adaptador nuevo `tev1_gguf`: 35 frente a 37 en bf16 en el DGX, acuerdo
+  92,1 %, 0 celdas tras Holm, ~3,5 s/caso) y Decider-0.8B (15 frente a 13, acuerdo 99,5 %); Decider-2B queda
+  incompleto por memoria y Qwen3.5-9B no cabe. Los cuelgues iniciales de la Jetson venían de la caché de
+  prompts de llama-server (`--cache-ram`, 8 GiB por defecto); corregido con `--cache-ram 0`. Control nuevo
+  `qwen35_4b_base_tev1fmt`. Ficha 57 en «Experimentos» (bloque 16). Re-ligado el hash del registro de
+  adaptadores en las 12 auditorías.
+- `jevbench.publish`: el export también reduce a su nombre de fichero los campos `base` y `base_tokenizer`
+  de `meta` (rutas locales del adaptador `tev1_gguf`).
+
+- JEV-113: completada la descarga de Ling-3.0-flash-Sante Q4_K_M (bartowski, 80,39 GB en tres partes) a la biblioteca; SHA256 contra Hugging Face y relectura desde el segundo Spark: 3/3 OK. Documentada la viabilidad estimada de Q6_K (111,43 GB) en uno o dos Spark; sin inferencia ni batería. Estado y registros en `docs/infra_runs/ling_sante_preparacion.md`.
+
 ## [2.9.1] - 2026-10-25 — «Experimentos»: take-home messages, entradillas por bloque y fichas más claras
 
 - «Experimentos» (ES/EN): dos mensajes adicionales sobre el agregado de los LLM generalistas y el acuerdo local/API, con fuentes directas y cifras reproducidas (96,2–99,9 % en seis pares). Se distinguen ranking, interpretación operativa y ausencia de diferencias significativas; nueve mensajes en total, sin afirmar equivalencia ni identidad de configuración.
