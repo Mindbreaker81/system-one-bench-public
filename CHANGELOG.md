@@ -13,6 +13,13 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.11.1] - 2026-11-19 — Artículo: autoría, declaración de uso de IA y párrafo inicial del resumen
+
+- Artículo (EN/ES) versión 2.11.1, mismo corte de datos v2.10.0: autoría bajo la línea de versión (nombre,
+  afiliación y ORCID; el escáner de privacidad la admite solo en las dos páginas del artículo) y la declaración de uso de
+  IA de §14 nombra los agentes (Claude Code como principal, con Codex y Devin) bajo dirección y revisión
+  del autor. §0 empieza con un párrafo que presenta el banco, el contrato y Jev antes de las cifras. Enlaces de reproducción al snapshot público v2.11.1. Sin cambios en cifras ni conclusiones.
+
 ## [2.11.0] - 2026-11-19 — Artículo publicado (JEV-92): versión 2.11.0, corte de datos v2.10.0
 
 - **Artículo técnico (EN principal + ES) publicado** en el sitio: `/article/` y `/articulo/`, enlazado desde la

@@ -39,3 +39,5 @@ Experimento Jetson (25-oct-2026, sin publicar): se re-liga únicamente el sha256
 Con la versión 2.10.0 (Jetson Orin Nano y JEV-113) se re-liga únicamente el sha256 de jevbench/__init__.py (nuevo valor b6c6c601e5e95e363b136df6b2fd533aaab6a3c5ec9102edf6e81f4fedb5be10) en las 12 auditorías con scripts/attest_rebind.py; ningún otro campo cambia. attest verify vuelve a dar 12/12. Publicación de la 2.10.0 pedida por el usuario el 25-oct-2026.
 
 Con la versión 2.11.0 (JEV-92, publicación del artículo) se re-liga únicamente el sha256 de jevbench/__init__.py (nuevo valor 54e609218c826ff94f7e27c938131d59a8640e9a2df953982a1735e32056e4cb) en las 12 auditorías con scripts/attest_rebind.py; ningún otro campo cambia. attest verify vuelve a dar 12/12. Publicación de la 2.11.0 pedida por el usuario el 19-nov-2026.
+
+Con la versión 2.11.1 (autoría del artículo) se re-liga únicamente el sha256 de jevbench/__init__.py (nuevo valor 2a69e0ad99734513f20cc4cd581042adf71deaf7c8d7811bed57374f8585c9d7) en las 12 auditorías con scripts/attest_rebind.py; ningún otro campo cambia. attest verify vuelve a dar 12/12. Pedida por el usuario el 19-nov-2026.
