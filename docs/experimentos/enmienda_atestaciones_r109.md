@@ -37,3 +37,5 @@ Con la versión 2.9.1 (texto de la página «Experimentos») se re-liga únicame
 Experimento Jetson (25-oct-2026, sin publicar): se re-liga únicamente el sha256 de `jevbench/adapters/__init__.py` (5ee54987381549b1ec3ec4a88ecdcf180804b856d7cf5fdc2836d78bcd667afd) en las 12 auditorías con scripts/attest_rebind.py; su único cambio es registrar el adaptador nuevo `tev1_gguf` en `REGISTRY`, inerte para los análisis auditados. Ningún otro campo cambia.
 
 Con la versión 2.10.0 (Jetson Orin Nano y JEV-113) se re-liga únicamente el sha256 de jevbench/__init__.py (nuevo valor b6c6c601e5e95e363b136df6b2fd533aaab6a3c5ec9102edf6e81f4fedb5be10) en las 12 auditorías con scripts/attest_rebind.py; ningún otro campo cambia. attest verify vuelve a dar 12/12. Publicación de la 2.10.0 pedida por el usuario el 25-oct-2026.
+
+Con la versión 2.11.0 (JEV-92, publicación del artículo) se re-liga únicamente el sha256 de jevbench/__init__.py (nuevo valor 54e609218c826ff94f7e27c938131d59a8640e9a2df953982a1735e32056e4cb) en las 12 auditorías con scripts/attest_rebind.py; ningún otro campo cambia. attest verify vuelve a dar 12/12. Publicación de la 2.11.0 pedida por el usuario el 19-nov-2026.

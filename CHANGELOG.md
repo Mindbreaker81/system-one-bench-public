@@ -13,8 +13,31 @@ documento y el README. Qué sube cada nivel:
 
 Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los commits ya existentes).
 
+## [2.11.0] - 2026-11-19 — Artículo publicado (JEV-92): versión 2.11.0, corte de datos v2.10.0
+
+- **Artículo técnico (EN principal + ES) publicado** en el sitio: `/article/` y `/articulo/`, enlazado desde la
+  navegación y el README; deja de ser borrador. Corte de datos **v2.10.0** (GT v5): auditoría de Codex contra los
+  resultados del tag (R-A1, hoja `docs/articulo/hechos_v2.10.0_delta.md`) y revisión paralela de conclusiones por
+  Claude; aplicadas las correcciones (R-A2): seis pares local/API (96,2–99,9 %, 0 celdas tras Holm por par),
+  mammoth-1 local 58,3 como mayor agregado observado de un decisor dedicado de una pasada (descriptivo), Jetson
+  (ficha 57) y BroncoScribe (ficha 56, fuera del ajustado, sin E5), 57 fichas / 16 bloques, recuentos 124/115/121,
+  F4/F5 (108 y 115 puntos), redacción estadística más estricta. Figuras regeneradas desde el scorer (`DATA_CUT = v2.10.0`).
+- Tubería de publicación: `scripts/article_html.py` pre-renderiza los .md con pandoc (Netlify solo tiene la stdlib)
+  a `docs/site_src/article/` y `docs/site_src/articulo/`; `jevbench.site` los copia con la barra rebased;
+  `--check` + `tests/test_article_html.py` vigilan que estén al día; las páginas pasan los controles de privacidad
+  de `tests/test_site.py`. Procedimiento en `docs/procedimientos/actualizar-web.md` §5.
+- Las fuentes del artículo, su generador de figuras y sus tests pasan a versionarse en el repo privado; no se
+  exportan al espejo (excluidos en `jevbench.publish`), que enlaza el artículo desde el README.
+- El espejo público recibe en esta versión la E5 de bscribe_verif, añadida tras el tag v2.10.0 (`MEMORIA.md` sigue solo en el privado).
+
 ## [2.10.0] - 2026-10-25 — Jetson Orin Nano (decisores en 8 GB) y JEV-113 (Ling-3.0 en la biblioteca)
 
+- `MEMORIA.md` (15-nov, después del tag, sin cambiar de versión): memoria de 1–2 páginas de lo hecho y lo pendiente, redactada por Devin y revisada contra las fuentes por Codex (dos pasadas; veredicto OK).
+- bscribe_verif E5 (pre-registrada antes de ejecutar; añadida al repo, Netlify y la web después del tag
+  `v2.10.0`, sin cambiar de versión: **no está en el espejo público v2.10.0**): **Qwen3.5-4B Q4 en la Jetson Orin Nano** como
+  verificador de BroncoScribe — cumple (acierto 0,984, sensibilidad 1,000, FP 0,031, ~4,9 s por
+  transcripción, sin caídas). Ficha 56 de «Experimentos» actualizada; corregida la frase que decía que ninguna
+  configuración válida tenía errores con confianza ≥ 0,9 (elephant-1 tenía uno).
 - **Jetson Orin Nano Super (8 GB):** experimento pre-registrado (`docs/experimentos/jetson_local.md`). Caben
   Qwen3.5-4B en 4 bits (llama.cpp, adaptador nuevo `tev1_gguf`: 35 frente a 37 en bf16 en el DGX, acuerdo
   92,1 %, 0 celdas tras Holm, ~3,5 s/caso) y Decider-0.8B (15 frente a 13, acuerdo 99,5 %); Decider-2B queda
@@ -26,6 +49,7 @@ Las versiones 0.1.0–0.4.0 son retroactivas (se asignaron a 27-sep sobre los co
   de `meta` (rutas locales del adaptador `tev1_gguf`).
 
 - JEV-113: completada la descarga de Ling-3.0-flash-Sante Q4_K_M (bartowski, 80,39 GB en tres partes) a la biblioteca; SHA256 contra Hugging Face y relectura desde el segundo Spark: 3/3 OK. Documentada la viabilidad estimada de Q6_K (111,43 GB) en uno o dos Spark; sin inferencia ni batería. Estado y registros en `docs/infra_runs/ling_sante_preparacion.md`.
+
 
 ## [2.9.1] - 2026-10-25 — «Experimentos»: take-home messages, entradillas por bloque y fichas más claras
 

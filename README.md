@@ -2,7 +2,7 @@
 
 # system-one-bench: banco de pruebas de decisores "System One"
 
-**Versión 2.10.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
+**Versión 2.11.0** — ver [`CHANGELOG.md`](CHANGELOG.md).
 
 Banco de pruebas para comparar **Jev** (TypeSafe), un modelo cerrado que no genera texto sino
 que responde preguntas tipadas con probabilidades, con las alternativas abiertas que prometen lo
@@ -25,6 +25,9 @@ scorer.
 > Los hashes de commit del `CHANGELOG.md` y los `meta.git` de `results/` se refieren al repo de
 > desarrollo, no a este historial. Los abstracts de los papers no se distribuyen: quedan solo
 > los metadatos y su hash, y `python3 -m jevbench.fetch_abstracts` los reconstruye desde PubMed.
+
+> **Artículo técnico (EN):** <https://system-one-bench.netlify.app/article/> · **versión en español:**
+> <https://system-one-bench.netlify.app/articulo/> — qué mide el banco, qué sostienen los datos del corte v2.10.0 y qué no.
 
 > **Web de resultados (pública):** <https://system-one-bench.netlify.app/>. Incluye el resumen,
 > un explorador caso a caso, aciertos por pregunta, matrices de confusión, calibración, un

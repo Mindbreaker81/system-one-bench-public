@@ -182,6 +182,16 @@ solo a modo secuencial si una petición desborda el índice de 32 bits):
 
 Los NaN o rechazos por longitud, si aparecen, se tratan igual (dos lecturas).
 
+## Enmienda E5 (25-oct-2026): Qwen3.5-4B en 4 bits en la Jetson Orin Nano, pre-registrada antes de ejecutarla
+
+Mismo GT v1, preguntas, umbral, métricas y criterio. Run `bv_qwen35_4b_q4km_jetson`: `Qwen/Qwen3.5-4B` @
+`851bf6e8…` cuantizado a GGUF Q4_K_M en la Jetson Orin Nano Super (8 GB, MAXN_SUPER), llama.cpp `df9beac`
+(`-c 8192 --cache-ram 0`), adaptador `tev1_gguf` (contrato de Tev1: una letra por pregunta; noul = P(«Yes»)),
+cliente en el DGX .81 por la LAN. Configuración del experimento de la Jetson
+(`docs/experimentos/jetson_local.md`), donde sacó 35 de ajustado en la batería principal. Una pregunta por
+llamada (el contrato de Tev1 no agrupa preguntas). Se informa junto a los anteriores; los errores de servidor o
+de memoria, si aparecen, se tratan como salidas inválidas (dos lecturas).
+
 ## Hallazgo lateral para BroncoScribe
 
 Al construir el set aparece que la regla `gauge` de `TRANSCRIPT_NORMALIZATION_RULES` no cubre
@@ -246,4 +256,15 @@ incluidas (262 verdaderas, 247 falsas; mayoría constante 0,515). IC 95 % por bo
   izquierdo», p = 0,85, el mismo que falla Clef-27B). Junto a Clef-27B, el mejor resultado del set.
 - Atribución: 12/12 en los dos. McNemar descriptivo frente a Clef-27B: elephant-1 b = 1, c = 4,
   p = 0,375; mammoth-1 b = 0, c = 1, p = 1,0.
+### Variante E5 (25-oct-2026): Qwen3.5-4B Q4 en la Jetson Orin Nano
+
+| run | acierto | sensibilidad | FP | Brier | errores ≥ 0,9 por 100 | mediana/estado |
+|---|---|---|---|---|---|---|
+| `bv_qwen35_4b_q4km_jetson` | 0,984 [0,963–0,998] | 1,000 [1,000–1,000] | 0,031 [0,003–0,075] | 0,024 | 0,39 | ~4,9 s |
+
+- **Cumple** el criterio pre-registrado, sin errores de servidor ni de memoria (46/46 estados; la Jetson no se
+  reinició). Detecta todos los hechos falsos; 8 avisos falsos (A2-04 «muestras a anatomía patológica» en 4
+  estados, A1-05 «150 ml en el BAL» en 3, B6-04 «cuatro pases en la estación 8»), 2 de ellos con confianza
+  ≥ 0,9 (A2-04, p = 0,05). Atribución 12/12. Más lento (una pregunta por llamada, contrato de Tev1) y con
+  peor Brier que los decisores dedicados, pero comparable a Clef-Flash y Jev 1.14 en acierto.
 - Manifiesto: [`docs/infra_runs/bscribe_verif.md`](../infra_runs/bscribe_verif.md).

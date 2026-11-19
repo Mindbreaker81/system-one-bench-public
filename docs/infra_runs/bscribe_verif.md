@@ -13,6 +13,7 @@ idénticos al repo (sha256 comprobado antes de lanzar).
 | `bv_jev114_typesafe` | <host> (cliente API) | Jev `jev-latest` → `jev-1.14.0`, API TypeSafe, adaptador `jev`, `retries=3` | Python del sistema | 25-oct-2026 |
 | `bv_elephant_1_local` | DGX Spark <host> (GB10) | `baselabs/elephant-1` @ `c54a55c2…`, adaptador `baselabs` | `.venv-baselabs` (ver `baselabs_local.md`) | 25-oct-2026 |
 | `bv_mammoth_1_local` | DGX Spark <host> (GB10) | `baselabs/mammoth-1` @ `03007ab3…`, adaptador `baselabs` | `.venv-baselabs` | 25-oct-2026 |
+| `bv_qwen35_4b_q4km_jetson` | Jetson Orin Nano Super (8 GB, MAXN_SUPER) | `Qwen/Qwen3.5-4B` @ `851bf6e8…` en GGUF Q4_K_M, llama.cpp `df9beac` (`-c 8192 --cache-ram 0`), adaptador `tev1_gguf`; cliente en <host> | ver `jetson_local.md` | 25-oct-2026 |
 | `bv_clef_27b` | DGX Spark <host> (GB10) | `Cloudflare/clef` @ `2f3de3dd85f379784083b0814d997ab627200f0c`, bf16, `device=cuda` | `.venv-clef` | 25-oct-2026 |
 
 - Pesos de Clef-Flash en <host> copiados desde la caché de <host> por la LAN (snapshot desreferenciado,
